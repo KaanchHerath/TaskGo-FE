@@ -33,7 +33,7 @@ const Navbar = () => {
 
           {/* Action Buttons - Right */}
           <div className="flex items-center space-x-4">
-            <Link to="/browse-jobs" className="text-gray-700 hover:text-gray-900">
+            <Link to="/tasks" className="text-gray-700 hover:text-gray-900">
               Browse Jobs
             </Link>
             <Link 

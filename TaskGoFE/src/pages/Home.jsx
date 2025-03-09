@@ -19,7 +19,6 @@ const Home = () => {
           <RegistrationCTA />
           <TestimonialsSection />
         </main>
-        <Footer />
       </div>
     </>
   );

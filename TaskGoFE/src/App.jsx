@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Navbar from "./components/layout/Navbar";
+import Layout from "./components/layout/Layout";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Tasks from "./pages/Tasks";
@@ -11,8 +11,7 @@ import PostTask from "./pages/PostTask";
 function App() {
   return (
     <Router>
-      <div className="font-sans">
-        <Navbar />
+      <Layout>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
@@ -22,7 +21,7 @@ function App() {
           <Route path="/browse-jobs" element={<BrowseJobs />} />
           <Route path="/post-task" element={<PostTask />} />
         </Routes>
-      </div>
+      </Layout>
     </Router>
   );
 }
