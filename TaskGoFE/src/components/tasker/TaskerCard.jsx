@@ -1,7 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { FaStar, FaMapMarkerAlt, FaClock, FaEye, FaPhone, FaEnvelope, FaCheckCircle } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
+import HireTaskerModal from './HireTaskerModal';
 
 const TaskerCard = ({ tasker, onClick, showContactInfo = false, className = "" }) => {
+  const navigate = useNavigate();
+  const [showHireModal, setShowHireModal] = useState(false);
+  const [hireSuccess, setHireSuccess] = useState(false);
+
   const getInitials = (name) => {
     return name
       .split(' ')
@@ -17,6 +23,45 @@ const TaskerCard = ({ tasker, onClick, showContactInfo = false, className = "" }
     if (hours < 24) return `${hours} hours`;
     const days = Math.ceil(hours / 24);
     return `${days} day${days > 1 ? 's' : ''}`;
+  };
+
+  const handleHireSuccess = () => {
+    setHireSuccess(true);
+    setTimeout(() => {
+      setHireSuccess(false);
+    }, 3000);
+  };
+
+  // Helper function to parse JWT token
+  const parseJwt = (token) => {
+    try {
+      return JSON.parse(atob(token.split('.')[1]));
+    } catch (e) {
+      return null;
+    }
+  };
+
+  const isCustomer = () => {
+    const token = localStorage.getItem('token');
+    if (!token) return false;
+    const payload = parseJwt(token);
+    return payload?.role === 'customer';
+  };
+
+  const isLoggedIn = () => {
+    const token = localStorage.getItem('token');
+    if (!token) return false;
+    const payload = parseJwt(token);
+    return !!payload && !!payload.userId;
+  };
+
+  const handleHireClick = (e) => {
+    e.stopPropagation();
+    if (isLoggedIn() && isCustomer()) {
+      setShowHireModal(true);
+    } else {
+      navigate('/login');
+    }
   };
 
   return (
@@ -131,26 +176,36 @@ const TaskerCard = ({ tasker, onClick, showContactInfo = false, className = "" }
       {/* Action Buttons */}
       <div className="flex gap-3">
         <button 
-          className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 font-semibold shadow-lg transform hover:scale-105"
-          onClick={(e) => {
-            e.stopPropagation();
-            // Handle hire action
-            console.log('Hire tasker:', tasker._id);
-          }}
+          className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-300 font-semibold shadow-lg transform hover:scale-105"
+          onClick={handleHireClick}
         >
-          Hire Now
+          {isLoggedIn() && isCustomer() ? 'Hire Now' : 'Login to Hire'}
         </button>
         <button 
           className="px-4 bg-white/70 border-2 border-blue-600/30 text-blue-600 rounded-xl hover:bg-white/90 hover:border-blue-600/50 transition-all duration-300 shadow-lg"
           onClick={(e) => {
             e.stopPropagation();
-            // Handle view profile action
-            console.log('View profile:', tasker._id);
+            navigate(`/taskers/${tasker._id}`);
           }}
         >
           <FaEye className="text-lg" />
         </button>
       </div>
+
+      {/* Success Message */}
+      {hireSuccess && (
+        <div className="mt-3 bg-green-100 border border-green-300 text-green-700 px-3 py-2 rounded-lg text-sm text-center">
+          Task sent successfully!
+        </div>
+      )}
+
+      {/* Hire Modal */}
+      <HireTaskerModal
+        isOpen={showHireModal}
+        onClose={() => setShowHireModal(false)}
+        tasker={tasker}
+        onSuccess={handleHireSuccess}
+      />
     </div>
   );
 };

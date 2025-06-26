@@ -59,6 +59,22 @@ export const createTask = async (taskData) => {
   }
 };
 
+// Create a targeted task for a specific tasker
+export const createTargetedTask = async (taskData, targetedTaskerId) => {
+  try {
+    const targetedTaskData = {
+      ...taskData,
+      targetedTasker: targetedTaskerId,
+      isTargeted: true
+    };
+    const response = await axiosInstance.post('/v1/tasks', targetedTaskData);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating targeted task:', error);
+    throw error;
+  }
+};
+
 // Get all tasks with filters
 export const getTasks = async (filters = {}) => {
   try {
@@ -200,6 +216,24 @@ export const cancelScheduledTask = async (taskId, reason) => {
     return response.data;
   } catch (error) {
     console.error('Error canceling scheduled task:', error);
+    throw error;
+  }
+};
+
+// Upload completion photos
+export const uploadCompletionPhoto = async (file) => {
+  try {
+    const formData = new FormData();
+    formData.append('photo', file);
+    
+    const response = await axiosInstance.post('/v1/tasks/upload-completion-photo', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error uploading completion photo:', error);
     throw error;
   }
 };

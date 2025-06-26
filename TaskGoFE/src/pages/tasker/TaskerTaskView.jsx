@@ -117,6 +117,18 @@ const TaskerTaskView = () => {
   };
 
   const getApplicationStatus = () => {
+    // Check if this is a targeted task for the current user
+    const isTargetedTask = task?.isTargeted && task?.targetedTasker === currentUser.userId;
+    
+    if (isTargetedTask) {
+      if (task.selectedTasker === currentUser.userId) {
+        return { text: 'Selected (Hired Directly)', color: 'text-green-700', bgColor: 'bg-green-100' };
+      }
+      // For targeted tasks, check if tasker has confirmed (this would be stored differently)
+      // For now, we'll assume they need to confirm availability
+      return { text: 'Hired Directly', color: 'text-purple-700', bgColor: 'bg-purple-100' };
+    }
+    
     if (!application) return { text: 'Not Applied', color: 'text-gray-500', bgColor: 'bg-gray-100' };
     
     if (task.selectedTasker === currentUser.userId) {
@@ -169,7 +181,7 @@ const TaskerTaskView = () => {
         payload.taskerRatingForCustomer = completionData.taskerRatingForCustomer;
       }
 
-      const response = await markTaskComplete(id, payload);
+      const response = await markTaskComplete(taskId, payload);
       
       if (response.bothCompleted) {
         addToast('🎉 Task completed successfully by both parties! Payment will be processed.', 'success');
@@ -191,7 +203,7 @@ const TaskerTaskView = () => {
   const handleCancelSchedule = async () => {
     try {
       setActionLoading(true);
-      await cancelScheduledTask(id, cancellationReason);
+      await cancelScheduledTask(taskId, cancellationReason);
       addToast('Schedule cancelled successfully. Task is now active again.', 'success');
       setShowCancelModal(false);
       setCancellationReason('');
@@ -293,8 +305,14 @@ const TaskerTaskView = () => {
   console.log('- application exists:', !!application);
   console.log('- application.confirmedByTasker:', application?.confirmedByTasker);
   console.log('- task.status:', task.status);
-  console.log('- Confirm button should show:', !application?.confirmedByTasker && task.status === 'active');
-  console.log('- Chat button should show:', !!application);
+  console.log('- task.isTargeted:', task.isTargeted);
+  console.log('- task.targetedTasker:', task.targetedTasker);
+  console.log('- currentUser.userId:', currentUser.userId);
+  console.log('- task.selectedTasker:', task.selectedTasker);
+  console.log('- Is targeted task for current user:', task.isTargeted && task.targetedTasker === currentUser.userId);
+  console.log('- Confirm button should show (old logic):', !application?.confirmedByTasker && task.status === 'active');
+  console.log('- Confirm button should show (targeted):', task.isTargeted && task.targetedTasker === currentUser.userId && task.status === 'active' && task.selectedTasker !== currentUser.userId);
+  console.log('- Chat button should show:', !!application || (task.isTargeted && task.targetedTasker === currentUser.userId));
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -367,6 +385,34 @@ const TaskerTaskView = () => {
               </div>
             </div>
 
+            {/* Targeted Task Details */}
+            {task.isTargeted && task.targetedTasker === currentUser.userId && !application && (
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                  <FaStar className="text-purple-600 mr-2" />
+                  You Were Hired Directly
+                </h3>
+                
+                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4">
+                  <p className="text-purple-700 text-sm">
+                    🎉 <strong>{task.customer.fullName}</strong> hired you directly for this task! 
+                    You can now confirm your availability and start chatting with the customer.
+                  </p>
+                </div>
+
+                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                   <div>
+                     <p className="font-medium text-gray-700">Budget Range</p>
+                     <p className="text-lg font-semibold text-green-600">LKR {task.minPayment} - {task.maxPayment}</p>
+                   </div>
+                   <div>
+                     <p className="font-medium text-gray-700">Task Type</p>
+                     <p className="text-gray-800">Direct Hire</p>
+                   </div>
+                 </div>
+              </div>
+            )}
+
             {/* Application Details */}
             {application && (
               <div className="bg-white rounded-xl shadow-sm p-6">
@@ -393,7 +439,8 @@ const TaskerTaskView = () => {
                 )}
 
                 {/* Action Button */}
-                {!application.confirmedByTasker && task.status === 'active' && (
+                {((!application?.confirmedByTasker && task.status === 'active') || 
+                  (task.isTargeted && task.targetedTasker === currentUser.userId && task.status === 'active' && task.selectedTasker !== currentUser.userId)) && (
                   <button
                     onClick={handleConfirmAvailability}
                     className="w-full bg-gradient-to-r from-green-600 to-green-700 text-white py-3 rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-300 font-semibold shadow-lg flex items-center justify-center space-x-2"
@@ -402,6 +449,27 @@ const TaskerTaskView = () => {
                     <span>Confirm Your Availability</span>
                   </button>
                 )}
+              </div>
+            )}
+
+            {/* Standalone Action Button for Targeted Tasks */}
+            {task.isTargeted && task.targetedTasker === currentUser.userId && !application && 
+             task.status === 'active' && task.selectedTasker !== currentUser.userId && (
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                  <FaCheckCircle className="text-green-600 mr-2" />
+                  Confirm Your Availability
+                </h3>
+                <p className="text-gray-600 mb-4">
+                  Ready to take on this task? Confirm your availability and set your preferred schedule.
+                </p>
+                <button
+                  onClick={handleConfirmAvailability}
+                  className="w-full bg-gradient-to-r from-green-600 to-green-700 text-white py-3 rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-300 font-semibold shadow-lg flex items-center justify-center space-x-2"
+                >
+                  <FaCheckCircle />
+                  <span>Confirm Your Availability</span>
+                </button>
               </div>
             )}
           </div>
@@ -460,7 +528,7 @@ const TaskerTaskView = () => {
               </div>
 
               {/* Chat Button */}
-              {application && (
+              {(application || (task.isTargeted && task.targetedTasker === currentUser.userId)) && (
                 <button
                   onClick={() => setChatOpen(true)}
                   className="w-full mt-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-300 font-semibold shadow-lg flex items-center justify-center space-x-2"
@@ -488,10 +556,13 @@ const TaskerTaskView = () => {
                   </span>
                 </div>
                 
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Applications:</span>
-                  <span className="font-medium">{task.applications?.length || 0}</span>
-                </div>
+                {/* Hide application count when task is completed */}
+                {task.status !== 'completed' && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Applications:</span>
+                    <span className="font-medium">{task.applications?.length || 0}</span>
+                  </div>
+                )}
 
                 {task.selectedTasker === currentUser.userId && (task.status === 'scheduled' || task.status === 'in-progress' || task.status === 'completed') && (
                   <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-4">
@@ -508,8 +579,215 @@ const TaskerTaskView = () => {
                     </p>
                   </div>
                 )}
+
+                {task.isTargeted && task.targetedTasker === currentUser.userId && task.status === 'active' && task.selectedTasker !== currentUser.userId && (
+                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 mt-4">
+                    <p className="text-purple-700 text-sm font-medium">
+                      🎯 You were hired directly! Please confirm your availability to proceed.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
+
+            {/* Completed Task Details - Show customer feedback and tasker submission */}
+            {task.status === 'completed' && task.selectedTasker && 
+             (task.selectedTasker._id === currentUser.userId || task.selectedTasker === currentUser.userId) && (
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-6 flex items-center">
+                  <FaCheckCircle className="text-green-600 mr-2" />
+                  Task Completed Successfully
+                </h3>
+                
+                {/* Task Completion Summary */}
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    {task.taskerCompletedAt && (
+                      <div className="flex items-center space-x-2">
+                        <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                        <span className="text-green-700">
+                          <strong>You completed:</strong> {formatDate(task.taskerCompletedAt)}
+                        </span>
+                      </div>
+                    )}
+                    {task.customerCompletedAt && (
+                      <div className="flex items-center space-x-2">
+                        <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                        <span className="text-green-700">
+                          <strong>Customer confirmed:</strong> {formatDate(task.customerCompletedAt)}
+                        </span>
+                      </div>
+                    )}
+                    {task.agreedPayment && (
+                      <div className="flex items-center space-x-2 col-span-full">
+                        <FaDollarSign className="text-green-600" />
+                        <span className="text-green-700 font-semibold">
+                          Payment: LKR {task.agreedPayment}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Your Work Submission */}
+                <div className="mb-6">
+                  <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                    <FaCamera className="text-blue-600 mr-2" />
+                    Your Work Submission
+                  </h4>
+                  
+                  {/* Completion Photos */}
+                  {task.completionPhotos && task.completionPhotos.length > 0 ? (
+                    <div className="mb-4">
+                      <p className="text-sm font-medium text-gray-700 mb-3">
+                        Completion Photos ({task.completionPhotos.length})
+                      </p>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        {task.completionPhotos.map((photo, index) => (
+                          <div key={index} className="relative group">
+                            <img
+                              src={photo}
+                              alt={`Completion photo ${index + 1}`}
+                              className="w-full h-32 object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-90 transition-opacity shadow-sm"
+                              onClick={() => window.open(photo, '_blank')}
+                            />
+                            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded-lg flex items-center justify-center">
+                              <span className="text-white opacity-0 group-hover:opacity-100 text-sm font-medium">
+                                Click to enlarge
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
+                      <p className="text-gray-600 text-sm">No completion photos were uploaded.</p>
+                    </div>
+                  )}
+
+                  {/* Completion Notes */}
+                  {task.completionNotes ? (
+                    <div className="mb-4">
+                      <p className="text-sm font-medium text-gray-700 mb-2">Work Completion Notes</p>
+                      <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                        <p className="text-sm text-gray-700">{task.completionNotes}</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4">
+                      <p className="text-gray-600 text-sm">No completion notes were provided.</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Customer Feedback Section */}
+                <div className="mb-6">
+                  <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                    <FaUser className="text-purple-600 mr-2" />
+                    Customer Feedback
+                  </h4>
+                  
+                  {/* Customer Rating */}
+                  {task.customerRating ? (
+                    <div className="mb-4">
+                      <p className="text-sm font-medium text-gray-700 mb-2">Customer's Rating for You</p>
+                      <div className="flex items-center space-x-2">
+                        <div className="flex items-center">
+                          {[...Array(5)].map((_, i) => (
+                            <FaStar
+                              key={i}
+                              className={`w-5 h-5 ${i < task.customerRating ? 'text-yellow-400' : 'text-gray-300'}`}
+                            />
+                          ))}
+                        </div>
+                        <span className="text-lg font-semibold text-gray-700">
+                          {task.customerRating}/5 stars
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4">
+                      <p className="text-gray-600 text-sm">Customer hasn't rated you yet.</p>
+                    </div>
+                  )}
+
+                  {/* Customer Review */}
+                  {task.customerReview ? (
+                    <div className="mb-4">
+                      <p className="text-sm font-medium text-gray-700 mb-2">Customer's Review</p>
+                      <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                        <p className="text-gray-700 italic">"{task.customerReview}"</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4">
+                      <p className="text-gray-600 text-sm">Customer hasn't left a review yet.</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Your Feedback About Customer */}
+                <div className="mb-6">
+                  <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                    <FaComments className="text-green-600 mr-2" />
+                    Your Feedback About Customer
+                  </h4>
+                  
+                  {/* Your Rating for Customer */}
+                  {task.taskerRatingForCustomer ? (
+                    <div className="mb-4">
+                      <p className="text-sm font-medium text-gray-700 mb-2">Your Rating for Customer</p>
+                      <div className="flex items-center space-x-2">
+                        <div className="flex items-center">
+                          {[...Array(5)].map((_, i) => (
+                            <FaStar
+                              key={i}
+                              className={`w-5 h-5 ${i < task.taskerRatingForCustomer ? 'text-yellow-400' : 'text-gray-300'}`}
+                            />
+                          ))}
+                        </div>
+                        <span className="text-lg font-semibold text-gray-700">
+                          {task.taskerRatingForCustomer}/5 stars
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4">
+                      <p className="text-gray-600 text-sm">You didn't rate the customer.</p>
+                    </div>
+                  )}
+
+                  {/* Your Feedback */}
+                  {task.taskerFeedback ? (
+                    <div className="mb-4">
+                      <p className="text-sm font-medium text-gray-700 mb-2">Your Feedback</p>
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <p className="text-gray-700 italic">"{task.taskerFeedback}"</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4">
+                      <p className="text-gray-600 text-sm">You didn't leave feedback about the customer.</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Payment Status */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <FaDollarSign className="text-blue-600" />
+                    <span className="font-semibold text-blue-800">Payment Status</span>
+                  </div>
+                  <p className="text-sm text-blue-700">
+                    {task.customerCompletedAt && task.taskerCompletedAt ? 
+                      '✅ Payment has been processed since both parties confirmed completion.' :
+                      '⏳ Payment will be processed once both parties confirm completion.'
+                    }
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Scheduled Task Actions */}
             {task.status === 'scheduled' && task.selectedTasker && 
@@ -579,7 +857,7 @@ const TaskerTaskView = () => {
       </div>
 
       {/* Chat Window */}
-      {chatOpen && application && (
+      {chatOpen && (application || (task.isTargeted && task.targetedTasker === currentUser.userId)) && (
         <TaskChatWindow
           taskId={taskId}
           receiverId={task.customer._id}

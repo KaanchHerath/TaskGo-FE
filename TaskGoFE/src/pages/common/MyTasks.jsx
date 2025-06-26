@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaTasks, FaUser, FaUsers, FaEye, FaEdit, FaTrash, FaCalendar, FaDollarSign, FaMapMarkerAlt, FaClock, FaCheckCircle, FaTimesCircle, FaHourglass, FaList, FaBars } from 'react-icons/fa';
+import { FaTasks, FaUser, FaUsers, FaEye, FaEdit, FaTrash, FaCalendar, FaDollarSign, FaMapMarkerAlt, FaClock, FaCheckCircle, FaTimesCircle, FaHourglass, FaList, FaBars, FaUserCheck, FaStar, FaFileAlt, FaClipboardList, FaHandshake } from 'react-icons/fa';
 
 function parseJwt(token) {
   try {
@@ -13,6 +13,7 @@ function parseJwt(token) {
 const MyTasks = () => {
   const [tasks, setTasks] = useState([]);
   const [applications, setApplications] = useState([]);
+  const [targetedTasks, setTargetedTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [userRole, setUserRole] = useState(null);
@@ -57,7 +58,23 @@ const MyTasks = () => {
       }
 
       const data = await response.json();
-      setTasks(data.data || []);
+      const allTasks = data.data || [];
+      
+      if (userRole === 'tasker') {
+        // For taskers, separate targeted tasks from selected tasks
+        const targeted = allTasks.filter(task => task.isTargeted && task.targetedTasker);
+        const selected = allTasks.filter(task => !task.isTargeted && task.selectedTasker);
+        
+        setTargetedTasks(targeted);
+        setTasks(selected);
+      } else {
+        // For customers, separate targeted tasks from regular tasks
+        const targeted = allTasks.filter(task => task.isTargeted);
+        const regular = allTasks.filter(task => !task.isTargeted);
+        
+        setTargetedTasks(targeted);
+        setTasks(regular);
+      }
     } catch (error) {
       console.error('Error fetching my tasks:', error);
       setError('Failed to load tasks. Please try again.');
@@ -148,12 +165,23 @@ const MyTasks = () => {
     navigate(`/edit-task/${taskId}`);
   };
 
-  const tabs = [
-    { id: 'all', label: 'All', count: userRole === 'customer' ? tasks.length : applications.length },
-    { id: 'active', label: 'Active', count: userRole === 'customer' ? tasks.filter(t => t.status === 'active').length : applications.filter(a => a.task.status === 'active').length },
-    { id: 'scheduled', label: 'Scheduled', count: userRole === 'customer' ? tasks.filter(t => t.status === 'scheduled').length : applications.filter(a => a.task.status === 'scheduled').length },
-    { id: 'completed', label: 'Completed', count: userRole === 'customer' ? tasks.filter(t => t.status === 'completed').length : applications.filter(a => a.task.status === 'completed').length },
-    { id: 'cancelled', label: 'Cancelled', count: userRole === 'customer' ? tasks.filter(t => t.status === 'cancelled').length : applications.filter(a => a.task.status === 'cancelled').length }
+  const tabs = userRole === 'customer' ? [
+    { id: 'all', label: 'All', count: tasks.length + targetedTasks.length },
+    { id: 'regular', label: 'Regular Tasks', count: tasks.length },
+    { id: 'targeted', label: 'Direct Hires', count: targetedTasks.length },
+    { id: 'active', label: 'Active', count: tasks.filter(t => t.status === 'active').length + targetedTasks.filter(t => t.status === 'active').length },
+    { id: 'scheduled', label: 'Scheduled', count: tasks.filter(t => t.status === 'scheduled').length + targetedTasks.filter(t => t.status === 'scheduled').length },
+    { id: 'completed', label: 'Completed', count: tasks.filter(t => t.status === 'completed').length + targetedTasks.filter(t => t.status === 'completed').length },
+    { id: 'cancelled', label: 'Cancelled', count: tasks.filter(t => t.status === 'cancelled').length + targetedTasks.filter(t => t.status === 'cancelled').length }
+  ] : [
+    { id: 'all', label: 'All', count: applications.length + targetedTasks.length + tasks.length },
+    { id: 'targeted', label: 'Hired Tasks', count: targetedTasks.length },
+    { id: 'selected', label: 'Selected Tasks', count: tasks.length },
+    { id: 'applications', label: 'Applications', count: applications.length },
+    { id: 'active', label: 'Active', count: applications.filter(a => a.task.status === 'active').length + targetedTasks.filter(t => t.status === 'active').length },
+    { id: 'scheduled', label: 'Scheduled', count: applications.filter(a => a.task.status === 'scheduled').length + targetedTasks.filter(t => t.status === 'scheduled').length + tasks.filter(t => t.status === 'scheduled').length },
+    { id: 'completed', label: 'Completed', count: applications.filter(a => a.task.status === 'completed').length + targetedTasks.filter(t => t.status === 'completed').length + tasks.filter(t => t.status === 'completed').length },
+    { id: 'cancelled', label: 'Cancelled', count: applications.filter(a => a.task.status === 'cancelled').length + targetedTasks.filter(t => t.status === 'cancelled').length + tasks.filter(t => t.status === 'cancelled').length }
   ];
 
   if (loading) {
@@ -187,15 +215,86 @@ const MyTasks = () => {
     );
   }
 
-  const currentData = userRole === 'customer' ? tasks : applications;
-  const filteredData = activeTab === 'all' ? currentData : currentData.filter(item => {
+  const getFilteredData = () => {
     if (userRole === 'customer') {
-      return item.status === activeTab;
+      switch (activeTab) {
+        case 'all':
+          return [
+            ...tasks.map(task => ({ ...task, type: 'regular' })),
+            ...targetedTasks.map(task => ({ ...task, type: 'targeted' }))
+          ];
+        case 'regular':
+          return tasks.map(task => ({ ...task, type: 'regular' }));
+        case 'targeted':
+          return targetedTasks.map(task => ({ ...task, type: 'targeted' }));
+        case 'active':
+          return [
+            ...tasks.filter(t => t.status === 'active').map(task => ({ ...task, type: 'regular' })),
+            ...targetedTasks.filter(t => t.status === 'active').map(task => ({ ...task, type: 'targeted' }))
+          ];
+        case 'scheduled':
+          return [
+            ...tasks.filter(t => t.status === 'scheduled').map(task => ({ ...task, type: 'regular' })),
+            ...targetedTasks.filter(t => t.status === 'scheduled').map(task => ({ ...task, type: 'targeted' }))
+          ];
+        case 'completed':
+          return [
+            ...tasks.filter(t => t.status === 'completed').map(task => ({ ...task, type: 'regular' })),
+            ...targetedTasks.filter(t => t.status === 'completed').map(task => ({ ...task, type: 'targeted' }))
+          ];
+        case 'cancelled':
+          return [
+            ...tasks.filter(t => t.status === 'cancelled').map(task => ({ ...task, type: 'regular' })),
+            ...targetedTasks.filter(t => t.status === 'cancelled').map(task => ({ ...task, type: 'targeted' }))
+          ];
+        default:
+          return [];
+      }
     } else {
-      // For taskers, filter by the task status (not application status)
-      return item.task.status === activeTab;
+      // For taskers, handle different tab types
+      switch (activeTab) {
+        case 'all':
+          return [
+            ...targetedTasks.map(task => ({ ...task, type: 'targeted' })),
+            ...tasks.map(task => ({ ...task, type: 'selected' })),
+            ...applications.map(app => ({ ...app, type: 'application' }))
+          ];
+        case 'targeted':
+          return targetedTasks.map(task => ({ ...task, type: 'targeted' }));
+        case 'selected':
+          return tasks.map(task => ({ ...task, type: 'selected' }));
+        case 'applications':
+          return applications.map(app => ({ ...app, type: 'application' }));
+        case 'active':
+          return [
+            ...targetedTasks.filter(t => t.status === 'active').map(task => ({ ...task, type: 'targeted' })),
+            ...applications.filter(a => a.task.status === 'active').map(app => ({ ...app, type: 'application' }))
+          ];
+        case 'scheduled':
+          return [
+            ...targetedTasks.filter(t => t.status === 'scheduled').map(task => ({ ...task, type: 'targeted' })),
+            ...tasks.filter(t => t.status === 'scheduled').map(task => ({ ...task, type: 'selected' })),
+            ...applications.filter(a => a.task.status === 'scheduled').map(app => ({ ...app, type: 'application' }))
+          ];
+        case 'completed':
+          return [
+            ...targetedTasks.filter(t => t.status === 'completed').map(task => ({ ...task, type: 'targeted' })),
+            ...tasks.filter(t => t.status === 'completed').map(task => ({ ...task, type: 'selected' })),
+            ...applications.filter(a => a.task.status === 'completed').map(app => ({ ...app, type: 'application' }))
+          ];
+        case 'cancelled':
+          return [
+            ...targetedTasks.filter(t => t.status === 'cancelled').map(task => ({ ...task, type: 'targeted' })),
+            ...tasks.filter(t => t.status === 'cancelled').map(task => ({ ...task, type: 'selected' })),
+            ...applications.filter(a => a.task.status === 'cancelled').map(app => ({ ...app, type: 'application' }))
+          ];
+        default:
+          return [];
+      }
     }
-  });
+  };
+
+  const filteredData = getFilteredData();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20">
@@ -298,6 +397,10 @@ const MyTasks = () => {
                           : 'bg-slate-100 group-hover:bg-blue-100'
                       }`}>
                         {tab.id === 'all' && <FaList className={`w-4 h-4 ${activeTab === tab.id ? 'text-white' : 'text-slate-600 group-hover:text-blue-600'}`} />}
+                        {tab.id === 'regular' && <FaClipboardList className={`w-4 h-4 ${activeTab === tab.id ? 'text-white' : 'text-blue-500'}`} />}
+                        {tab.id === 'targeted' && <FaHandshake className={`w-4 h-4 ${activeTab === tab.id ? 'text-white' : 'text-purple-500'}`} />}
+                        {tab.id === 'selected' && <FaUserCheck className={`w-4 h-4 ${activeTab === tab.id ? 'text-white' : 'text-indigo-500'}`} />}
+                        {tab.id === 'applications' && <FaFileAlt className={`w-4 h-4 ${activeTab === tab.id ? 'text-white' : 'text-orange-500'}`} />}
                         {tab.id === 'active' && <FaHourglass className={`w-4 h-4 ${activeTab === tab.id ? 'text-white' : 'text-blue-500'}`} />}
                         {tab.id === 'scheduled' && <FaCalendar className={`w-4 h-4 ${activeTab === tab.id ? 'text-white' : 'text-yellow-500'}`} />}
                         {tab.id === 'completed' && <FaCheckCircle className={`w-4 h-4 ${activeTab === tab.id ? 'text-white' : 'text-green-500'}`} />}
@@ -391,14 +494,33 @@ const MyTasks = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredData.map((item) => {
-              const task = userRole === 'customer' ? item : item.task;
-              const isApplication = userRole === 'tasker';
+              let task, isApplication, isTargeted, isSelected, taskType;
+              
+              if (userRole === 'customer') {
+                task = item;
+                isApplication = false;
+                isTargeted = item.type === 'targeted';
+                isSelected = false;
+                taskType = item.type; // 'regular' or 'targeted'
+              } else {
+                // For taskers, determine the type of task/application
+                taskType = item.type;
+                isApplication = taskType === 'application';
+                isTargeted = taskType === 'targeted';
+                isSelected = taskType === 'selected';
+                task = isApplication ? item.task : item;
+              }
               
               return (
                 <div
                   key={isApplication ? item._id : task._id}
                   onClick={() => handleTaskClick(task._id, isApplication ? item._id : null)}
-                  className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/30 hover:shadow-xl hover:bg-white/80 transition-all duration-300 cursor-pointer group"
+                  className={`bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border transition-all duration-300 cursor-pointer group hover:shadow-xl hover:bg-white/80 ${
+                    isTargeted ? 'border-purple-200 hover:border-purple-300' :
+                    isSelected ? 'border-indigo-200 hover:border-indigo-300' :
+                    isApplication ? 'border-orange-200 hover:border-orange-300' :
+                    'border-white/30'
+                  }`}
                 >
                   {/* Header */}
                   <div className="flex items-start justify-between mb-4">
@@ -407,6 +529,20 @@ const MyTasks = () => {
                       <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(task.status)}`}>
                         {task.status.charAt(0).toUpperCase() + task.status.slice(1)}
                       </span>
+                      {/* Task type indicator */}
+                      {((userRole === 'tasker') || (userRole === 'customer' && isTargeted)) && (
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          isTargeted ? 'bg-purple-100 text-purple-800' :
+                          isSelected ? 'bg-indigo-100 text-indigo-800' :
+                          isApplication ? 'bg-orange-100 text-orange-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {userRole === 'customer' && isTargeted ? 'Direct Hire' :
+                           userRole === 'tasker' && isTargeted ? 'Hired' :
+                           userRole === 'tasker' && isSelected ? 'Selected' :
+                           userRole === 'tasker' && isApplication ? 'Applied' : ''}
+                        </span>
+                      )}
                     </div>
                     {userRole === 'customer' && task.status === 'active' && (
                       <button
@@ -454,19 +590,38 @@ const MyTasks = () => {
                   <div className="flex items-center justify-between pt-4 border-t border-slate-200/60">
                     {userRole === 'customer' ? (
                       <div className="flex items-center space-x-2 text-sm text-slate-600">
-                        <FaUsers className="w-3 h-3" />
-                        <span>{task.applicationCount || 0} applications</span>
+                        {isTargeted ? (
+                          <>
+                            <FaHandshake className="w-3 h-3 text-purple-600" />
+                            <span>
+                              Hired: <span className="font-medium text-purple-600">{task.targetedTasker?.fullName || 'Tasker'}</span>
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <FaUsers className="w-3 h-3" />
+                            <span>{task.applicationCount || 0} applications</span>
+                          </>
+                        )}
                       </div>
                     ) : (
                       <div className="flex items-center space-x-2 text-sm text-slate-600">
                         <FaUser className="w-3 h-3" />
                         <span>{task.customer?.fullName}</span>
+                        {isTargeted && (
+                          <span className="text-purple-600 font-medium">• Hired you directly</span>
+                        )}
                       </div>
                     )}
                     
                     <button className="flex items-center space-x-1 text-blue-600 hover:text-blue-700 text-sm font-medium group-hover:translate-x-1 transition-all duration-200">
                       <FaEye className="w-3 h-3" />
-                      <span>{userRole === 'customer' ? 'View' : 'Manage'}</span>
+                      <span>
+                        {userRole === 'customer' ? (isTargeted ? 'Manage Hire' : 'View') : 
+                         isTargeted ? 'View Task' :
+                         isSelected ? 'Manage' : 
+                         'View Application'}
+                      </span>
                     </button>
                   </div>
                 </div>

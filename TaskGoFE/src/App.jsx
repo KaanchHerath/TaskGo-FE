@@ -14,6 +14,7 @@ import MyTasks from "./pages/common/MyTasks";
 import BrowseJobs from "./pages/BrowseJobs";
 import PostTask from "./pages/PostTask";
 import TaskDetails from "./pages/TaskDetails";
+import PublicTaskerProfile from "./pages/TaskerProfile";
 
 // Auth Pages
 import Login from "./pages/auth/Login";
@@ -47,6 +48,7 @@ function App() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/categories" element={<Categories />} />
           <Route path="/taskers" element={<Taskers />} />
+          <Route path="/taskers/:id" element={<PublicTaskerProfile />} />
           <Route path="/browse-jobs" element={<BrowseJobs />} />
           <Route path="/tasks" element={<Tasks />} />
           <Route element={<PrivateRoute allowedRoles={['customer']} />}>
