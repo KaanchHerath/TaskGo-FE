@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import loginImage from '../assets/login.png';
-import { loginUser } from '../api/auth';
+import loginImage from '../../assets/login.png';
 
 function parseJwt(token) {
   try {
@@ -12,9 +11,9 @@ function parseJwt(token) {
 }
 
 const roleToDashboard = {
-  customer: '/customer-dashboard',
-  tasker: '/tasker-dashboard',
-  admin: '/admin-dashboard',
+  customer: '/customer/dashboard',
+  tasker: '/tasker/dashboard',
+  admin: '/admin/dashboard',
 };
 
 const Login = () => {
@@ -32,9 +31,26 @@ const Login = () => {
     setError(null);
 
     try {
-      const response = await loginUser(credentials);
-      localStorage.setItem('token', response.token);
-      const payload = parseJwt(response.token);
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(credentials),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || 'Login failed');
+      }
+
+      const data = await response.json();
+      localStorage.setItem('token', data.token);
+      
+      // Dispatch custom event to notify navbar of auth change
+      window.dispatchEvent(new Event('authStateChanged'));
+      
+      const payload = parseJwt(data.token);
       const dashboard = roleToDashboard[payload?.role] || '/';
       navigate(dashboard);
     } catch (err) {
@@ -50,29 +66,32 @@ const Login = () => {
       {/* Left Section */}
       <div className="w-1/2 p-8 flex flex-col justify-center max-w-md mx-auto">
         <div className="mb-8">
-          <h2 className="text-2xl font-bold mb-2">Welcome Back!</h2>
-          <p className="text-gray-600">Meet the good taste today</p>
+          <h2 className="text-3xl font-bold mb-2">Welcome Back!</h2>
+          <p className="text-gray-600">Sign in to your TaskGo account</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {error && <div className="text-red-500 text-sm text-center mb-4">{error}</div>}
+          {error && <div className="text-red-500 text-sm text-center mb-4 p-3 bg-red-50 rounded-lg">{error}</div>}
+          
           <div>
             <input
-              type="text"
-              placeholder="Type your e-mail or phone number"
+              type="email"
+              placeholder="Enter your email"
               value={credentials.email}
               onChange={(e) => setCredentials({ ...credentials, email: e.target.value })}
-              className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full p-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              required
             />
           </div>
 
           <div>
             <input
               type="password"
-              placeholder="Type your password"
+              placeholder="Enter your password"
               value={credentials.password}
               onChange={(e) => setCredentials({ ...credentials, password: e.target.value })}
-              className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full p-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              required
             />
             <div className="flex justify-end mt-2">
               <Link to="/forgot-password" className="text-sm text-gray-600 hover:text-blue-600">
@@ -83,7 +102,7 @@ const Login = () => {
 
           <button 
             type="submit"
-            className="w-full bg-black text-white py-3 rounded-lg hover:bg-gray-800 transition-colors"
+            className="w-full bg-black text-white py-4 rounded-lg hover:bg-gray-800 transition-colors font-semibold"
             disabled={loading}
           >
             {loading ? 'Signing In...' : 'Sign In'}
@@ -94,21 +113,21 @@ const Login = () => {
           </div>
 
           <div className="flex justify-center space-x-4">
-            <button className="p-2 border rounded-lg hover:bg-gray-50">
-              <img src="/google-icon.svg" alt="Google" className="w-6 h-6" />
+            <button type="button" className="p-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+              <span className="text-lg">G</span>
             </button>
-            <button className="p-2 border rounded-lg hover:bg-gray-50">
-              <img src="/apple-icon.svg" alt="Apple" className="w-6 h-6" />
+            <button type="button" className="p-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+              <span className="text-lg">A</span>
             </button>
-            <button className="p-2 border rounded-lg hover:bg-gray-50">
-              <img src="/facebook-icon.svg" alt="Facebook" className="w-6 h-6" />
+            <button type="button" className="p-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+              <span className="text-lg">F</span>
             </button>
           </div>
 
           <div className="text-center text-sm">
             Don't have an account?{' '}
             <Link to="/signup" className="text-blue-600 font-semibold hover:text-blue-700">
-              Sign up as Customer or Tasker
+              Sign up here
             </Link>
           </div>
         </form>
@@ -126,4 +145,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default Login; 

@@ -1,14 +1,62 @@
 import axios from 'axios';
 
 const API_URL = 'http://localhost:5000/api';
-const TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2N2NkNjE2N2EzMDQ1ZDI0NDZlNzg2MWQiLCJyb2xlIjoiY3VzdG9tZXIiLCJpYXQiOjE3NDE1MTMzNzcsImV4cCI6MTc0MTU5OTc3N30.HLXm7RLRInUM55nLN549tblZCOf7-HIKgw2RhxnzqWM';
 
 const axiosInstance = axios.create({
   baseURL: API_URL,
   headers: {
-    'Authorization': `Bearer ${TOKEN}`,
     'Content-Type': 'application/json',
   }
 });
+
+// Add request interceptor to include auth token
+axiosInstance.interceptors.request.use(
+  (config) => {
+    // Get token from localStorage
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Add response interceptor
+axiosInstance.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  (error) => {
+    if (error.response) {
+      // Server responded with error
+      switch (error.response.status) {
+        case 400:
+          console.error('Bad Request:', error.response.data);
+          break;
+        case 401:
+          // Handle unauthorized - redirect to login
+          console.error('Unauthorized');
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          window.location.href = '/login';
+          break;
+        case 404:
+          console.error('Not Found');
+          break;
+        default:
+          console.error('Server Error:', error.response.data);
+      }
+    } else if (error.request) {
+      // Request made but no response
+      console.error('Network Error');
+    } else {
+      console.error('Error:', error.message);
+    }
+    return Promise.reject(error);
+  }
+);
 
 export default axiosInstance;

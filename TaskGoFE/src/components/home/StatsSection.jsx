@@ -1,29 +1,52 @@
+import { useState, useEffect } from 'react';
 import React from "react";
 import { FaBriefcase, FaUsers, FaRegCalendarAlt, FaRegFileAlt } from "react-icons/fa";
 
 const StatsSection = () => {
+  const [statsData, setStatsData] = useState({
+    liveJobs: 0,
+    taskers: 0,
+    customers: 0,
+    newJobs: 0,
+  });
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/stats/dashboard');
+        const data = await response.json();
+        setStatsData(data);
+      } catch (error) {
+        console.error("Error fetching dashboard stats:", error);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
   const stats = [
-    { 
-      title: "Live Job", 
-      count: "175,324", 
+    {
+      title: "Live Job",
+      count: statsData.liveJobs,
       icon: <FaRegCalendarAlt className="w-8 h-8 text-blue-600" />
     },
-    { 
-      title: "Taskers", 
-      count: "97,354", 
+    {
+      title: "Taskers",
+      count: statsData.taskers,
       icon: <FaUsers className="w-8 h-8 text-blue-600" />
     },
-    { 
-      title: "Customers", 
-      count: "38,47,154", 
+    {
+      title: "Customers",
+      count: statsData.customers,
       icon: <FaUsers className="w-8 h-8 text-blue-600" />
     },
-    { 
-      title: "New Jobs", 
-      count: "7,532", 
+    {
+      title: "New Jobs",
+      count: statsData.newJobs,
       icon: <FaRegFileAlt className="w-8 h-8 text-blue-600" />
-    },
+    }
   ];
+
 
   return (
     <div className="bg-[#f1f2f4]">
