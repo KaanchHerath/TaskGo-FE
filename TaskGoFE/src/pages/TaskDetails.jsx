@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaUsers, FaEye, FaCalendarAlt, FaDollarSign, FaMapMarkerAlt, FaClock, FaUser, FaCheckCircle, FaHourglass, FaTimesCircle, FaComments } from 'react-icons/fa';
-import { getTask, applyForTask, getTaskApplications } from '../services/api/taskService';
+import { getTask, applyForTask, getTaskApplications, markTaskComplete, cancelScheduledTask } from '../services/api/taskService';
 import { useToast, ToastContainer } from '../components/common/Toast';
 import TaskChatWindow from '../components/task/TaskChatWindow';
 import ApplyButton from '../components/task/ApplyButton';
@@ -31,6 +31,11 @@ const TaskDetails = () => {
   const [applying, setApplying] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [chatReceiver, setChatReceiver] = useState(null);
+  const [showCompleteModal, setShowCompleteModal] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [completionData, setCompletionData] = useState({ rating: 5, review: '', completionNotes: '' });
+  const [cancellationReason, setCancellationReason] = useState('');
+  const [actionLoading, setActionLoading] = useState(false);
   const currentUser = getCurrentUser();
 
   useEffect(() => {
@@ -93,6 +98,52 @@ const TaskDetails = () => {
       name: application.tasker.fullName
     });
     setChatOpen(true);
+  };
+
+  const handleMarkComplete = async () => {
+    try {
+      setActionLoading(true);
+      const payload = {};
+      
+      // If current user is customer, include rating and review
+      if (isTaskOwner) {
+        if (completionData.rating) payload.rating = completionData.rating;
+        if (completionData.review) payload.review = completionData.review;
+      }
+      
+      // If current user is tasker, include completion notes
+      if (currentUser && task.selectedTasker && currentUser._id === task.selectedTasker._id) {
+        if (completionData.completionNotes) payload.completionNotes = completionData.completionNotes;
+      }
+
+      await markTaskComplete(id, payload);
+      showSuccess('Task marked as completed successfully!');
+      setShowCompleteModal(false);
+      await fetchTaskDetails(); // Refresh task data
+    } catch (err) {
+      const errorMessage = err.response?.data?.message || 'Failed to mark task as complete';
+      showError(errorMessage);
+      console.error('Error marking task complete:', err);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleCancelSchedule = async () => {
+    try {
+      setActionLoading(true);
+      await cancelScheduledTask(id, cancellationReason);
+      showSuccess('Schedule cancelled successfully. Task is now active again.');
+      setShowCancelModal(false);
+      setCancellationReason('');
+      await fetchTaskDetails(); // Refresh task data
+    } catch (err) {
+      const errorMessage = err.response?.data?.message || 'Failed to cancel schedule';
+      showError(errorMessage);
+      console.error('Error cancelling schedule:', err);
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   const formatDate = (dateString) => {
@@ -434,6 +485,81 @@ const TaskDetails = () => {
                 </div>
               </div>
             )}
+
+            {/* Scheduled Task Actions */}
+            {task.status === 'scheduled' && currentUser && (
+              (isTaskOwner || (task.selectedTasker && currentUser._id === task.selectedTasker._id)) && (
+                <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20">
+                  <h3 className="text-lg font-bold mb-4 text-slate-800">Task Actions</h3>
+                  
+                  {/* Show scheduled details */}
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <FaCalendarAlt className="text-yellow-600" />
+                      <span className="font-medium text-yellow-800">Task Scheduled</span>
+                    </div>
+                    {task.agreedTime && (
+                      <p className="text-sm text-yellow-700">
+                        <strong>Scheduled for:</strong> {formatDate(task.agreedTime)}
+                      </p>
+                    )}
+                    {task.agreedPayment && (
+                      <p className="text-sm text-yellow-700">
+                        <strong>Agreed payment:</strong> LKR {task.agreedPayment}
+                      </p>
+                    )}
+                    {task.selectedTasker && (
+                      <p className="text-sm text-yellow-700">
+                        <strong>Tasker:</strong> {task.selectedTasker.fullName}
+                      </p>
+                    )}
+                    
+                    {/* Show completion status */}
+                    <div className="mt-3 space-y-1">
+                      <div className="flex items-center space-x-2">
+                        <span className={`w-2 h-2 rounded-full ${task.taskerCompletedAt ? 'bg-green-500' : 'bg-gray-300'}`}></span>
+                        <span className="text-sm text-yellow-700">
+                          Tasker completion: {task.taskerCompletedAt ? '✓ Completed' : 'Pending'}
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <span className={`w-2 h-2 rounded-full ${task.customerCompletedAt ? 'bg-green-500' : 'bg-gray-300'}`}></span>
+                        <span className="text-sm text-yellow-700">
+                          Customer completion: {task.customerCompletedAt ? '✓ Completed' : 'Pending'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <button
+                      onClick={() => setShowCompleteModal(true)}
+                      disabled={isTaskOwner ? task.customerCompletedAt : task.taskerCompletedAt}
+                      className={`w-full px-4 py-2 rounded-lg transition-colors flex items-center justify-center space-x-2 ${
+                        (isTaskOwner ? task.customerCompletedAt : task.taskerCompletedAt)
+                          ? 'bg-gray-400 text-white cursor-not-allowed' 
+                          : 'bg-green-600 text-white hover:bg-green-700'
+                      }`}
+                    >
+                      <FaCheckCircle />
+                      <span>
+                        {isTaskOwner 
+                          ? (task.customerCompletedAt ? 'Already Completed' : 'Mark as Complete')
+                          : (task.taskerCompletedAt ? 'Already Completed' : 'Mark as Complete')
+                        }
+                      </span>
+                    </button>
+                    <button
+                      onClick={() => setShowCancelModal(true)}
+                      className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center space-x-2"
+                    >
+                      <FaTimesCircle />
+                      <span>Cancel Schedule</span>
+                    </button>
+                  </div>
+                </div>
+              )
+            )}
           </div>
         </div>
       </div>
@@ -450,7 +576,171 @@ const TaskDetails = () => {
         />
       )}
 
-      {/* Toast Container */}
+      {/* Complete Task Modal */}
+      {showCompleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-gray-800">Mark Task as Complete</h3>
+                <button
+                  onClick={() => setShowCompleteModal(false)}
+                  className="text-gray-400 hover:text-gray-600 text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {/* Show different fields based on user role */}
+                {isTaskOwner && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Rate the Tasker (1-5 stars)
+                      </label>
+                      <div className="flex space-x-1">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            key={star}
+                            onClick={() => setCompletionData({...completionData, rating: star})}
+                            className={`text-2xl ${
+                              star <= completionData.rating ? 'text-yellow-400' : 'text-gray-300'
+                            } hover:text-yellow-400 transition-colors`}
+                          >
+                            ★
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Review (optional)
+                      </label>
+                      <textarea
+                        value={completionData.review}
+                        onChange={(e) => setCompletionData({...completionData, review: e.target.value})}
+                        placeholder="Share your experience with this tasker..."
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        rows="3"
+                      />
+                    </div>
+                  </>
+                )}
+
+                {currentUser && task.selectedTasker && currentUser._id === task.selectedTasker._id && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Completion Notes (optional)
+                    </label>
+                    <textarea
+                      value={completionData.completionNotes}
+                      onChange={(e) => setCompletionData({...completionData, completionNotes: e.target.value})}
+                      placeholder="Add any notes about the completed task..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      rows="3"
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="flex space-x-3 mt-6">
+                <button
+                  onClick={() => setShowCompleteModal(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  disabled={actionLoading}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleMarkComplete}
+                  disabled={actionLoading}
+                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                >
+                  {actionLoading ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                  ) : (
+                    <>
+                      <FaCheckCircle />
+                      <span>Complete Task</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cancel Schedule Modal */}
+      {showCancelModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-gray-800">Cancel Schedule</h3>
+                <button
+                  onClick={() => setShowCancelModal(false)}
+                  className="text-gray-400 hover:text-gray-600 text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="mb-6">
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                  <div className="flex items-center space-x-2">
+                    <FaTimesCircle className="text-red-600" />
+                    <span className="font-medium text-red-800">Cancel this scheduled task?</span>
+                  </div>
+                  <p className="text-sm text-red-700 mt-1">
+                    This will make the task active again and remove the current schedule.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Reason for cancellation (optional)
+                  </label>
+                  <textarea
+                    value={cancellationReason}
+                    onChange={(e) => setCancellationReason(e.target.value)}
+                    placeholder="Please provide a reason for canceling the schedule..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                    rows="3"
+                  />
+                </div>
+              </div>
+
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setShowCancelModal(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  disabled={actionLoading}
+                >
+                  Keep Schedule
+                </button>
+                <button
+                  onClick={handleCancelSchedule}
+                  disabled={actionLoading}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                >
+                  {actionLoading ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                  ) : (
+                    <>
+                      <FaTimesCircle />
+                      <span>Cancel Schedule</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <ToastContainer toasts={toasts} removeToast={removeToast} />
     </div>
   );

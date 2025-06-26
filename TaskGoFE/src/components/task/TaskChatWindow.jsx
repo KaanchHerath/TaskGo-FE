@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { FaPaperPlane, FaTimes, FaSpinner, FaComments, FaUser, FaMinus, FaExpand } from 'react-icons/fa';
+import { FaPaperPlane, FaTimes, FaSpinner, FaComments, FaUser, FaMinus, FaExpand, FaPhone, FaVideo } from 'react-icons/fa';
 import { getConversation, sendMessage, markMessagesAsRead } from '../../services/api/chatService';
 
 const TaskChatWindow = ({ taskId, receiverId, receiverName, isOpen, onClose, currentUser }) => {
@@ -60,12 +60,38 @@ const TaskChatWindow = ({ taskId, receiverId, receiverName, isOpen, onClose, cur
       setSending(true);
       setError(null);
 
+      // Debug logging to check all values
+      console.log('🔍 Chat Debug:', {
+        taskId,
+        currentUser,
+        receiverId,
+        message: newMessage.trim()
+      });
+
+      // Get the correct user ID from currentUser
+      const senderId = currentUser?.userId || currentUser?._id;
+      
+      // Validate all required fields
+      if (!taskId || !senderId || !receiverId || !newMessage.trim()) {
+        const missingFields = [];
+        if (!taskId) missingFields.push('taskId');
+        if (!senderId) missingFields.push('senderId');
+        if (!receiverId) missingFields.push('receiverId');
+        if (!newMessage.trim()) missingFields.push('message');
+        
+        console.error('Missing required fields:', missingFields);
+        setError(`Missing required fields: ${missingFields.join(', ')}`);
+        return;
+      }
+
       const messageData = {
         taskId,
-        senderId: currentUser.userId,
+        senderId,
         receiverId,
         message: newMessage.trim()
       };
+
+      console.log('📤 Sending message:', messageData);
 
       const response = await sendMessage(messageData);
       
@@ -75,7 +101,8 @@ const TaskChatWindow = ({ taskId, receiverId, receiverName, isOpen, onClose, cur
       
     } catch (error) {
       console.error('Error sending message:', error);
-      setError('Failed to send message. Please try again.');
+      const errorMessage = error.response?.data?.message || 'Failed to send message. Please try again.';
+      setError(errorMessage);
     } finally {
       setSending(false);
     }
@@ -104,49 +131,63 @@ const TaskChatWindow = ({ taskId, receiverId, receiverName, isOpen, onClose, cur
   };
 
   const isMyMessage = (message) => {
-    return message.senderId._id === currentUser.userId;
+    const myUserId = currentUser?.userId || currentUser?._id;
+    return message.senderId._id === myUserId;
   };
+
+  // Don't render anything if not open
+  if (!isOpen) return null;
 
   return (
     <>
-      {/* Overlay for mobile/smaller screens */}
-      {isOpen && (
-        <div 
-          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 lg:hidden"
-          onClick={onClose}
-        />
-      )}
+      {/* Mobile overlay only - no desktop overlay */}
+      <div 
+        className="fixed inset-0 bg-black/20 backdrop-blur-sm z-30 sm:hidden"
+        onClick={onClose}
+      />
 
-      {/* Chat Sidebar */}
-      <div className={`fixed top-0 right-0 h-full w-96 bg-white/95 backdrop-blur-xl shadow-2xl border-l border-gray-200/60 z-50 transform transition-all duration-300 ease-in-out ${
-        isOpen ? 'translate-x-0' : 'translate-x-full'
-      } ${isMinimized ? 'h-16' : 'h-full'}`}>
-        
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200/60 bg-gradient-to-r from-blue-50/80 to-indigo-50/80">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-              <FaUser className="text-blue-600" />
+      {/* Floating Chat Window - Positioned to stay fully visible */}
+      <div 
+        className={`fixed bg-white/95 backdrop-blur-xl shadow-2xl border border-gray-200/50 z-50 rounded-2xl overflow-hidden transition-all duration-300 ease-out ${
+          isMinimized 
+            ? 'bottom-4 right-4 w-80' 
+            : 'bottom-4 right-4 w-96'
+        }`}
+        style={{ 
+          height: isMinimized ? 'auto' : 'min(80vh, 500px)',
+          maxHeight: 'calc(100vh - 8rem)',
+          minHeight: isMinimized ? 'auto' : '300px',
+          transform: 'translate3d(0, 0, 0)',
+          willChange: 'transform',
+          display: 'flex',
+          flexDirection: 'column'
+        }}
+      >
+        {/* Header - Auto height */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200/50 bg-gradient-to-r from-blue-500/10 to-indigo-500/10 flex-shrink-0">
+          <div className="flex items-center space-x-3 flex-1 min-w-0">
+            <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center flex-shrink-0">
+              <FaUser className="text-white text-xs" />
             </div>
-            <div>
-              <h3 className="font-semibold text-slate-800">{receiverName}</h3>
-              <p className="text-sm text-slate-600">Task Chat</p>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-medium text-slate-800 text-sm leading-tight truncate">{receiverName}</h3>
+              <p className="text-xs text-slate-500 leading-tight">Task Chat</p>
             </div>
           </div>
-          <div className="flex items-center space-x-1">
+          <div className="flex items-center space-x-1 flex-shrink-0">
             <button
               onClick={() => setIsMinimized(!isMinimized)}
-              className="p-2 hover:bg-gray-200/80 rounded-full transition-colors"
+              className="p-1.5 hover:bg-gray-200/80 rounded-md transition-colors"
               title={isMinimized ? "Expand" : "Minimize"}
             >
-              {isMinimized ? <FaExpand className="text-gray-600" /> : <FaMinus className="text-gray-600" />}
+              {isMinimized ? <FaExpand className="text-gray-600 text-xs" /> : <FaMinus className="text-gray-600 text-xs" />}
             </button>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-gray-200/80 rounded-full transition-colors"
+              className="p-1.5 hover:bg-gray-200/80 rounded-md transition-colors"
               title="Close"
             >
-              <FaTimes className="text-gray-600" />
+              <FaTimes className="text-gray-600 text-xs" />
             </button>
           </div>
         </div>
@@ -154,38 +195,41 @@ const TaskChatWindow = ({ taskId, receiverId, receiverName, isOpen, onClose, cur
         {/* Chat Content - Hidden when minimized */}
         {!isMinimized && (
           <>
-            {/* Messages Container */}
+            {/* Messages Container - Flexible height */}
             <div 
               ref={chatContainerRef}
-              className="flex-1 overflow-y-auto p-4 space-y-3 bg-gradient-to-b from-gray-50/50 to-white/50"
-              style={{ height: 'calc(100vh - 140px)' }}
+              className="flex-1 overflow-y-auto px-4 py-3 space-y-3 bg-gradient-to-b from-gray-50/30 to-white/30 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent"
+              style={{ 
+                minHeight: 0,
+                flex: '1 1 0%'
+              }}
             >
               {loading ? (
-                <div className="flex items-center justify-center h-full">
+                <div className="flex items-center justify-center h-full min-h-[200px]">
                   <div className="flex items-center space-x-2 text-gray-600">
-                    <FaSpinner className="animate-spin" />
-                    <span>Loading conversation...</span>
+                    <FaSpinner className="animate-spin text-base" />
+                    <span className="text-sm">Loading...</span>
                   </div>
                 </div>
               ) : error ? (
-                <div className="flex items-center justify-center h-full">
+                <div className="flex items-center justify-center h-full min-h-[200px]">
                   <div className="text-center text-red-600">
-                    <FaComments className="mx-auto mb-2 text-2xl" />
-                    <p>{error}</p>
+                    <FaComments className="mx-auto mb-2 text-xl" />
+                    <p className="text-sm">{error}</p>
                     <button
                       onClick={fetchConversation}
-                      className="mt-2 text-blue-600 hover:text-blue-800 underline"
+                      className="mt-2 text-blue-600 hover:text-blue-800 underline text-xs"
                     >
                       Try again
                     </button>
                   </div>
                 </div>
               ) : messages.length === 0 ? (
-                <div className="flex items-center justify-center h-full">
+                <div className="flex items-center justify-center h-full min-h-[200px]">
                   <div className="text-center text-gray-500">
-                    <FaComments className="mx-auto mb-2 text-3xl" />
-                    <p className="font-medium">No messages yet</p>
-                    <p className="text-sm">Start the conversation!</p>
+                    <FaComments className="mx-auto mb-2 text-2xl" />
+                    <p className="font-medium text-sm">No messages yet</p>
+                    <p className="text-xs">Start the conversation!</p>
                   </div>
                 </div>
               ) : (
@@ -198,16 +242,16 @@ const TaskChatWindow = ({ taskId, receiverId, receiverName, isOpen, onClose, cur
                         className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}
                       >
                         <div
-                          className={`max-w-xs px-4 py-3 rounded-xl shadow-sm ${
+                          className={`max-w-[75%] px-3 py-2 rounded-2xl shadow-sm ${
                             isMine
-                              ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white'
-                              : 'bg-white text-gray-800 border border-gray-200'
+                              ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-br-md'
+                              : 'bg-white text-gray-800 border border-gray-200/80 rounded-bl-md'
                           }`}
                         >
-                          <p className="text-sm">{message.message}</p>
+                          <p className="text-sm leading-relaxed break-words">{message.message}</p>
                           <p
                             className={`text-xs mt-1 ${
-                              isMine ? 'text-blue-100' : 'text-gray-500'
+                              isMine ? 'text-blue-100' : 'text-gray-400'
                             }`}
                           >
                             {formatTime(message.createdAt)}
@@ -221,36 +265,36 @@ const TaskChatWindow = ({ taskId, receiverId, receiverName, isOpen, onClose, cur
               )}
             </div>
 
-            {/* Message Input */}
-            <div className="p-4 border-t border-gray-200/60 bg-white/80 backdrop-blur-sm">
+            {/* Message Input - Auto height */}
+            <div className="px-4 py-3 border-t border-gray-200/50 bg-white/90 backdrop-blur-sm flex-shrink-0">
               <form onSubmit={handleSendMessage} className="flex space-x-2">
                 <input
                   type="text"
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder="Type your message..."
-                  className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white/90"
+                  placeholder="Type message..."
+                  className="flex-1 px-3 py-2 text-sm border border-gray-300/70 rounded-lg focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-colors bg-white/90 placeholder-gray-400"
                   disabled={sending}
                   maxLength={500}
                 />
                 <button
                   type="submit"
                   disabled={!newMessage.trim() || sending}
-                  className="px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg flex items-center justify-center"
+                  className="px-3 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm flex items-center justify-center w-10"
                 >
                   {sending ? (
-                    <FaSpinner className="animate-spin" />
+                    <FaSpinner className="animate-spin text-xs" />
                   ) : (
-                    <FaPaperPlane />
+                    <FaPaperPlane className="text-xs" />
                   )}
                 </button>
               </form>
 
               {/* Error Message */}
               {error && (
-                <div className="mt-2 bg-red-50 border border-red-200 rounded-xl p-3">
-                  <p className="text-red-700 text-sm flex items-center">
-                    <span className="mr-2">⚠️</span>
+                <div className="mt-2 bg-red-50/80 border border-red-200/80 rounded-md p-2">
+                  <p className="text-red-700 text-xs flex items-center">
+                    <span className="mr-1">⚠️</span>
                     {error}
                   </p>
                 </div>

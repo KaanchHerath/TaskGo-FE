@@ -180,6 +180,30 @@ export const taskerCompleteTask = async (taskId, completionData) => {
   }
 };
 
+// Mark scheduled task as complete (customer or tasker)
+export const markTaskComplete = async (taskId, completionData) => {
+  try {
+    const response = await axiosInstance.post(`/v1/tasks/${taskId}/mark-complete`, completionData);
+    return response.data;
+  } catch (error) {
+    console.error('Error marking task complete:', error);
+    throw error;
+  }
+};
+
+// Cancel scheduled task (customer or tasker)
+export const cancelScheduledTask = async (taskId, reason) => {
+  try {
+    const response = await axiosInstance.post(`/v1/tasks/${taskId}/cancel-schedule`, {
+      reason
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error canceling scheduled task:', error);
+    throw error;
+  }
+};
+
 // Get user's tasks
 export const getMyTasks = async (status = '') => {
   try {

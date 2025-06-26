@@ -12,11 +12,14 @@ import {
   FaSpinner,
   FaClock,
   FaCheckCircle,
-  FaExclamationTriangle
+  FaExclamationTriangle,
+  FaCamera,
+  FaTimes,
+  FaStar
 } from 'react-icons/fa';
 import TaskChatWindow from '../../components/task/TaskChatWindow';
 import ConfirmScheduleModal from '../../components/task/ConfirmScheduleModal';
-import { getTask } from '../../services/api/taskService';
+import { getTask, markTaskComplete, cancelScheduledTask } from '../../services/api/taskService';
 import { useToast, ToastContainer } from '../../components/common/Toast';
 
 // Helper function to get current user from token
@@ -43,6 +46,17 @@ const TaskerTaskView = () => {
   const [error, setError] = useState(null);
   const [chatOpen, setChatOpen] = useState(false);
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+  const [showCompleteModal, setShowCompleteModal] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [completionData, setCompletionData] = useState({ 
+    completionNotes: '', 
+    completionPhotos: [],
+    taskerFeedback: '',
+    taskerRatingForCustomer: 5
+  });
+  const [cancellationReason, setCancellationReason] = useState('');
+  const [actionLoading, setActionLoading] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   
   const currentUser = getCurrentUser();
 
@@ -136,6 +150,101 @@ const TaskerTaskView = () => {
     fetchTaskDetails(); // Refresh data
   };
 
+  const handleMarkComplete = async () => {
+    try {
+      setActionLoading(true);
+      const payload = {};
+      
+      // For taskers, include completion photos, notes, and feedback
+      if (completionData.completionNotes) {
+        payload.completionNotes = completionData.completionNotes;
+      }
+      if (completionData.completionPhotos && completionData.completionPhotos.length > 0) {
+        payload.completionPhotos = completionData.completionPhotos;
+      }
+      if (completionData.taskerFeedback) {
+        payload.taskerFeedback = completionData.taskerFeedback;
+      }
+      if (completionData.taskerRatingForCustomer) {
+        payload.taskerRatingForCustomer = completionData.taskerRatingForCustomer;
+      }
+
+      const response = await markTaskComplete(id, payload);
+      
+      if (response.bothCompleted) {
+        addToast('🎉 Task completed successfully by both parties! Payment will be processed.', 'success');
+      } else {
+        addToast('Task marked as complete. Waiting for customer confirmation.', 'success');
+      }
+      
+      setShowCompleteModal(false);
+      await fetchTaskDetails(); // Refresh task data
+    } catch (err) {
+      const errorMessage = err.response?.data?.message || 'Failed to mark task as complete';
+      addToast(errorMessage, 'error');
+      console.error('Error marking task complete:', err);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleCancelSchedule = async () => {
+    try {
+      setActionLoading(true);
+      await cancelScheduledTask(id, cancellationReason);
+      addToast('Schedule cancelled successfully. Task is now active again.', 'success');
+      setShowCancelModal(false);
+      setCancellationReason('');
+      await fetchTaskDetails(); // Refresh task data
+    } catch (err) {
+      const errorMessage = err.response?.data?.message || 'Failed to cancel schedule';
+      addToast(errorMessage, 'error');
+      console.error('Error cancelling schedule:', err);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handlePhotoUpload = async (event) => {
+    const files = Array.from(event.target.files);
+    if (files.length === 0) return;
+
+    setUploadingPhoto(true);
+    try {
+      const uploadedPhotos = [];
+      
+      for (const file of files) {
+        // Create FormData for file upload
+        const formData = new FormData();
+        formData.append('photo', file);
+        
+        // For now, we'll create a mock URL. In production, you'd upload to a service
+        const mockUrl = URL.createObjectURL(file);
+        uploadedPhotos.push(mockUrl);
+      }
+      
+      setCompletionData({
+        ...completionData,
+        completionPhotos: [...completionData.completionPhotos, ...uploadedPhotos]
+      });
+      
+      addToast(`${files.length} photo(s) added successfully!`, 'success');
+    } catch (error) {
+      console.error('Error uploading photos:', error);
+      addToast('Failed to upload photos. Please try again.', 'error');
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
+  const removePhoto = (index) => {
+    const updatedPhotos = completionData.completionPhotos.filter((_, i) => i !== index);
+    setCompletionData({
+      ...completionData,
+      completionPhotos: updatedPhotos
+    });
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -188,7 +297,7 @@ const TaskerTaskView = () => {
   console.log('- Chat button should show:', !!application);
 
   return (
-    <div className={`min-h-screen bg-gray-50 transition-all duration-300 ${chatOpen ? 'lg:mr-96' : ''}`}>
+    <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto py-8 px-4">
         {/* Header */}
         <div className="mb-8">
@@ -401,6 +510,70 @@ const TaskerTaskView = () => {
                 )}
               </div>
             </div>
+
+            {/* Scheduled Task Actions */}
+            {task.status === 'scheduled' && task.selectedTasker && 
+             (task.selectedTasker._id === currentUser.userId || task.selectedTasker === currentUser.userId) && (
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">Task Actions</h3>
+                
+                {/* Show scheduled details */}
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <FaCalendarAlt className="text-yellow-600" />
+                    <span className="font-medium text-yellow-800">Task Scheduled</span>
+                  </div>
+                  {task.agreedTime && (
+                    <p className="text-sm text-yellow-700">
+                      <strong>Scheduled for:</strong> {formatDate(task.agreedTime)}
+                    </p>
+                  )}
+                  {task.agreedPayment && (
+                    <p className="text-sm text-yellow-700">
+                      <strong>Agreed payment:</strong> LKR {task.agreedPayment}
+                    </p>
+                  )}
+                  
+                  {/* Show completion status */}
+                  <div className="mt-3 space-y-1">
+                    <div className="flex items-center space-x-2">
+                      <span className={`w-2 h-2 rounded-full ${task.taskerCompletedAt ? 'bg-green-500' : 'bg-gray-300'}`}></span>
+                      <span className="text-sm text-yellow-700">
+                        Tasker completion: {task.taskerCompletedAt ? '✓ Completed' : 'Pending'}
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className={`w-2 h-2 rounded-full ${task.customerCompletedAt ? 'bg-green-500' : 'bg-gray-300'}`}></span>
+                      <span className="text-sm text-yellow-700">
+                        Customer completion: {task.customerCompletedAt ? '✓ Completed' : 'Pending'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <button
+                    onClick={() => setShowCompleteModal(true)}
+                    disabled={task.taskerCompletedAt}
+                    className={`w-full px-4 py-2 rounded-lg transition-colors flex items-center justify-center space-x-2 ${
+                      task.taskerCompletedAt 
+                        ? 'bg-gray-400 text-white cursor-not-allowed' 
+                        : 'bg-green-600 text-white hover:bg-green-700'
+                    }`}
+                  >
+                    <FaCheckCircle />
+                    <span>{task.taskerCompletedAt ? 'Already Completed' : 'Mark as Complete'}</span>
+                  </button>
+                  <button
+                    onClick={() => setShowCancelModal(true)}
+                    className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center space-x-2"
+                  >
+                    <FaExclamationTriangle />
+                    <span>Cancel Schedule</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -426,6 +599,235 @@ const TaskerTaskView = () => {
           task={task}
           onSuccess={handleConfirmSuccess}
         />
+      )}
+
+      {/* Complete Task Modal */}
+      {showCompleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-gray-800">Complete Task & Submit Work</h3>
+                <button
+                  onClick={() => setShowCompleteModal(false)}
+                  className="text-gray-400 hover:text-gray-600 text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="space-y-6">
+                {/* Photo Upload Section */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Upload Completion Photos <span className="text-red-500">*</span>
+                  </label>
+                  <p className="text-xs text-gray-500 mb-3">
+                    Please upload photos showing the completed work. This is required for payment processing.
+                  </p>
+                  
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={handlePhotoUpload}
+                      className="hidden"
+                      id="photo-upload"
+                      disabled={uploadingPhoto}
+                    />
+                    <label
+                      htmlFor="photo-upload"
+                      className={`cursor-pointer flex flex-col items-center space-y-2 ${
+                        uploadingPhoto ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}
+                    >
+                      <FaCamera className="text-3xl text-gray-400" />
+                      <span className="text-sm font-medium text-gray-600">
+                        {uploadingPhoto ? 'Uploading...' : 'Click to upload photos'}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        PNG, JPG, GIF up to 10MB each
+                      </span>
+                    </label>
+                  </div>
+
+                  {/* Photo Preview */}
+                  {completionData.completionPhotos.length > 0 && (
+                    <div className="mt-4">
+                      <p className="text-sm font-medium text-gray-700 mb-2">
+                        Uploaded Photos ({completionData.completionPhotos.length})
+                      </p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {completionData.completionPhotos.map((photo, index) => (
+                          <div key={index} className="relative group">
+                            <img
+                              src={photo}
+                              alt={`Completion photo ${index + 1}`}
+                              className="w-full h-24 object-cover rounded-lg"
+                            />
+                            <button
+                              onClick={() => removePhoto(index)}
+                              className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <FaTimes />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Completion Notes */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Work Completion Notes
+                  </label>
+                  <textarea
+                    value={completionData.completionNotes}
+                    onChange={(e) => setCompletionData({...completionData, completionNotes: e.target.value})}
+                    placeholder="Describe the work completed, any challenges faced, or additional notes..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    rows="3"
+                  />
+                </div>
+
+                {/* Customer Rating */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Rate the Customer (1-5 stars)
+                  </label>
+                  <div className="flex space-x-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        onClick={() => setCompletionData({...completionData, taskerRatingForCustomer: star})}
+                        className={`text-2xl ${
+                          star <= completionData.taskerRatingForCustomer ? 'text-yellow-400' : 'text-gray-300'
+                        } hover:text-yellow-400 transition-colors`}
+                      >
+                        ★
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Customer Feedback */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Feedback about the Customer (optional)
+                  </label>
+                  <textarea
+                    value={completionData.taskerFeedback}
+                    onChange={(e) => setCompletionData({...completionData, taskerFeedback: e.target.value})}
+                    placeholder="Share your experience working with this customer..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    rows="3"
+                  />
+                </div>
+              </div>
+
+              <div className="flex space-x-3 mt-6">
+                <button
+                  onClick={() => setShowCompleteModal(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  disabled={actionLoading}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleMarkComplete}
+                  disabled={actionLoading || completionData.completionPhotos.length === 0}
+                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                >
+                  {actionLoading ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                  ) : (
+                    <>
+                      <FaCheckCircle />
+                      <span>Submit Completion</span>
+                    </>
+                  )}
+                </button>
+              </div>
+              
+              {completionData.completionPhotos.length === 0 && (
+                <p className="text-xs text-red-500 mt-2 text-center">
+                  At least one completion photo is required
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cancel Schedule Modal */}
+      {showCancelModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-gray-800">Cancel Schedule</h3>
+                <button
+                  onClick={() => setShowCancelModal(false)}
+                  className="text-gray-400 hover:text-gray-600 text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="mb-6">
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                  <div className="flex items-center space-x-2">
+                    <FaExclamationTriangle className="text-red-600" />
+                    <span className="font-medium text-red-800">Cancel this scheduled task?</span>
+                  </div>
+                  <p className="text-sm text-red-700 mt-1">
+                    This will make the task active again and remove the current schedule.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Reason for cancellation (optional)
+                  </label>
+                  <textarea
+                    value={cancellationReason}
+                    onChange={(e) => setCancellationReason(e.target.value)}
+                    placeholder="Please provide a reason for canceling the schedule..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                    rows="3"
+                  />
+                </div>
+              </div>
+
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setShowCancelModal(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  disabled={actionLoading}
+                >
+                  Keep Schedule
+                </button>
+                <button
+                  onClick={handleCancelSchedule}
+                  disabled={actionLoading}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                >
+                  {actionLoading ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                  ) : (
+                    <>
+                      <FaExclamationTriangle />
+                      <span>Cancel Schedule</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Toast Container */}
