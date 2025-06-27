@@ -407,6 +407,15 @@ const TaskerProfile = () => {
                     <div className="text-sm text-gray-600">Response Rate</div>
                   </div>
                 )}
+                
+                {tasker.taskerProfile?.advancePaymentAmount && (
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-orange-600">
+                      LKR {tasker.taskerProfile.advancePaymentAmount.toLocaleString()}
+                    </div>
+                    <div className="text-sm text-gray-600">Advance Payment</div>
+                  </div>
+                )}
               </div>
             </div>
 

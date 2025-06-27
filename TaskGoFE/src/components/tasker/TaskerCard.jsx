@@ -91,6 +91,11 @@ const TaskerCard = ({ tasker, onClick, showContactInfo = false, className = "" }
           </div>
           <div className="text-sm text-slate-500 font-medium">
             {tasker.completedTasks || 0} tasks completed
+            {tasker.taskerProfile?.experience && (
+              <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-700 rounded-md text-xs">
+                {tasker.taskerProfile.experience} exp
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -128,9 +133,9 @@ const TaskerCard = ({ tasker, onClick, showContactInfo = false, className = "" }
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold bg-gradient-to-r from-green-600 to-green-700 bg-clip-text text-transparent mb-2">
-              ${tasker.hourlyRate || 25}
+              LKR {tasker.taskerProfile?.advancePaymentAmount || 0}
             </div>
-            <div className="text-xs text-slate-500 font-medium">Per Hour</div>
+            <div className="text-xs text-slate-500 font-medium">Advance Payment</div>
           </div>
         </div>
         <div className="text-center mt-3 pt-3 border-t border-slate-200">

@@ -44,7 +44,9 @@ const MyTasks = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const statusFilter = activeTab !== 'all' ? `?status=${activeTab}` : '';
+      // Only apply status filter for status-specific tabs
+      const statusTabs = ['cancelled'];
+      const statusFilter = statusTabs.includes(activeTab) ? `?status=${activeTab}` : '';
       
       const response = await fetch(`http://localhost:5000/api/v1/tasks/my-tasks${statusFilter}`, {
         headers: {
@@ -86,7 +88,9 @@ const MyTasks = () => {
   const fetchMyApplications = async () => {
     try {
       const token = localStorage.getItem('token');
-      const statusFilter = activeTab !== 'all' ? `?status=${activeTab}` : '';
+      // Only apply status filter for status-specific tabs
+      const statusTabs = ['cancelled'];
+      const statusFilter = statusTabs.includes(activeTab) ? `?status=${activeTab}` : '';
       
       const response = await fetch(`http://localhost:5000/api/v1/tasks/my-applications${statusFilter}`, {
         headers: {
@@ -167,20 +171,16 @@ const MyTasks = () => {
 
   const tabs = userRole === 'customer' ? [
     { id: 'all', label: 'All', count: tasks.length + targetedTasks.length },
-    { id: 'regular', label: 'Regular Tasks', count: tasks.length },
     { id: 'targeted', label: 'Direct Hires', count: targetedTasks.length },
     { id: 'active', label: 'Active', count: tasks.filter(t => t.status === 'active').length + targetedTasks.filter(t => t.status === 'active').length },
     { id: 'scheduled', label: 'Scheduled', count: tasks.filter(t => t.status === 'scheduled').length + targetedTasks.filter(t => t.status === 'scheduled').length },
     { id: 'completed', label: 'Completed', count: tasks.filter(t => t.status === 'completed').length + targetedTasks.filter(t => t.status === 'completed').length },
     { id: 'cancelled', label: 'Cancelled', count: tasks.filter(t => t.status === 'cancelled').length + targetedTasks.filter(t => t.status === 'cancelled').length }
   ] : [
-    { id: 'all', label: 'All', count: applications.length + targetedTasks.length + tasks.length },
+    { id: 'all', label: 'All', count: applications.filter(app => app.task.status !== 'completed' && app.task.status !== 'scheduled').length + targetedTasks.length + tasks.length },
     { id: 'targeted', label: 'Hired Tasks', count: targetedTasks.length },
-    { id: 'selected', label: 'Selected Tasks', count: tasks.length },
-    { id: 'applications', label: 'Applications', count: applications.length },
-    { id: 'active', label: 'Active', count: applications.filter(a => a.task.status === 'active').length + targetedTasks.filter(t => t.status === 'active').length },
-    { id: 'scheduled', label: 'Scheduled', count: applications.filter(a => a.task.status === 'scheduled').length + targetedTasks.filter(t => t.status === 'scheduled').length + tasks.filter(t => t.status === 'scheduled').length },
-    { id: 'completed', label: 'Completed', count: applications.filter(a => a.task.status === 'completed').length + targetedTasks.filter(t => t.status === 'completed').length + tasks.filter(t => t.status === 'completed').length },
+    { id: 'selected', label: 'Scheduled Tasks', count: tasks.length },
+    { id: 'applications', label: 'Applications', count: applications.filter(app => app.task.status !== 'completed' && app.task.status !== 'scheduled').length },
     { id: 'cancelled', label: 'Cancelled', count: applications.filter(a => a.task.status === 'cancelled').length + targetedTasks.filter(t => t.status === 'cancelled').length + tasks.filter(t => t.status === 'cancelled').length }
   ];
 
@@ -220,31 +220,29 @@ const MyTasks = () => {
       switch (activeTab) {
         case 'all':
           return [
-            ...tasks.map(task => ({ ...task, type: 'regular' })),
+            ...tasks.map(task => ({ ...task, type: 'task' })),
             ...targetedTasks.map(task => ({ ...task, type: 'targeted' }))
           ];
-        case 'regular':
-          return tasks.map(task => ({ ...task, type: 'regular' }));
         case 'targeted':
           return targetedTasks.map(task => ({ ...task, type: 'targeted' }));
         case 'active':
           return [
-            ...tasks.filter(t => t.status === 'active').map(task => ({ ...task, type: 'regular' })),
+            ...tasks.filter(t => t.status === 'active').map(task => ({ ...task, type: 'task' })),
             ...targetedTasks.filter(t => t.status === 'active').map(task => ({ ...task, type: 'targeted' }))
           ];
         case 'scheduled':
           return [
-            ...tasks.filter(t => t.status === 'scheduled').map(task => ({ ...task, type: 'regular' })),
+            ...tasks.filter(t => t.status === 'scheduled').map(task => ({ ...task, type: 'task' })),
             ...targetedTasks.filter(t => t.status === 'scheduled').map(task => ({ ...task, type: 'targeted' }))
           ];
         case 'completed':
           return [
-            ...tasks.filter(t => t.status === 'completed').map(task => ({ ...task, type: 'regular' })),
+            ...tasks.filter(t => t.status === 'completed').map(task => ({ ...task, type: 'task' })),
             ...targetedTasks.filter(t => t.status === 'completed').map(task => ({ ...task, type: 'targeted' }))
           ];
         case 'cancelled':
           return [
-            ...tasks.filter(t => t.status === 'cancelled').map(task => ({ ...task, type: 'regular' })),
+            ...tasks.filter(t => t.status === 'cancelled').map(task => ({ ...task, type: 'task' })),
             ...targetedTasks.filter(t => t.status === 'cancelled').map(task => ({ ...task, type: 'targeted' }))
           ];
         default:
@@ -257,31 +255,14 @@ const MyTasks = () => {
           return [
             ...targetedTasks.map(task => ({ ...task, type: 'targeted' })),
             ...tasks.map(task => ({ ...task, type: 'selected' })),
-            ...applications.map(app => ({ ...app, type: 'application' }))
+            ...applications.filter(app => app.task.status !== 'completed' && app.task.status !== 'scheduled').map(app => ({ ...app, type: 'application' }))
           ];
         case 'targeted':
           return targetedTasks.map(task => ({ ...task, type: 'targeted' }));
         case 'selected':
           return tasks.map(task => ({ ...task, type: 'selected' }));
         case 'applications':
-          return applications.map(app => ({ ...app, type: 'application' }));
-        case 'active':
-          return [
-            ...targetedTasks.filter(t => t.status === 'active').map(task => ({ ...task, type: 'targeted' })),
-            ...applications.filter(a => a.task.status === 'active').map(app => ({ ...app, type: 'application' }))
-          ];
-        case 'scheduled':
-          return [
-            ...targetedTasks.filter(t => t.status === 'scheduled').map(task => ({ ...task, type: 'targeted' })),
-            ...tasks.filter(t => t.status === 'scheduled').map(task => ({ ...task, type: 'selected' })),
-            ...applications.filter(a => a.task.status === 'scheduled').map(app => ({ ...app, type: 'application' }))
-          ];
-        case 'completed':
-          return [
-            ...targetedTasks.filter(t => t.status === 'completed').map(task => ({ ...task, type: 'targeted' })),
-            ...tasks.filter(t => t.status === 'completed').map(task => ({ ...task, type: 'selected' })),
-            ...applications.filter(a => a.task.status === 'completed').map(app => ({ ...app, type: 'application' }))
-          ];
+          return applications.filter(app => app.task.status !== 'completed' && app.task.status !== 'scheduled').map(app => ({ ...app, type: 'application' }));
         case 'cancelled':
           return [
             ...targetedTasks.filter(t => t.status === 'cancelled').map(task => ({ ...task, type: 'targeted' })),
@@ -397,7 +378,6 @@ const MyTasks = () => {
                           : 'bg-slate-100 group-hover:bg-blue-100'
                       }`}>
                         {tab.id === 'all' && <FaList className={`w-4 h-4 ${activeTab === tab.id ? 'text-white' : 'text-slate-600 group-hover:text-blue-600'}`} />}
-                        {tab.id === 'regular' && <FaClipboardList className={`w-4 h-4 ${activeTab === tab.id ? 'text-white' : 'text-blue-500'}`} />}
                         {tab.id === 'targeted' && <FaHandshake className={`w-4 h-4 ${activeTab === tab.id ? 'text-white' : 'text-purple-500'}`} />}
                         {tab.id === 'selected' && <FaUserCheck className={`w-4 h-4 ${activeTab === tab.id ? 'text-white' : 'text-indigo-500'}`} />}
                         {tab.id === 'applications' && <FaFileAlt className={`w-4 h-4 ${activeTab === tab.id ? 'text-white' : 'text-orange-500'}`} />}
@@ -501,7 +481,7 @@ const MyTasks = () => {
                 isApplication = false;
                 isTargeted = item.type === 'targeted';
                 isSelected = false;
-                taskType = item.type; // 'regular' or 'targeted'
+                taskType = item.type; // 'task' or 'targeted'
               } else {
                 // For taskers, determine the type of task/application
                 taskType = item.type;
@@ -539,7 +519,7 @@ const MyTasks = () => {
                         }`}>
                           {userRole === 'customer' && isTargeted ? 'Direct Hire' :
                            userRole === 'tasker' && isTargeted ? 'Hired' :
-                           userRole === 'tasker' && isSelected ? 'Selected' :
+                           userRole === 'tasker' && isSelected ? 'Scheduled' :
                            userRole === 'tasker' && isApplication ? 'Applied' : ''}
                         </span>
                       )}
@@ -619,7 +599,7 @@ const MyTasks = () => {
                       <span>
                         {userRole === 'customer' ? (isTargeted ? 'Manage Hire' : 'View') : 
                          isTargeted ? 'View Task' :
-                         isSelected ? 'Manage' : 
+                         isSelected ? 'Manage Schedule' : 
                          'View Application'}
                       </span>
                     </button>

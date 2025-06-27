@@ -759,10 +759,18 @@ const TaskDetails = () => {
                     )}
 
                     {taskerProfile.hourlyRate && (
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-2 mb-3">
                         <FaDollarSign className="text-green-600" />
                         <span className="font-medium text-gray-700">Hourly Rate:</span>
                         <span className="text-gray-600">LKR {taskerProfile.hourlyRate}</span>
+                      </div>
+                    )}
+
+                    {taskerProfile.advancePaymentAmount && (
+                      <div className="flex items-center space-x-2">
+                        <FaDollarSign className="text-orange-600" />
+                        <span className="font-medium text-gray-700">Advance Payment:</span>
+                        <span className="text-gray-600">LKR {taskerProfile.advancePaymentAmount.toLocaleString()}</span>
                       </div>
                     )}
                   </div>
