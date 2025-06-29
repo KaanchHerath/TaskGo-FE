@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FaSearch, FaDollarSign } from 'react-icons/fa';
 import { useJobs } from '../../hooks/useJobs';
 import AvailableTaskCard from '../../components/task/AvailableTaskCard';
@@ -19,18 +19,23 @@ const Tasks = () => {
   
   const { jobs, pagination, loading, error, setParams } = useJobs();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const categories = [
     { value: '', label: 'All Categories' },
     { value: 'Cleaning', label: 'Cleaning' },
+    { value: 'Repairing', label: 'Repairing' },
     { value: 'Handyman', label: 'Handyman' },
+    { value: 'Maintenance', label: 'Maintenance' },
+    { value: 'Gardening', label: 'Gardening' },
+    { value: 'Landscaping', label: 'Landscaping' },
+    { value: 'Installations', label: 'Installations' },
+    { value: 'Security', label: 'Security' },
     { value: 'Moving', label: 'Moving' },
     { value: 'Plumbing', label: 'Plumbing' },
     { value: 'Electrical', label: 'Electrical' },
-    { value: 'Gardening', label: 'Gardening' },
     { value: 'Painting', label: 'Painting' },
     { value: 'Carpentry', label: 'Carpentry' },
-    { value: 'Installation', label: 'Installation' },
     { value: 'Repairs', label: 'Repairs' },
     { value: 'Delivery', label: 'Delivery' },
     { value: 'Other', label: 'Other' }
@@ -42,6 +47,36 @@ const Tasks = () => {
     { value: 'maxPayment', label: 'Payment: High to Low' },
     { value: 'endDate', label: 'Deadline' }
   ];
+
+  // Read URL parameters and set initial state
+  useEffect(() => {
+    const categoryParam = searchParams.get('category');
+    const searchParam = searchParams.get('search');
+    const areaParam = searchParams.get('area');
+    const minPaymentParam = searchParams.get('minPayment');
+    const maxPaymentParam = searchParams.get('maxPayment');
+    
+    if (categoryParam) setSelectedCategory(categoryParam);
+    if (searchParam) setSearchTerm(searchParam);
+    if (areaParam) setLocation(areaParam);
+    if (minPaymentParam) setMinPayment(minPaymentParam);
+    if (maxPaymentParam) setMaxPayment(maxPaymentParam);
+  }, [searchParams]);
+
+  // Trigger search when URL parameters are loaded or when component mounts
+  useEffect(() => {
+    const hasParams = searchParams.toString().length > 0;
+    if (hasParams) {
+      // If there are URL parameters, wait a bit for state to be set then search
+      const timeoutId = setTimeout(() => {
+        handleSearch();
+      }, 100);
+      return () => clearTimeout(timeoutId);
+    } else {
+      // If no URL parameters, do initial search
+      handleSearch();
+    }
+  }, [searchParams.toString()]);
 
   const handleSearch = () => {
     const searchParams = {
@@ -56,6 +91,15 @@ const Tasks = () => {
       sortOrder: 'desc'
     };
     
+    // Update URL parameters
+    const urlParams = new URLSearchParams();
+    if (searchTerm) urlParams.set('search', searchTerm);
+    if (location) urlParams.set('area', location);
+    if (selectedCategory) urlParams.set('category', selectedCategory);
+    if (minPayment) urlParams.set('minPayment', minPayment);
+    if (maxPayment) urlParams.set('maxPayment', maxPayment);
+    setSearchParams(urlParams);
+    
     setCurrentPage(1);
     setParams(searchParams);
   };
@@ -67,6 +111,10 @@ const Tasks = () => {
     setMinPayment('');
     setMaxPayment('');
     setSortBy('createdAt');
+    
+    // Clear URL parameters
+    setSearchParams(new URLSearchParams());
+    
     handleSearch();
   };
 
@@ -141,9 +189,7 @@ const Tasks = () => {
     }
   ];
 
-  useEffect(() => {
-    handleSearch();
-  }, []);
+
 
   if (error) {
     return (
@@ -189,7 +235,7 @@ const Tasks = () => {
         searchPlaceholder="What task are you looking for?"
         locationPlaceholder="Location"
         filterIcon={FaDollarSign}
-        filterLabel="$"
+        filterLabel="LKR"
         advancedFilters={advancedFilters}
         onFilterChange={handleFilterChange}
         sortOptions={sortOptions}

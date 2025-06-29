@@ -3,11 +3,13 @@ import {
   FaEdit, FaUser, FaEnvelope, FaMapMarkerAlt, FaTasks, FaStar, FaTools, 
   FaFileAlt, FaCog, FaCamera, FaPhone, FaDollarSign, FaCheckCircle, 
   FaClock, FaAward, FaChartLine, FaEye, FaHeart, FaUpload, FaTrash,
-  FaPlus, FaTimes, FaSave, FaSpinner, FaLock
+  FaPlus, FaTimes, FaSave, FaSpinner, FaLock, FaExpand, FaDownload,
+  FaFilePdf, FaImage
 } from 'react-icons/fa';
 import { changePassword } from '../../services/api/profileService';
 import { updateTaskerAvailability } from '../../services/api/taskerService';
 import { useToast, ToastContainer } from '../../components/common/Toast';
+import Modal from '../../components/common/Modal';
 
 const TaskerProfile = () => {
   const [user, setUser] = useState(null);
@@ -46,6 +48,10 @@ const TaskerProfile = () => {
   });
   const [changingPassword, setChangingPassword] = useState(false);
   const [updatingAvailability, setUpdatingAvailability] = useState(false);
+  
+  // Document preview state
+  const [previewDocument, setPreviewDocument] = useState(null);
+  const [showPreview, setShowPreview] = useState(false);
 
   useEffect(() => {
     fetchProfile();
@@ -59,6 +65,8 @@ const TaskerProfile = () => {
       fetchJobAlerts();
     }
   }, [user]);
+
+
 
     const fetchProfile = async () => {
     try {
@@ -114,16 +122,25 @@ const TaskerProfile = () => {
         
         const completedTasks = tasks.filter(t => t.status === 'completed').length;
         const activeTasks = tasks.filter(t => t.status === 'active' || t.status === 'scheduled').length;
+        const totalTasks = tasks.length;
         const totalEarnings = tasks
           .filter(t => t.status === 'completed')
           .reduce((sum, t) => sum + (t.agreedPrice || t.maxPayment || 0), 0);
+        
+        // Calculate response rate based on completion rate and activity
+        let responseRate = 0;
+        if (totalTasks > 0) {
+          const completionRate = (completedTasks / totalTasks) * 100;
+          // Base response rate on completion rate, with a minimum for active users
+          responseRate = Math.min(Math.max(completionRate, totalTasks > 0 ? 85 : 0), 100);
+        }
         
         setStatistics({
           completedTasks,
           activeTasks,
           totalEarnings,
-          responseRate: 95 + Math.floor(Math.random() * 5),
-          avgRating: user?.rating?.average || 4.8,
+          responseRate: Math.round(responseRate),
+          avgRating: user?.rating?.average || 0,
           totalReviews: user?.rating?.count || 0
         });
       }
@@ -398,10 +415,48 @@ const TaskerProfile = () => {
     }
   };
 
+  // Helper functions for document handling
+  const getDocumentUrl = (docPath) => {
+    // Handle both absolute and relative paths
+    return docPath.includes('uploads/') 
+      ? `http://localhost:5000/${docPath}`
+      : `http://localhost:5000/uploads/tasker-docs/${docPath.split(/[\\\/]/).pop()}`;
+  };
+
+  const getFileType = (filename) => {
+    const extension = filename.toLowerCase().split('.').pop();
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension)) {
+      return 'image';
+    } else if (extension === 'pdf') {
+      return 'pdf';
+    }
+    return 'unknown';
+  };
+
+  const handlePreviewDocument = (docPath, title) => {
+    setPreviewDocument({
+      url: getDocumentUrl(docPath),
+      title: title,
+      type: getFileType(docPath)
+    });
+    setShowPreview(true);
+  };
+
+  const handleDownloadDocument = (docPath, filename) => {
+    const url = getDocumentUrl(docPath);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename || 'document';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const tabs = [
     { id: 'overview', label: 'Overview', icon: FaChartLine },
     { id: 'personal', label: 'Personal', icon: FaUser },
     { id: 'profile', label: 'Profile', icon: FaTools },
+    { id: 'documents', label: 'Documents', icon: FaFileAlt },
     { id: 'account', label: 'Account Settings', icon: FaCog }
   ];
 
@@ -591,7 +646,9 @@ const TaskerProfile = () => {
                         <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center mx-auto mb-2">
                           <FaStar className="w-5 h-5 text-yellow-600" />
                         </div>
-                        <div className="text-lg font-bold text-slate-800">{statistics.avgRating.toFixed(1)}</div>
+                        <div className="text-lg font-bold text-slate-800">
+                          {statistics.avgRating > 0 ? statistics.avgRating.toFixed(1) : 'New'}
+                        </div>
                         <div className="text-xs text-slate-600">Average Rating</div>
         </div>
 
@@ -924,71 +981,7 @@ const TaskerProfile = () => {
 
             {activeTab === 'profile' && (
               <div className="space-y-8">
-                {/* Your CV/Certifications */}
-                <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-8">
-                  <h3 className="text-xl font-bold text-slate-800 mb-6">Your Cv/Certifications</h3>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Professional Resume */}
-                    <div className="border border-gray-200 rounded-xl p-6 bg-blue-50/30">
-                      <div className="flex items-start space-x-4">
-                        <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                          <FaFileAlt className="w-6 h-6 text-blue-600" />
-                        </div>
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-slate-800">Professional Resume</h4>
-                          <p className="text-sm text-slate-600 mt-1">3.5 MB</p>
-                          <div className="flex items-center space-x-2 mt-3">
-                            <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
-                              <FaEye className="w-4 h-4 inline mr-1" />
-                              View
-                            </button>
-                            <button className="text-red-600 hover:text-red-700 text-sm font-medium">
-                              <FaTrash className="w-4 h-4 inline mr-1" />
-                              Delete
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
 
-                    {/* Electrician Certificate */}
-                    <div className="border border-gray-200 rounded-xl p-6 bg-green-50/30">
-                      <div className="flex items-start space-x-4">
-                        <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                          <FaAward className="w-6 h-6 text-green-600" />
-                        </div>
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-slate-800">Electrician certificate</h4>
-                          <p className="text-sm text-slate-600 mt-1">4.7 MB</p>
-                          <div className="flex items-center space-x-2 mt-3">
-                            <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
-                              <FaEye className="w-4 h-4 inline mr-1" />
-                              View
-                            </button>
-                            <button className="text-red-600 hover:text-red-700 text-sm font-medium">
-                              <FaTrash className="w-4 h-4 inline mr-1" />
-                              Delete
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-              </div>
-            </div>
-
-                  {/* Add CV/Certification */}
-                  <div className="mt-6">
-                    <button className="w-full border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-blue-400 hover:bg-blue-50/30 transition-all duration-200">
-                      <div className="flex flex-col items-center space-y-2">
-                        <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center">
-                          <FaPlus className="w-6 h-6 text-gray-600" />
-                        </div>
-                        <h4 className="font-medium text-slate-800">Add Cv/Certification</h4>
-                        <p className="text-sm text-slate-600">Browse file or drop here, only pdf</p>
-                      </div>
-                    </button>
-                  </div>
-                </div>
 
                 {/* Skills Section */}
                 <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-8">
@@ -1201,6 +1194,144 @@ const TaskerProfile = () => {
 
 
 
+            {/* Documents Tab */}
+            {activeTab === 'documents' && (
+              <div className="space-y-8">
+                {/* ID Document Section */}
+                <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-8">
+                  <h3 className="text-xl font-bold text-slate-800 mb-6 flex items-center">
+                    <FaFileAlt className="w-6 h-6 text-blue-600 mr-3" />
+                    Identification Document
+                  </h3>
+                  
+                  {user.taskerProfile?.idDocument ? (
+                    <div className="border border-gray-200 rounded-xl p-6 bg-blue-50/30">
+                      <div className="flex items-start space-x-4">
+                        <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                          <FaFileAlt className="w-6 h-6 text-blue-600" />
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-slate-800">ID Document</h4>
+                          <p className="text-sm text-slate-600 mt-1">
+                            {user.taskerProfile.idDocument.split('/').pop()}
+                          </p>
+                          <div className="flex items-center space-x-3 mt-3">
+                            <button 
+                              onClick={() => handlePreviewDocument(user.taskerProfile.idDocument, 'ID Document')}
+                              className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center space-x-1 bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors"
+                            >
+                              <FaEye className="w-4 h-4" />
+                              <span>Preview</span>
+                            </button>
+                            <button 
+                              onClick={() => handleDownloadDocument(user.taskerProfile.idDocument, 'id-document')}
+                              className="text-green-600 hover:text-green-700 text-sm font-medium flex items-center space-x-1 bg-green-50 px-3 py-1.5 rounded-lg hover:bg-green-100 transition-colors"
+                            >
+                              <FaDownload className="w-4 h-4" />
+                              <span>Download</span>
+                            </button>
+                            <button 
+                              onClick={() => {
+                                const docPath = user.taskerProfile.idDocument;
+                                const url = getDocumentUrl(docPath);
+                                window.open(url, '_blank');
+                              }}
+                              className="text-purple-600 hover:text-purple-700 text-sm font-medium flex items-center space-x-1 bg-purple-50 px-3 py-1.5 rounded-lg hover:bg-purple-100 transition-colors"
+                            >
+                              <FaExpand className="w-4 h-4" />
+                              <span>Open</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <FaFileAlt className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                      <p>No ID document uploaded</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Qualification Documents Section */}
+                <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-8">
+                  <h3 className="text-xl font-bold text-slate-800 mb-6 flex items-center">
+                    <FaAward className="w-6 h-6 text-green-600 mr-3" />
+                    Qualification Documents
+                  </h3>
+                  
+                  {user.taskerProfile?.qualificationDocuments && user.taskerProfile.qualificationDocuments.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {user.taskerProfile.qualificationDocuments.map((doc, index) => (
+                        <div key={index} className="border border-gray-200 rounded-xl p-6 bg-green-50/30">
+                          <div className="flex items-start space-x-4">
+                            <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                              <FaAward className="w-6 h-6 text-green-600" />
+                            </div>
+                            <div className="flex-1">
+                              <h4 className="font-semibold text-slate-800">
+                                Qualification Document {index + 1}
+                              </h4>
+                              <p className="text-sm text-slate-600 mt-1">
+                                {doc.split('/').pop()}
+                              </p>
+                              <div className="flex items-center space-x-3 mt-3">
+                                <button 
+                                  onClick={() => handlePreviewDocument(doc, `Qualification Document ${index + 1}`)}
+                                  className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center space-x-1 bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors"
+                                >
+                                  <FaEye className="w-4 h-4" />
+                                  <span>Preview</span>
+                                </button>
+                                <button 
+                                  onClick={() => handleDownloadDocument(doc, `qualification-document-${index + 1}`)}
+                                  className="text-green-600 hover:text-green-700 text-sm font-medium flex items-center space-x-1 bg-green-50 px-3 py-1.5 rounded-lg hover:bg-green-100 transition-colors"
+                                >
+                                  <FaDownload className="w-4 h-4" />
+                                  <span>Download</span>
+                                </button>
+                                <button 
+                                  onClick={() => {
+                                    const url = getDocumentUrl(doc);
+                                    window.open(url, '_blank');
+                                  }}
+                                  className="text-purple-600 hover:text-purple-700 text-sm font-medium flex items-center space-x-1 bg-purple-50 px-3 py-1.5 rounded-lg hover:bg-purple-100 transition-colors"
+                                >
+                                  <FaExpand className="w-4 h-4" />
+                                  <span>Open</span>
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <FaAward className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                      <p>No qualification documents uploaded</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Document Upload Note */}
+                <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6">
+                  <div className="flex items-start space-x-3">
+                    <div className="w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center mt-0.5">
+                      <FaUpload className="w-3 h-3 text-white" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-semibold text-yellow-800">Document Management</h4>
+                      <p className="text-sm text-yellow-700 mt-1">
+                        Documents were uploaded during registration and cannot be changed through this interface. 
+                        If you need to update your documents, please contact support.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Account Settings Tab */}
             {activeTab === 'account' && (
               <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-8">
@@ -1328,6 +1459,114 @@ const TaskerProfile = () => {
           </div>
         </div>
       </div>
+
+      {/* Document Preview Modal */}
+      <Modal
+        isOpen={showPreview}
+        onClose={() => setShowPreview(false)}
+        title={previewDocument?.title || 'Document Preview'}
+        icon={previewDocument?.type === 'image' ? FaImage : previewDocument?.type === 'pdf' ? FaFilePdf : FaFileAlt}
+        iconColor={previewDocument?.type === 'image' ? 'text-blue-600' : previewDocument?.type === 'pdf' ? 'text-red-600' : 'text-gray-600'}
+        iconBgColor={previewDocument?.type === 'image' ? 'bg-blue-100' : previewDocument?.type === 'pdf' ? 'bg-red-100' : 'bg-gray-100'}
+        maxWidth="max-w-4xl"
+        maxHeight="max-h-[90vh]"
+      >
+        {previewDocument && (
+          <div className="space-y-4">
+            {/* Action Buttons */}
+            <div className="flex items-center justify-center space-x-3 pb-4 border-b border-gray-200">
+              <button
+                onClick={() => handleDownloadDocument(previewDocument.url, previewDocument.title)}
+                className="flex items-center space-x-2 px-4 py-2 text-green-600 hover:text-green-700 bg-green-50 hover:bg-green-100 rounded-lg transition-colors"
+              >
+                <FaDownload className="w-4 h-4" />
+                <span>Download</span>
+              </button>
+              <button
+                onClick={() => window.open(previewDocument.url, '_blank')}
+                className="flex items-center space-x-2 px-4 py-2 text-purple-600 hover:text-purple-700 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors"
+              >
+                <FaExpand className="w-4 h-4" />
+                <span>Open in New Tab</span>
+              </button>
+            </div>
+
+            {/* Document Content */}
+            <div className="min-h-[400px]">
+              {previewDocument.type === 'image' ? (
+                <div className="flex justify-center">
+                  <img
+                    src={previewDocument.url}
+                    alt={previewDocument.title}
+                    className="max-w-full max-h-[500px] object-contain rounded-lg shadow-lg"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'block';
+                    }}
+                  />
+                  <div className="hidden text-center py-12">
+                    <FaImage className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <p className="text-gray-500 mb-4">Unable to load image preview</p>
+                    <button
+                      onClick={() => window.open(previewDocument.url, '_blank')}
+                      className="text-blue-600 hover:text-blue-700 font-medium"
+                    >
+                      Open in new tab
+                    </button>
+                  </div>
+                </div>
+              ) : previewDocument.type === 'pdf' ? (
+                <div className="space-y-4">
+                  <div className="w-full h-96 border rounded-lg overflow-hidden">
+                    <iframe
+                      src={previewDocument.url}
+                      className="w-full h-full border-0"
+                      title={previewDocument.title}
+                    />
+                  </div>
+                  <div className="text-center text-sm text-gray-600">
+                    <p className="mb-2">If the PDF doesn't display properly, try:</p>
+                    <div className="flex justify-center space-x-4">
+                      <button
+                        onClick={() => window.open(previewDocument.url, '_blank')}
+                        className="text-blue-600 hover:text-blue-700 font-medium"
+                      >
+                        Opening in new tab
+                      </button>
+                      <span className="text-gray-400">or</span>
+                      <button
+                        onClick={() => handleDownloadDocument(previewDocument.url, previewDocument.title)}
+                        className="text-green-600 hover:text-green-700 font-medium"
+                      >
+                        Downloading the file
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <FaFileAlt className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500 mb-4">Preview not available for this file type</p>
+                  <div className="flex justify-center space-x-4">
+                    <button
+                      onClick={() => window.open(previewDocument.url, '_blank')}
+                      className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      Open File
+                    </button>
+                    <button
+                      onClick={() => handleDownloadDocument(previewDocument.url, previewDocument.title)}
+                      className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                    >
+                      Download
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </Modal>
 
       <ToastContainer toasts={toasts} removeToast={removeToast} />
     </div>

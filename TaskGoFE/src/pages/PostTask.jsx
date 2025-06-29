@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createTask, TASK_CATEGORIES, CANADIAN_PROVINCES } from '../services/api/taskService';
+import { createTask, uploadTaskPhotos, TASK_CATEGORIES, CANADIAN_PROVINCES } from '../services/api/taskService';
 
 const PostTask = () => {
   const navigate = useNavigate();
@@ -136,6 +136,15 @@ const PostTask = () => {
     setError('');
 
     try {
+      let photoUrls = [];
+      
+      // Upload photos if any are selected
+      if (formData.photos.length > 0) {
+        const photoFiles = formData.photos.map(photo => photo.file);
+        const uploadResponse = await uploadTaskPhotos(photoFiles);
+        photoUrls = uploadResponse.data.map(photo => photo.url);
+      }
+
       const taskData = {
         title: formData.title.trim(),
         category: formData.category,
@@ -146,8 +155,7 @@ const PostTask = () => {
         startDate: new Date(formData.startDate).toISOString(),
         endDate: new Date(formData.endDate).toISOString(),
         description: formData.description.trim(),
-        // For now, skip photos until we implement proper file upload
-        photos: []
+        photos: photoUrls
       };
 
       const response = await createTask(taskData);

@@ -495,10 +495,10 @@ const MyTasks = () => {
                 <div
                   key={isApplication ? item._id : task._id}
                   onClick={() => handleTaskClick(task._id, isApplication ? item._id : null)}
-                  className={`bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border transition-all duration-300 cursor-pointer group hover:shadow-xl hover:bg-white/80 ${
-                    isTargeted ? 'border-purple-200 hover:border-purple-300' :
-                    isSelected ? 'border-indigo-200 hover:border-indigo-300' :
-                    isApplication ? 'border-orange-200 hover:border-orange-300' :
+                  className={`bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border cursor-pointer ${
+                    isTargeted ? 'border-purple-200' :
+                    isSelected ? 'border-indigo-200' :
+                    isApplication ? 'border-orange-200' :
                     'border-white/30'
                   }`}
                 >
@@ -527,7 +527,7 @@ const MyTasks = () => {
                     {userRole === 'customer' && task.status === 'active' && (
                       <button
                         onClick={(e) => handleEditTask(task._id, e)}
-                        className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 opacity-0 group-hover:opacity-100"
+                        className="p-2 text-slate-400 rounded-lg"
                       >
                         <FaEdit className="w-4 h-4" />
                       </button>
@@ -535,7 +535,7 @@ const MyTasks = () => {
                   </div>
 
                   {/* Task Title */}
-                  <h3 className="text-lg font-bold text-slate-800 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
+                  <h3 className="text-lg font-bold text-slate-800 mb-2 line-clamp-2">
                     {task.title}
                   </h3>
 
@@ -594,7 +594,7 @@ const MyTasks = () => {
                       </div>
                     )}
                     
-                    <button className="flex items-center space-x-1 text-blue-600 hover:text-blue-700 text-sm font-medium group-hover:translate-x-1 transition-all duration-200">
+                    <button className="flex items-center space-x-1 text-blue-600 text-sm font-medium">
                       <FaEye className="w-3 h-3" />
                       <span>
                         {userRole === 'customer' ? (isTargeted ? 'Manage Hire' : 'View') : 

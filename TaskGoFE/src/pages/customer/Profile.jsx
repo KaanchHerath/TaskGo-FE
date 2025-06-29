@@ -71,9 +71,9 @@ const CustomerProfile = () => {
   if (!user) return null;
 
   const taskHistory = [
-    { id: 1, title: "House Cleaning", status: "Completed", date: "2024-01-15", amount: "$80" },
-    { id: 2, title: "Plumbing Repair", status: "In Progress", date: "2024-01-20", amount: "$120" },
-    { id: 3, title: "Garden Maintenance", status: "Completed", date: "2024-01-10", amount: "$60" }
+    { id: 1, title: "House Cleaning", status: "Completed", date: "2024-01-15", amount: "LKR 8,000" },
+    { id: 2, title: "Plumbing Repair", status: "In Progress", date: "2024-01-20", amount: "LKR 12,000" },
+    { id: 3, title: "Garden Maintenance", status: "Completed", date: "2024-01-10", amount: "LKR 6,000" }
   ];
 
   return (
@@ -155,7 +155,7 @@ const CustomerProfile = () => {
             <div className="text-gray-600">Completed</div>
           </div>
           <div className="bg-white rounded-lg shadow-md p-6 text-center">
-            <div className="text-3xl font-bold text-purple-600 mb-2">$480</div>
+                            <div className="text-3xl font-bold text-purple-600 mb-2">LKR 48,000</div>
             <div className="text-gray-600">Total Spent</div>
           </div>
         </div>

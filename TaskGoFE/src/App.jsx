@@ -25,11 +25,13 @@ import TaskerSignup from "./pages/auth/TaskerSignup";
 // Customer Pages
 import CustomerDashboard from "./pages/customer/Dashboard";
 import CustomerProfile from "./pages/customer/Profile";
+import CustomerCategories from "./pages/customer/CustomerCategories";
 import TaskApplicationsPage from "./pages/customer/TaskApplicationsPage";
 
 // Tasker Pages
 import TaskerDashboard from "./pages/tasker/Dashboard";
 import TaskerProfile from "./pages/tasker/Profile";
+import TaskerCategories from "./pages/tasker/Categories";
 import TaskerTaskView from "./pages/tasker/TaskerTaskView";
 
 // Admin Pages
@@ -71,6 +73,7 @@ function App() {
           <Route element={<PrivateRoute allowedRoles={["customer"]} />}>
             <Route path="/customer/dashboard" element={<CustomerDashboard />} />
             <Route path="/customer/profile" element={<CustomerProfile />} />
+            <Route path="/customer/categories" element={<CustomerCategories />} />
             <Route path="/customer/my-tasks/:taskId/applications" element={<TaskApplicationsPage />} />
           </Route>
 
@@ -78,6 +81,7 @@ function App() {
           <Route element={<PrivateRoute allowedRoles={["tasker"]} />}>
             <Route path="/tasker/dashboard" element={<TaskerDashboard />} />
             <Route path="/tasker/profile" element={<TaskerProfile />} />
+            <Route path="/tasker/categories" element={<TaskerCategories />} />
             <Route path="/tasker/task/:taskId" element={<TaskerTaskView />} />
           </Route>
 

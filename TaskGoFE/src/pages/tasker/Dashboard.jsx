@@ -262,7 +262,7 @@ const EarningsStats = () => {
               </div>
               <div className="text-right">
                 <div className="text-2xl font-bold bg-gradient-to-r from-green-600 to-green-700 bg-clip-text text-transparent">
-                  ${stats.thisMonth}
+                  LKR {stats.thisMonth?.toLocaleString()}
                 </div>
               </div>
             </div>
@@ -277,7 +277,7 @@ const EarningsStats = () => {
               </div>
               <div className="text-right">
                 <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">
-                  ${stats.totalEarnings}
+                  LKR {stats.totalEarnings?.toLocaleString()}
                 </div>
               </div>
             </div>
@@ -607,7 +607,7 @@ const RecentActivity = () => {
                       {getStatusText(activity.status)}
                     </span>
                     <div className="text-2xl font-bold bg-gradient-to-r from-green-600 to-emerald-700 bg-clip-text text-transparent">
-                      ${activity.amount}
+                      LKR {activity.amount?.toLocaleString()}
                     </div>
                   </div>
                   

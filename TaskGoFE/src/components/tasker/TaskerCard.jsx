@@ -66,7 +66,7 @@ const TaskerCard = ({ tasker, onClick, showContactInfo = false, className = "" }
 
   return (
     <div 
-      className={`group bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer ${className}`}
+      className={`bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20 cursor-pointer ${className}`}
       onClick={() => onClick && onClick(tasker)}
     >
       {/* Header with Avatar and Info */}
@@ -82,7 +82,7 @@ const TaskerCard = ({ tasker, onClick, showContactInfo = false, className = "" }
           )}
         </div>
         <div className="ml-4 flex-1">
-          <h3 className="font-bold text-xl text-slate-800 group-hover:text-blue-600 transition-colors">
+          <h3 className="font-bold text-xl text-slate-800">
             {tasker.fullName}
           </h3>
           <div className="flex items-center text-slate-600 mb-1">
@@ -181,13 +181,13 @@ const TaskerCard = ({ tasker, onClick, showContactInfo = false, className = "" }
       {/* Action Buttons */}
       <div className="flex gap-3">
         <button 
-          className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-300 font-semibold shadow-lg transform hover:scale-105"
+          className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 rounded-xl font-semibold shadow-lg"
           onClick={handleHireClick}
         >
           {isLoggedIn() && isCustomer() ? 'Hire Now' : 'Login to Hire'}
         </button>
         <button 
-          className="px-4 bg-white/70 border-2 border-blue-600/30 text-blue-600 rounded-xl hover:bg-white/90 hover:border-blue-600/50 transition-all duration-300 shadow-lg"
+          className="px-4 bg-white/70 border-2 border-blue-600/30 text-blue-600 rounded-xl shadow-lg"
           onClick={(e) => {
             e.stopPropagation();
             navigate(`/taskers/${tasker._id}`);

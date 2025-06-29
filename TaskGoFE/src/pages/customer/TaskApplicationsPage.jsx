@@ -77,7 +77,7 @@ const TaskApplicationsPage = () => {
     const confirmed = window.confirm(
       `Are you sure you want to select ${application.tasker.fullName} for this task?\n\n` +
       `Time: ${new Date(application.confirmedTime).toLocaleString()}\n` +
-      `Payment: $${application.confirmedPayment}`
+              `Payment: LKR ${application.confirmedPayment?.toLocaleString()}`
     );
 
     if (!confirmed) return;
@@ -189,7 +189,7 @@ const TaskApplicationsPage = () => {
                   </span>
                   <span className="flex items-center space-x-1">
                     <FaDollarSign />
-                    <span>${task.minPayment} - ${task.maxPayment}</span>
+                    <span>LKR {task.minPayment?.toLocaleString()} - LKR {task.maxPayment?.toLocaleString()}</span>
                   </span>
                   <span className="flex items-center space-x-1">
                     <FaUsers />
@@ -246,7 +246,7 @@ const TaskApplicationsPage = () => {
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                         <div>
                           <p className="text-sm font-medium text-gray-700">Proposed Payment</p>
-                          <p className="text-lg font-semibold text-green-600">${application.proposedPayment}</p>
+                          <p className="text-lg font-semibold text-green-600">LKR {application.proposedPayment?.toLocaleString()}</p>
                         </div>
                         {application.estimatedDuration && (
                           <div>

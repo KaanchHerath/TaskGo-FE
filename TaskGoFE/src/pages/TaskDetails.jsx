@@ -173,7 +173,7 @@ const TaskDetails = () => {
     const confirmed = window.confirm(
       `Are you sure you want to select ${application.tasker.fullName} for this task?\n\n` +
       `Time: ${new Date(application.confirmedTime).toLocaleString()}\n` +
-      `Payment: $${application.confirmedPayment}`
+              `Payment: LKR ${application.confirmedPayment?.toLocaleString()}`
     );
 
     if (!confirmed) return;
@@ -376,7 +376,7 @@ const TaskDetails = () => {
                     </span>
                     <span className="flex items-center space-x-1">
                       <FaDollarSign />
-                      <span>${task.minPayment} - ${task.maxPayment}</span>
+                      <span>LKR {task.minPayment?.toLocaleString()} - LKR {task.maxPayment?.toLocaleString()}</span>
                     </span>
                     <span className="flex items-center space-x-1">
                       <FaCalendarAlt />
@@ -441,7 +441,7 @@ const TaskDetails = () => {
                        task.status === 'completed' ? 'Completed' : task.status}
                     </span>
                     <span className="text-sm text-gray-600">
-                      Budget: ${task.minPayment} - ${task.maxPayment}
+                      Budget: LKR {task.minPayment?.toLocaleString()} - LKR {task.maxPayment?.toLocaleString()}
                     </span>
                   </div>
                   
@@ -469,7 +469,7 @@ const TaskDetails = () => {
                       </p>
                       {task.agreedPayment && (
                         <p className="text-sm text-blue-700">
-                          <strong>Agreed payment:</strong> ${task.agreedPayment}
+                          <strong>Agreed payment:</strong> LKR {task.agreedPayment?.toLocaleString()}
                         </p>
                       )}
                     </div>
@@ -519,7 +519,7 @@ const TaskDetails = () => {
                               )}
                               {applications[0].confirmedPayment && (
                                 <p className="text-sm text-green-700">
-                                  <strong>Proposed payment:</strong> ${applications[0].confirmedPayment}
+                                  <strong>Proposed payment:</strong> LKR {applications[0].confirmedPayment?.toLocaleString()}
                                 </p>
                               )}
                             </div>
@@ -626,7 +626,7 @@ const TaskDetails = () => {
                             </div>
                             <div>
                               <h4 className="font-semibold text-gray-800">{application.tasker.fullName}</h4>
-                              <p className="text-sm text-gray-600">Proposed: ${application.proposedPayment}</p>
+                              <p className="text-sm text-gray-600">Proposed: LKR {application.proposedPayment?.toLocaleString()}</p>
                             </div>
                           </div>
                           <div className="flex items-center space-x-2">

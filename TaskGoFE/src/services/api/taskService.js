@@ -97,6 +97,17 @@ export const getTasks = async (filters = {}) => {
   }
 };
 
+// Get category statistics
+export const getCategoryStats = async () => {
+  try {
+    const response = await axiosInstance.get('/v1/tasks/category-stats');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching category stats:', error);
+    throw error;
+  }
+};
+
 // Get single task
 export const getTask = async (taskId) => {
   try {
@@ -220,6 +231,28 @@ export const cancelScheduledTask = async (taskId, reason) => {
   }
 };
 
+// Upload task photos
+export const uploadTaskPhotos = async (files) => {
+  try {
+    const formData = new FormData();
+    
+    // Append multiple files
+    for (let i = 0; i < files.length; i++) {
+      formData.append('photos', files[i]);
+    }
+    
+    const response = await axiosInstance.post('/v1/tasks/upload-photos', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error uploading task photos:', error);
+    throw error;
+  }
+};
+
 // Upload completion photos
 export const uploadCompletionPhoto = async (file) => {
   try {
@@ -289,6 +322,7 @@ export const getTaskerApplications = getMyApplications;
 export const taskService = {
   createTask,
   getTasks,
+  getCategoryStats,
   getTask,
   applyForTask,
   getTaskApplications,

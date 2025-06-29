@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FaUsers, FaStar, FaDollarSign } from 'react-icons/fa';
 import TaskerCard from '../../components/tasker/TaskerCard';
 import { getAllTaskers } from '../../services/api/taskerService';
@@ -22,18 +22,23 @@ const Taskers = () => {
   const [error, setError] = useState(null);
   
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const skills = [
     { value: '', label: 'All Skills' },
     { value: 'Cleaning', label: 'Cleaning' },
+    { value: 'Repairing', label: 'Repairing' },
     { value: 'Handyman', label: 'Handyman' },
+    { value: 'Maintenance', label: 'Maintenance' },
+    { value: 'Gardening', label: 'Gardening' },
+    { value: 'Landscaping', label: 'Landscaping' },
+    { value: 'Installations', label: 'Installations' },
+    { value: 'Security', label: 'Security' },
     { value: 'Moving', label: 'Moving' },
     { value: 'Plumbing', label: 'Plumbing' },
     { value: 'Electrical', label: 'Electrical' },
-    { value: 'Gardening', label: 'Gardening' },
     { value: 'Painting', label: 'Painting' },
     { value: 'Carpentry', label: 'Carpentry' },
-    { value: 'Installation', label: 'Installation' },
     { value: 'Repairs', label: 'Repairs' },
     { value: 'Delivery', label: 'Delivery' },
     { value: 'Other', label: 'Other' }
@@ -45,6 +50,36 @@ const Taskers = () => {
     { value: 'completedTasks', label: 'Most Experienced' },
     { value: 'hourlyRate', label: 'Price: Low to High' }
   ];
+
+  // Read URL parameters and set initial state
+  useEffect(() => {
+    const skillsParam = searchParams.get('skills');
+    const searchParam = searchParams.get('search');
+    const areaParam = searchParams.get('area');
+    const minRatingParam = searchParams.get('minRating');
+    const maxHourlyRateParam = searchParams.get('maxHourlyRate');
+    
+    if (skillsParam) setSelectedSkill(skillsParam);
+    if (searchParam) setSearchTerm(searchParam);
+    if (areaParam) setLocation(areaParam);
+    if (minRatingParam) setMinRating(minRatingParam);
+    if (maxHourlyRateParam) setMaxHourlyRate(maxHourlyRateParam);
+  }, [searchParams]);
+
+  // Trigger search when URL parameters are loaded or when component mounts
+  useEffect(() => {
+    const hasParams = searchParams.toString().length > 0;
+    if (hasParams) {
+      // If there are URL parameters, wait a bit for state to be set then search
+      const timeoutId = setTimeout(() => {
+        handleSearch();
+      }, 100);
+      return () => clearTimeout(timeoutId);
+    } else {
+      // If no URL parameters, do initial search
+      handleSearch();
+    }
+  }, [searchParams.toString()]);
 
   const fetchTaskers = async (params = {}) => {
     try {
@@ -77,6 +112,15 @@ const Taskers = () => {
   };
 
   const handleSearch = () => {
+    // Update URL parameters
+    const urlParams = new URLSearchParams();
+    if (searchTerm) urlParams.set('search', searchTerm);
+    if (location) urlParams.set('area', location);
+    if (selectedSkill) urlParams.set('skills', selectedSkill);
+    if (minRating) urlParams.set('minRating', minRating);
+    if (maxHourlyRate) urlParams.set('maxHourlyRate', maxHourlyRate);
+    setSearchParams(urlParams);
+    
     setCurrentPage(1);
     fetchTaskers({ page: 1 });
   };
@@ -88,6 +132,10 @@ const Taskers = () => {
     setMinRating('');
     setMaxHourlyRate('');
     setSortBy('rating.average');
+    
+    // Clear URL parameters
+    setSearchParams(new URLSearchParams());
+    
     setCurrentPage(1);
     fetchTaskers({ page: 1 });
   };
@@ -142,9 +190,7 @@ const Taskers = () => {
     }
   ];
 
-  useEffect(() => {
-    fetchTaskers();
-  }, []);
+
 
   if (error) {
     return (

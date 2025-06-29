@@ -58,7 +58,7 @@ const TaskerSignup = () => {
         });
       }
 
-      const response = await fetch('/api/auth/register-tasker', {
+      const response = await fetch('http://localhost:5000/api/auth/register-tasker', {
         method: 'POST',
         body: finalData
       });

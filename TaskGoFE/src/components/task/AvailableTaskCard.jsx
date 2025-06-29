@@ -66,7 +66,7 @@ const AvailableTaskCard = ({
   const CategoryIcon = categoryInfo.icon;
 
   return (
-    <div className="group bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20 hover:shadow-xl hover:scale-105 transition-all duration-300">
+    <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20">
       <div className="mb-6">
         <div className="flex justify-between items-start mb-4">
           <div className="flex items-center space-x-3">
@@ -76,7 +76,7 @@ const AvailableTaskCard = ({
               </div>
             </div>
             <div>
-              <h3 className="font-bold text-xl text-slate-800 group-hover:text-blue-600 transition-colors line-clamp-2">
+              <h3 className="font-bold text-xl text-slate-800 line-clamp-2">
                 {task.title}
               </h3>
               <div className="flex gap-2 mt-2">
@@ -121,13 +121,13 @@ const AvailableTaskCard = ({
           <div className="flex gap-3">
             <button 
               onClick={() => onTaskClick(task._id)}
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-5 py-2.5 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 font-semibold shadow-lg transform hover:scale-105"
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-5 py-2.5 rounded-xl font-semibold shadow-lg"
             >
               View
             </button>
             <button 
               onClick={(e) => onSaveTask(task._id, e)}
-              className="bg-white/80 backdrop-blur-sm border-2 border-blue-600/30 text-blue-600 p-2.5 rounded-xl hover:bg-white/90 hover:border-blue-600/50 transition-all duration-300 shadow-lg"
+              className="bg-white/80 backdrop-blur-sm border-2 border-blue-600/30 text-blue-600 p-2.5 rounded-xl shadow-lg"
             >
               {savedTasks.has(task._id) ? <FaHeart /> : <FaEye />}
             </button>

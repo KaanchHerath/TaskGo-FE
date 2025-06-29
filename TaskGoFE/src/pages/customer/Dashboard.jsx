@@ -263,7 +263,7 @@ const QuickStats = () => {
               </div>
               <div className="text-right">
                 <div className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-purple-700 bg-clip-text text-transparent">
-                  ${stats.totalSpent}
+                  LKR {stats.totalSpent?.toLocaleString()}
                 </div>
               </div>
             </div>
@@ -278,7 +278,7 @@ const QuickStats = () => {
               </div>
               <div className="text-right">
                 <div className="text-2xl font-bold bg-gradient-to-r from-orange-600 to-orange-700 bg-clip-text text-transparent">
-                  ${stats.savedMoney}
+                  LKR {stats.savedMoney?.toLocaleString()}
                 </div>
               </div>
             </div>
@@ -598,7 +598,7 @@ const RecentTasks = () => {
                     {getStatusText(task.status)}
                   </span>
                   <div className="text-2xl font-bold bg-gradient-to-r from-green-600 to-green-700 bg-clip-text text-transparent">
-                    ${task.amount}
+                    LKR {task.amount?.toLocaleString()}
                   </div>
                 </div>
                 
@@ -625,16 +625,68 @@ const RecentTasks = () => {
 
 
 const PopularCategories = () => {
-  const categories = [
-    { title: "Home Maintenance", tasks: "357 Open Tasks", icon: <FaTools className="w-8 h-8" />, color: "from-blue-500 to-blue-600" },
-    { title: "Repairs", tasks: "312 Open Tasks", icon: <FaWrench className="w-8 h-8" />, color: "from-green-500 to-green-600" },
-    { title: "Cleaning Services", tasks: "281 Open Tasks", icon: <FaBroom className="w-8 h-8" />, color: "from-purple-500 to-purple-600" },
-    { title: "Appliance Repair", tasks: "247 Open Tasks", icon: <FaCog className="w-8 h-8" />, color: "from-orange-500 to-orange-600" },
-    { title: "Installations", tasks: "204 Open Tasks", icon: <FaPlug className="w-8 h-8" />, color: "from-red-500 to-red-600" },
-    { title: "Handyman Services", tasks: "187 Open Tasks", icon: <FaHammer className="w-8 h-8" />, color: "from-indigo-500 to-indigo-600" },
-    { title: "Gardening", tasks: "125 Open Tasks", icon: <FaLeaf className="w-8 h-8" />, color: "from-emerald-500 to-emerald-600" },
-    { title: "Landscaping", tasks: "52 Open Tasks", icon: <FaTree className="w-8 h-8" />, color: "from-teal-500 to-teal-600" },
-  ];
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Define category metadata with icons and colors
+  const categoryMetadata = {
+    'Cleaning': { title: "Cleaning Services", icon: <FaBroom className="w-8 h-8" />, color: "from-purple-500 to-purple-600" },
+    'Repairing': { title: "Repairs", icon: <FaWrench className="w-8 h-8" />, color: "from-green-500 to-green-600" },
+    'Handyman': { title: "Handyman Services", icon: <FaHammer className="w-8 h-8" />, color: "from-indigo-500 to-indigo-600" },
+    'Maintenance': { title: "Home Maintenance", icon: <FaTools className="w-8 h-8" />, color: "from-blue-500 to-blue-600" },
+    'Gardening': { title: "Gardening", icon: <FaLeaf className="w-8 h-8" />, color: "from-emerald-500 to-emerald-600" },
+    'Landscaping': { title: "Landscaping", icon: <FaTree className="w-8 h-8" />, color: "from-teal-500 to-teal-600" },
+    'Installations': { title: "Installations", icon: <FaPlug className="w-8 h-8" />, color: "from-red-500 to-red-600" },
+    'Security': { title: "Security Services", icon: <FaCog className="w-8 h-8" />, color: "from-orange-500 to-orange-600" }
+  };
+
+  useEffect(() => {
+    const fetchCategoryStats = async () => {
+      try {
+        setLoading(true);
+        const response = await taskService.getCategoryStats();
+        
+        // Filter and map the categories we want to display
+        const displayCategories = ['Cleaning', 'Repairing', 'Handyman', 'Maintenance', 
+                                   'Gardening', 'Landscaping', 'Installations', 'Security'];
+        
+        const categoriesWithMetadata = displayCategories.map(categoryName => {
+          const categoryData = response.data.find(cat => cat.category === categoryName);
+          const count = categoryData ? categoryData.count : 0;
+          const metadata = categoryMetadata[categoryName];
+          
+          return {
+            title: metadata.title,
+            tasks: `${count} Open Tasks`,
+            count: count,
+            icon: metadata.icon,
+            color: metadata.color
+          };
+        });
+        
+        setCategories(categoriesWithMetadata);
+      } catch (err) {
+        console.error('Error fetching category stats:', err);
+        
+        // Fallback to static data if API fails
+        const fallbackCategories = Object.keys(categoryMetadata).map(categoryName => {
+          const metadata = categoryMetadata[categoryName];
+          return {
+            title: metadata.title,
+            tasks: "0 Open Tasks",
+            count: 0,
+            icon: metadata.icon,
+            color: metadata.color
+          };
+        });
+        setCategories(fallbackCategories);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCategoryStats();
+  }, []);
 
   return (
     <section className="py-10 bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20 relative">
@@ -662,21 +714,33 @@ const PopularCategories = () => {
             </svg>
           </Link>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {categories.map((category, index) => (
-                          <div key={index} className="group bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer">
-              <div className={`p-4 bg-gradient-to-r ${category.color} rounded-xl shadow-lg mb-6 w-fit`}>
-                <div className="text-white">
-                  {category.icon}
-                </div>
+        {loading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[...Array(8)].map((_, index) => (
+              <div key={index} className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20 animate-pulse">
+                <div className="w-16 h-16 bg-gray-300 rounded-xl mb-6"></div>
+                <div className="h-6 bg-gray-300 rounded mb-2"></div>
+                <div className="h-4 bg-gray-200 rounded w-2/3"></div>
               </div>
-              <h3 className="font-bold text-xl text-slate-800 group-hover:text-blue-600 transition-colors mb-2">
-                {category.title}
-              </h3>
-              <p className="text-slate-600 font-medium">{category.tasks}</p>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {categories.map((category, index) => (
+              <div key={index} className="group bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer">
+                <div className={`p-4 bg-gradient-to-r ${category.color} rounded-xl shadow-lg mb-6 w-fit`}>
+                  <div className="text-white">
+                    {category.icon}
+                  </div>
+                </div>
+                <h3 className="font-bold text-xl text-slate-800 group-hover:text-blue-600 transition-colors mb-2">
+                  {category.title}
+                </h3>
+                <p className="text-slate-600 font-medium">{category.tasks}</p>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );

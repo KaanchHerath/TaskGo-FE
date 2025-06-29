@@ -38,7 +38,7 @@ const ConfirmScheduleModal = ({
 
     const payment = parseFloat(formData.confirmedPayment);
     if (isNaN(payment) || payment < task.minPayment || payment > task.maxPayment) {
-      setError(`Payment must be between $${task.minPayment} and $${task.maxPayment}`);
+      setError(`Payment must be between LKR ${task.minPayment?.toLocaleString()} and LKR ${task.maxPayment?.toLocaleString()}`);
       return;
     }
 
@@ -102,7 +102,7 @@ const ConfirmScheduleModal = ({
           <h4 className="font-semibold text-slate-800 mb-2">{task?.title}</h4>
           <div className="text-sm text-slate-600 space-y-1">
             <p>Available: {new Date(task?.startDate).toLocaleDateString()} - {new Date(task?.endDate).toLocaleDateString()}</p>
-            <p>Payment Range: ${task?.minPayment} - ${task?.maxPayment}</p>
+            <p>Payment Range: LKR {task?.minPayment?.toLocaleString()} - LKR {task?.maxPayment?.toLocaleString()}</p>
           </div>
         </div>
 
@@ -131,7 +131,7 @@ const ConfirmScheduleModal = ({
             Proposed Payment
           </label>
           <div className="relative">
-            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500 font-medium">$</span>
+            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500 font-medium">LKR</span>
             <input
               type="number"
               name="confirmedPayment"
@@ -141,12 +141,12 @@ const ConfirmScheduleModal = ({
               max={task?.maxPayment}
               step="0.01"
               placeholder={`${task?.minPayment} - ${task?.maxPayment}`}
-              className="w-full pl-8 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
               required
             />
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            Must be between ${task?.minPayment} and ${task?.maxPayment}
+            Must be between LKR {task?.minPayment?.toLocaleString()} and LKR {task?.maxPayment?.toLocaleString()}
           </p>
         </div>
 
