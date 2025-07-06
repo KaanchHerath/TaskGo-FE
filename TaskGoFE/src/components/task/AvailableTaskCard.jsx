@@ -1,11 +1,9 @@
 import React from 'react';
-import { FaUser, FaMapMarkerAlt, FaClock, FaUsers, FaEye, FaHeart, FaTools, FaWrench, FaBroom, FaCog, FaPlug, FaHammer, FaLeaf, FaTree, FaTruck, FaPaintBrush, FaLaptop } from 'react-icons/fa';
+import { FaUser, FaMapMarkerAlt, FaClock, FaUsers, FaTools, FaWrench, FaBroom, FaCog, FaPlug, FaHammer, FaLeaf, FaTree, FaTruck, FaPaintBrush, FaLaptop } from 'react-icons/fa';
 
 const AvailableTaskCard = ({ 
   task, 
   onTaskClick, 
-  onSaveTask, 
-  savedTasks = new Set(),
   formatDate 
 }) => {
   const getCategoryIcon = (category) => {
@@ -38,29 +36,7 @@ const AvailableTaskCard = ({
     }
   };
 
-  const getUrgencyColor = (endDate) => {
-    const now = new Date();
-    const end = new Date(endDate);
-    const diffDays = Math.ceil((end - now) / (1000 * 60 * 60 * 24));
-    
-    if (diffDays <= 1) {
-      return 'bg-gradient-to-r from-red-100 to-red-200 text-red-800 border border-red-300';
-    } else if (diffDays <= 3) {
-      return 'bg-gradient-to-r from-yellow-100 to-yellow-200 text-yellow-800 border border-yellow-300';
-    } else {
-      return 'bg-gradient-to-r from-green-100 to-green-200 text-green-800 border border-green-300';
-    }
-  };
 
-  const getUrgencyLabel = (endDate) => {
-    const now = new Date();
-    const end = new Date(endDate);
-    const diffDays = Math.ceil((end - now) / (1000 * 60 * 60 * 24));
-    
-    if (diffDays <= 1) return 'urgent';
-    if (diffDays <= 3) return 'medium';
-    return 'low';
-  };
 
   const categoryInfo = getCategoryIcon(task.category);
   const CategoryIcon = categoryInfo.icon;
@@ -82,9 +58,6 @@ const AvailableTaskCard = ({
               <div className="flex gap-2 mt-2">
                 <span className="bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 px-3 py-1 rounded-xl text-xs font-semibold border border-blue-200">
                   {task.category}
-                </span>
-                <span className={`px-3 py-1 rounded-xl text-xs font-semibold ${getUrgencyColor(task.endDate)}`}>
-                  {getUrgencyLabel(task.endDate)}
                 </span>
               </div>
             </div>
@@ -124,12 +97,6 @@ const AvailableTaskCard = ({
               className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-5 py-2.5 rounded-xl font-semibold shadow-lg"
             >
               View
-            </button>
-            <button 
-              onClick={(e) => onSaveTask(task._id, e)}
-              className="bg-white/80 backdrop-blur-sm border-2 border-blue-600/30 text-blue-600 p-2.5 rounded-xl shadow-lg"
-            >
-              {savedTasks.has(task._id) ? <FaHeart /> : <FaEye />}
             </button>
           </div>
         </div>

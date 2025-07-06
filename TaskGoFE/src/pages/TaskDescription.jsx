@@ -85,7 +85,7 @@ const TaskDescription = () => {
     const diffInHours = Math.floor((now - date) / (1000 * 60 * 60));
     
     if (diffInHours < 1) return 'Just now';
-    if (diffInHours < 24) return `${diffInHours} hours ago`;
+    if (diffInHours < 24) return `${diffInHours} hour(s) ago`;
     
     const diffInDays = Math.floor(diffInHours / 24);
     if (diffInDays < 7) return `${diffInDays} days ago`;

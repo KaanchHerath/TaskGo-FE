@@ -37,6 +37,11 @@ import TaskerTaskView from "./pages/tasker/TaskerTaskView";
 // Admin Pages
 import AdminDashboard from "./pages/admin/Dashboard";
 
+// Payment Pages
+import PaymentSuccess from "./pages/PaymentSuccess";
+import PaymentFailed from "./pages/PaymentFailed";
+import PaymentCancelled from "./pages/PaymentCancelled";
+
 // Components
 import PrivateRoute from "./components/common/PrivateRoute";
 
@@ -68,6 +73,11 @@ function App() {
           <Route path="/signup" element={<SignupSelection />} />
           <Route path="/signup/customer" element={<CustomerSignup />} />
           <Route path="/signup/tasker" element={<TaskerSignup />} />
+
+          {/* Payment Routes */}
+          <Route path="/payment/success" element={<PaymentSuccess />} />
+          <Route path="/payment/failed" element={<PaymentFailed />} />
+          <Route path="/payment/cancelled" element={<PaymentCancelled />} />
 
           {/* Customer Protected Routes */}
           <Route element={<PrivateRoute allowedRoles={["customer"]} />}>

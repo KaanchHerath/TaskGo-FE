@@ -21,6 +21,7 @@ import TaskChatWindow from '../../components/task/TaskChatWindow';
 import ConfirmScheduleModal from '../../components/task/ConfirmScheduleModal';
 import { getTask, markTaskComplete, cancelScheduledTask } from '../../services/api/taskService';
 import { useToast, ToastContainer } from '../../components/common/Toast';
+import { getMyApplications } from '../../services/api/taskService';
 
 // Helper function to get current user from token
 const getCurrentUser = () => {
@@ -81,25 +82,11 @@ const TaskerTaskView = () => {
       
       // Fetch the current user's application for this task separately
       try {
-        const token = localStorage.getItem('token');
-        const applicationResponse = await fetch(`http://localhost:5000/api/v1/tasks/my-applications`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        if (applicationResponse.ok) {
-          const applicationData = await applicationResponse.json();
-          const userApplication = applicationData.data?.find(
-            app => app.task._id === taskId
-          );
-          
-          console.log('🔍 DEBUG - All Applications:', applicationData.data);
-          console.log('🔍 DEBUG - User Application for this task:', userApplication);
-          
-          setApplication(userApplication);
-        }
+        const applicationData = await getMyApplications();
+        const userApplication = applicationData.data?.find(
+          app => app.task._id === taskId
+        );
+        setApplication(userApplication);
       } catch (appError) {
         console.error('Error fetching applications:', appError);
         // Don't set error state for application fetch failure
@@ -560,7 +547,7 @@ const TaskerTaskView = () => {
                 {task.status !== 'completed' && (
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">Applications:</span>
-                    <span className="font-medium">{task.applications?.length || 0}</span>
+                    <span className="font-medium">{task.applicationCount || 0}</span>
                   </div>
                 )}
 

@@ -1,4 +1,10 @@
 import axiosInstance from './axiosConfig';
+import { useMemo } from 'react';
+import { PROVINCES, DISTRICTS } from '../../config/locations';
+
+// ============================================================================
+// CONSTANTS & CONFIGURATION
+// ============================================================================
 
 // Task categories for the dropdown
 export const TASK_CATEGORIES = [
@@ -19,63 +25,15 @@ export const TASK_CATEGORIES = [
   'Other'
 ];
 
-// Sri Lankan districts for area selection (kept the same export name for backward compatibility)
-export const CANADIAN_PROVINCES = [
-  'Colombo',
-  'Gampaha',
-  'Kalutara',
-  'Kandy',
-  'Matale',
-  'Nuwara Eliya',
-  'Galle',
-  'Matara',
-  'Hambantota',
-  'Jaffna',
-  'Kilinochchi',
-  'Mannar',
-  'Vavuniya',
-  'Mullaitivu',
-  'Batticaloa',
-  'Ampara',
-  'Trincomalee',
-  'Kurunegala',
-  'Puttalam',
-  'Anuradhapura',
-  'Polonnaruwa',
-  'Badulla',
-  'Moneragala',
-  'Ratnapura',
-  'Kegalle'
-];
+// ============================================================================
+// PUBLIC TASK OPERATIONS (Available to all users)
+// ============================================================================
 
-// Create a new task
-export const createTask = async (taskData) => {
-  try {
-    const response = await axiosInstance.post('/v1/tasks', taskData);
-    return response.data;
-  } catch (error) {
-    console.error('Error creating task:', error);
-    throw error;
-  }
-};
-
-// Create a targeted task for a specific tasker
-export const createTargetedTask = async (taskData, targetedTaskerId) => {
-  try {
-    const targetedTaskData = {
-      ...taskData,
-      targetedTasker: targetedTaskerId,
-      isTargeted: true
-    };
-    const response = await axiosInstance.post('/v1/tasks', targetedTaskData);
-    return response.data;
-  } catch (error) {
-    console.error('Error creating targeted task:', error);
-    throw error;
-  }
-};
-
-// Get all tasks with filters
+/**
+ * Get all available tasks with filters and pagination
+ * @param {Object} filters - Filter options
+ * @returns {Promise<Object>} Tasks data with pagination
+ */
 export const getTasks = async (filters = {}) => {
   try {
     const params = new URLSearchParams();
@@ -89,7 +47,7 @@ export const getTasks = async (filters = {}) => {
     if (filters.page) params.append('page', filters.page);
     if (filters.limit) params.append('limit', filters.limit);
 
-    const response = await axiosInstance.get(`/v1/tasks?${params.toString()}`);
+    const response = await axiosInstance.get(`/tasks?${params.toString()}`);
     return response.data;
   } catch (error) {
     console.error('Error fetching tasks:', error);
@@ -97,21 +55,14 @@ export const getTasks = async (filters = {}) => {
   }
 };
 
-// Get category statistics
-export const getCategoryStats = async () => {
-  try {
-    const response = await axiosInstance.get('/v1/tasks/category-stats');
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching category stats:', error);
-    throw error;
-  }
-};
-
-// Get single task
+/**
+ * Get a single task by ID
+ * @param {string} taskId - Task ID
+ * @returns {Promise<Object>} Task data
+ */
 export const getTask = async (taskId) => {
   try {
-    const response = await axiosInstance.get(`/v1/tasks/${taskId}`);
+    const response = await axiosInstance.get(`/tasks/${taskId}`);
     return response.data;
   } catch (error) {
     console.error('Error fetching task:', error);
@@ -119,22 +70,75 @@ export const getTask = async (taskId) => {
   }
 };
 
-// Apply for a task
-export const applyForTask = async (taskId, applicationData) => {
+/**
+ * Get category statistics
+ * @returns {Promise<Object>} Category statistics
+ */
+export const getCategoryStats = async () => {
   try {
-    const response = await axiosInstance.post(`/v1/tasks/${taskId}/apply`, applicationData);
+    const response = await axiosInstance.get('/tasks/category-stats');
     return response.data;
   } catch (error) {
-    console.error('Error applying for task:', error);
+    console.error('Error fetching category stats:', error);
     throw error;
   }
 };
 
-// Get applications for a task (task owner only)
+// Memoized version of getCategoryStats for use in components
+export const useCategoryStats = () => {
+  return useMemo(() => getCategoryStats, []);
+};
+
+// ============================================================================
+// CUSTOMER OPERATIONS (Task creation and management)
+// ============================================================================
+
+/**
+ * Create a new task
+ * @param {Object} taskData - Task data
+ * @returns {Promise<Object>} Created task data
+ */
+export const createTask = async (taskData) => {
+  try {
+    const response = await axiosInstance.post('/tasks', taskData);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating task:', error);
+    throw error;
+  }
+};
+
+/**
+ * Create a targeted task for a specific tasker
+ * @param {Object} taskData - Task data
+ * @param {string} targetedTaskerId - Target tasker ID
+ * @returns {Promise<Object>} Created targeted task data
+ */
+export const createTargetedTask = async (taskData, targetedTaskerId) => {
+  try {
+    const targetedTaskData = {
+      ...taskData,
+      targetedTasker: targetedTaskerId,
+      isTargeted: true
+    };
+    const response = await axiosInstance.post('/tasks', targetedTaskData);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating targeted task:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get applications for a task (task owner only)
+ * @param {string} taskId - Task ID
+ * @param {string} status - Optional status filter
+ * @returns {Promise<Object>} Applications data
+ */
 export const getTaskApplications = async (taskId, status = '') => {
   try {
     const params = status ? `?status=${status}` : '';
-    const response = await axiosInstance.get(`/v1/tasks/${taskId}/applications${params}`);
+    const response = await axiosInstance.get(`/tasks/${taskId}/applications${params}`);
     return response.data;
   } catch (error) {
     console.error('Error fetching task applications:', error);
@@ -142,10 +146,17 @@ export const getTaskApplications = async (taskId, status = '') => {
   }
 };
 
-// Select tasker for task
+/**
+ * Select a tasker for a task
+ * @param {string} taskId - Task ID
+ * @param {string} taskerId - Tasker ID
+ * @param {string} agreedTime - Agreed time
+ * @param {number} agreedPayment - Agreed payment
+ * @returns {Promise<Object>} Updated task data
+ */
 export const selectTasker = async (taskId, taskerId, agreedTime, agreedPayment) => {
   try {
-    const response = await axiosInstance.post(`/v1/tasks/${taskId}/select-tasker`, {
+    const response = await axiosInstance.post(`/tasks/${taskId}/select-tasker`, {
       taskerId,
       agreedTime,
       agreedPayment
@@ -157,35 +168,16 @@ export const selectTasker = async (taskId, taskerId, agreedTime, agreedPayment) 
   }
 };
 
-// Confirm time and payment (tasker)
-export const confirmTime = async (taskId, confirmedTime, confirmedPayment) => {
-  try {
-    const response = await axiosInstance.post(`/v1/tasks/${taskId}/confirm-time`, {
-      confirmedTime,
-      confirmedPayment
-    });
-    return response.data;
-  } catch (error) {
-    console.error('Error confirming time:', error);
-    throw error;
-  }
-};
-
-// Confirm schedule (tasker)
-export const confirmSchedule = async (taskId) => {
-  try {
-    const response = await axiosInstance.post(`/v1/tasks/${taskId}/confirm-schedule`);
-    return response.data;
-  } catch (error) {
-    console.error('Error confirming schedule:', error);
-    throw error;
-  }
-};
-
-// Complete task (customer)
+/**
+ * Complete a task with rating and review (customer)
+ * @param {string} taskId - Task ID
+ * @param {number} rating - Rating (1-5)
+ * @param {string} review - Review text
+ * @returns {Promise<Object>} Completed task data
+ */
 export const completeTask = async (taskId, rating, review) => {
   try {
-    const response = await axiosInstance.post(`/v1/tasks/${taskId}/complete`, {
+    const response = await axiosInstance.post(`/tasks/${taskId}/complete`, {
       rating,
       review
     });
@@ -196,10 +188,93 @@ export const completeTask = async (taskId, rating, review) => {
   }
 };
 
-// Tasker complete task
+/**
+ * Get tasks by customer ID
+ * @param {string} customerId - Customer ID
+ * @param {Object} options - Query options
+ * @returns {Promise<Object>} Customer tasks data
+ */
+export const getTasksByCustomerId = async (customerId, options = {}) => {
+  try {
+    const { status, page = 1, limit = 10 } = options;
+    const params = new URLSearchParams();
+    
+    if (status) params.append('status', status);
+    params.append('page', page);
+    params.append('limit', limit);
+
+    const response = await axiosInstance.get(`/tasks/customer/${customerId}?${params.toString()}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching tasks by customer ID:', error);
+    throw error;
+  }
+};
+
+// ============================================================================
+// TASKER OPERATIONS (Task applications and completion)
+// ============================================================================
+
+/**
+ * Apply for a task
+ * @param {string} taskId - Task ID
+ * @param {Object} applicationData - Application data
+ * @returns {Promise<Object>} Application data
+ */
+export const applyForTask = async (taskId, applicationData) => {
+  try {
+    const response = await axiosInstance.post(`/tasks/${taskId}/apply`, applicationData);
+    return response.data;
+  } catch (error) {
+    console.error('Error applying for task:', error);
+    throw error;
+  }
+};
+
+/**
+ * Confirm time and payment (tasker)
+ * @param {string} taskId - Task ID
+ * @param {string} confirmedTime - Confirmed time
+ * @param {number} confirmedPayment - Confirmed payment
+ * @returns {Promise<Object>} Updated application data
+ */
+export const confirmTime = async (taskId, confirmedTime, confirmedPayment) => {
+  try {
+    const response = await axiosInstance.post(`/tasks/${taskId}/confirm-time`, {
+      confirmedTime,
+      confirmedPayment
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error confirming time:', error);
+    throw error;
+  }
+};
+
+/**
+ * Confirm schedule (tasker)
+ * @param {string} taskId - Task ID
+ * @returns {Promise<Object>} Updated task data
+ */
+export const confirmSchedule = async (taskId) => {
+  try {
+    const response = await axiosInstance.post(`/tasks/${taskId}/confirm-schedule`);
+    return response.data;
+  } catch (error) {
+    console.error('Error confirming schedule:', error);
+    throw error;
+  }
+};
+
+/**
+ * Mark task as complete (tasker)
+ * @param {string} taskId - Task ID
+ * @param {Object} completionData - Completion data
+ * @returns {Promise<Object>} Updated task data
+ */
 export const taskerCompleteTask = async (taskId, completionData) => {
   try {
-    const response = await axiosInstance.post(`/v1/tasks/${taskId}/tasker-complete`, completionData);
+    const response = await axiosInstance.post(`/tasks/${taskId}/tasker-complete`, completionData);
     return response.data;
   } catch (error) {
     console.error('Error marking task complete:', error);
@@ -207,10 +282,19 @@ export const taskerCompleteTask = async (taskId, completionData) => {
   }
 };
 
-// Mark scheduled task as complete (customer or tasker)
+// ============================================================================
+// SHARED OPERATIONS (Both customer and tasker)
+// ============================================================================
+
+/**
+ * Mark scheduled task as complete (customer or tasker)
+ * @param {string} taskId - Task ID
+ * @param {Object} completionData - Completion data
+ * @returns {Promise<Object>} Updated task data
+ */
 export const markTaskComplete = async (taskId, completionData) => {
   try {
-    const response = await axiosInstance.post(`/v1/tasks/${taskId}/mark-complete`, completionData);
+    const response = await axiosInstance.post(`/tasks/${taskId}/mark-complete`, completionData);
     return response.data;
   } catch (error) {
     console.error('Error marking task complete:', error);
@@ -218,10 +302,15 @@ export const markTaskComplete = async (taskId, completionData) => {
   }
 };
 
-// Cancel scheduled task (customer or tasker)
+/**
+ * Cancel scheduled task (customer or tasker)
+ * @param {string} taskId - Task ID
+ * @param {string} reason - Cancellation reason
+ * @returns {Promise<Object>} Updated task data
+ */
 export const cancelScheduledTask = async (taskId, reason) => {
   try {
-    const response = await axiosInstance.post(`/v1/tasks/${taskId}/cancel-schedule`, {
+    const response = await axiosInstance.post(`/tasks/${taskId}/cancel-schedule`, {
       reason
     });
     return response.data;
@@ -231,7 +320,15 @@ export const cancelScheduledTask = async (taskId, reason) => {
   }
 };
 
-// Upload task photos
+// ============================================================================
+// FILE UPLOAD OPERATIONS
+// ============================================================================
+
+/**
+ * Upload task photos
+ * @param {File[]} files - Array of photo files
+ * @returns {Promise<Object>} Upload response with photo URLs
+ */
 export const uploadTaskPhotos = async (files) => {
   try {
     const formData = new FormData();
@@ -241,7 +338,7 @@ export const uploadTaskPhotos = async (files) => {
       formData.append('photos', files[i]);
     }
     
-    const response = await axiosInstance.post('/v1/tasks/upload-photos', formData, {
+    const response = await axiosInstance.post('/tasks/upload-photos', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
@@ -253,13 +350,17 @@ export const uploadTaskPhotos = async (files) => {
   }
 };
 
-// Upload completion photos
+/**
+ * Upload completion photo
+ * @param {File} file - Photo file
+ * @returns {Promise<Object>} Upload response with photo URL
+ */
 export const uploadCompletionPhoto = async (file) => {
   try {
     const formData = new FormData();
     formData.append('photo', file);
     
-    const response = await axiosInstance.post('/v1/tasks/upload-completion-photo', formData, {
+    const response = await axiosInstance.post('/tasks/upload-completion-photo', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
@@ -271,11 +372,19 @@ export const uploadCompletionPhoto = async (file) => {
   }
 };
 
-// Get user's tasks
+// ============================================================================
+// USER-SPECIFIC OPERATIONS 
+// ============================================================================
+
+/**
+ * Get current user's tasks
+ * @param {string} status - Optional status filter
+ * @returns {Promise<Object>} User's tasks data
+ */
 export const getMyTasks = async (status = '') => {
   try {
     const params = status ? `?status=${status}` : '';
-    const response = await axiosInstance.get(`/v1/tasks/my-tasks${params}`);
+    const response = await axiosInstance.get(`/tasks/my-tasks${params}`);
     return response.data;
   } catch (error) {
     console.error('Error fetching my tasks:', error);
@@ -283,29 +392,15 @@ export const getMyTasks = async (status = '') => {
   }
 };
 
-// Get tasks by customer ID
-export const getTasksByCustomerId = async (customerId, options = {}) => {
-  try {
-    const { status, page = 1, limit = 10 } = options;
-    const params = new URLSearchParams();
-    
-    if (status) params.append('status', status);
-    params.append('page', page);
-    params.append('limit', limit);
-
-    const response = await axiosInstance.get(`/v1/tasks/customer/${customerId}?${params.toString()}`);
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching tasks by customer ID:', error);
-    throw error;
-  }
-};
-
-// Get user's applications
+/**
+ * Get current user's applications (tasker only)
+ * @param {string} status - Optional status filter
+ * @returns {Promise<Object>} User's applications data
+ */
 export const getMyApplications = async (status = '') => {
   try {
     const params = status ? `?status=${status}` : '';
-    const response = await axiosInstance.get(`/v1/tasks/my-applications${params}`);
+    const response = await axiosInstance.get(`/tasks/my-applications${params}`);
     return response.data;
   } catch (error) {
     console.error('Error fetching my applications:', error);
@@ -313,30 +408,82 @@ export const getMyApplications = async (status = '') => {
   }
 };
 
-// Alias methods for dashboard consistency
+/**
+ * Get available tasks for taskers (alias for getTasks with better naming)
+ * @param {Object} filters - Filter options
+ * @returns {Promise<Object>} Available tasks data
+ */
+export const getAvailableTasks = async (filters = {}) => {
+  return getTasks(filters);
+};
+
+/**
+ * Get the 3 most recent tasks for the current user (sorted by createdAt descending)
+ * @returns {Promise<Object>} Recent tasks data
+ */
+export const getMyRecentTasks = async () => {
+  const data = await getMyTasks();
+  const allTasks = data.data || [];
+  // Sort by createdAt descending and take the first 3
+  const recentTasks = allTasks
+    .slice()
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    .slice(0, 3);
+  return { data: recentTasks };
+};
+
+// ============================================================================
+// ALIASES FOR BACKWARD COMPATIBILITY
+// ============================================================================
+
 export const getUserTasks = getMyTasks;
 export const getTaskerTasks = getMyTasks;
 export const getTaskerApplications = getMyApplications;
 
-// Default export with all methods
+// ============================================================================
+// DEFAULT EXPORT
+// ============================================================================
+
 export const taskService = {
-  createTask,
+  // Constants
+  TASK_CATEGORIES,
+  
+  // Public operations
   getTasks,
-  getCategoryStats,
   getTask,
-  applyForTask,
+  getCategoryStats,
+  useCategoryStats,
+  
+  // Customer operations
+  createTask,
+  createTargetedTask,
   getTaskApplications,
   selectTasker,
+  completeTask,
+  getTasksByCustomerId,
+  
+  // Tasker operations
+  applyForTask,
   confirmTime,
   confirmSchedule,
-  completeTask,
   taskerCompleteTask,
+  
+  // Shared operations
+  markTaskComplete,
+  cancelScheduledTask,
+  
+  // File uploads
+  uploadTaskPhotos,
+  uploadCompletionPhoto,
+  
+  // User-specific operations
   getMyTasks,
   getMyApplications,
+  getAvailableTasks,
+  getMyRecentTasks,
+  
+  // Aliases
   getUserTasks,
   getTaskerTasks,
-  getTaskerApplications,
-  TASK_CATEGORIES,
-  CANADIAN_PROVINCES,
-  getTasksByCustomerId
+  getTaskerApplications
 }; 

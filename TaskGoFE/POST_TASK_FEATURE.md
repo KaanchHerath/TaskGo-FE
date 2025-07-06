@@ -32,7 +32,7 @@ The Post Task feature has been completely redesigned and implemented with modern
 - **Success Flow**: Success screen with automatic redirect to tasks listing
 
 ### 🔌 API Integration
-- **Task Creation**: Full integration with `/api/v1/tasks` endpoint
+- **Task Creation**: Full integration with `/api/tasks` endpoint
 - **Authentication**: Automatic token handling via axios interceptors
 - **Error Handling**: Proper API error handling and user feedback
 - **Data Transformation**: Proper data formatting before API submission
@@ -169,7 +169,7 @@ All Canadian provinces and territories:
 5. **Authentication**: Test with and without valid tokens
 
 ## 🔄 Integration with Backend
-- **Endpoint**: `POST /api/v1/tasks`
+- **Endpoint**: `POST /api/tasks`
 - **Authentication**: Bearer token required
 - **Response**: Task object with generated ID
 - **Error Handling**: Proper HTTP status codes and messages

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaTasks, FaUser, FaUsers, FaEye, FaEdit, FaTrash, FaCalendar, FaDollarSign, FaMapMarkerAlt, FaClock, FaCheckCircle, FaTimesCircle, FaHourglass, FaList, FaBars, FaUserCheck, FaStar, FaFileAlt, FaClipboardList, FaHandshake } from 'react-icons/fa';
+import { getMyTasks, getMyApplications } from '../../services/api/taskService';
 
 function parseJwt(token) {
   try {
@@ -43,37 +44,21 @@ const MyTasks = () => {
   const fetchMyTasks = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
       // Only apply status filter for status-specific tabs
       const statusTabs = ['cancelled'];
-      const statusFilter = statusTabs.includes(activeTab) ? `?status=${activeTab}` : '';
-      
-      const response = await fetch(`http://localhost:5000/api/v1/tasks/my-tasks${statusFilter}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch tasks');
-      }
-
-      const data = await response.json();
+      const statusFilter = statusTabs.includes(activeTab) ? activeTab : undefined;
+      const data = await getMyTasks(statusFilter);
       const allTasks = data.data || [];
-      
       if (userRole === 'tasker') {
         // For taskers, separate targeted tasks from selected tasks
         const targeted = allTasks.filter(task => task.isTargeted && task.targetedTasker);
         const selected = allTasks.filter(task => !task.isTargeted && task.selectedTasker);
-        
         setTargetedTasks(targeted);
         setTasks(selected);
       } else {
         // For customers, separate targeted tasks from regular tasks
         const targeted = allTasks.filter(task => task.isTargeted);
         const regular = allTasks.filter(task => !task.isTargeted);
-        
         setTargetedTasks(targeted);
         setTasks(regular);
       }
@@ -87,23 +72,10 @@ const MyTasks = () => {
 
   const fetchMyApplications = async () => {
     try {
-      const token = localStorage.getItem('token');
       // Only apply status filter for status-specific tabs
       const statusTabs = ['cancelled'];
-      const statusFilter = statusTabs.includes(activeTab) ? `?status=${activeTab}` : '';
-      
-      const response = await fetch(`http://localhost:5000/api/v1/tasks/my-applications${statusFilter}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch applications');
-      }
-
-      const data = await response.json();
+      const statusFilter = statusTabs.includes(activeTab) ? activeTab : undefined;
+      const data = await getMyApplications(statusFilter);
       setApplications(data.data || []);
     } catch (error) {
       console.error('Error fetching my applications:', error);

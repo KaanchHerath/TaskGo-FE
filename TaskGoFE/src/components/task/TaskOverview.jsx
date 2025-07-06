@@ -31,7 +31,7 @@ const TaskOverview = ({ task, formatDate }) => {
     {
       icon: FaRegHourglass,
       label: 'ESTIMATED DURATION:',
-      value: task.estimatedDuration ? `${task.estimatedDuration} hours` : 'Not specified'
+      value: task.estimatedDuration ? `${task.estimatedDuration} hour(s)` : 'Not specified'
     }
   ];
 

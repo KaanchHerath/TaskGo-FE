@@ -1,4 +1,6 @@
-const API_BASE_URL = 'http://localhost:5000';
+import { APP_CONFIG } from '../../config/appConfig';
+
+const API_BASE_URL = APP_CONFIG.API.BASE_URL;
 
 /**
  * Get user's profile information

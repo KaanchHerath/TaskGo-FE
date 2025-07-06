@@ -1,9 +1,11 @@
 import axios from 'axios';
+import { APP_CONFIG } from '../../config/appConfig';
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = `${APP_CONFIG.API.BASE_URL}/api`;
 
 const axiosInstance = axios.create({
   baseURL: API_URL,
+  timeout: APP_CONFIG.API.TIMEOUT,
   headers: {
     'Content-Type': 'application/json',
   }

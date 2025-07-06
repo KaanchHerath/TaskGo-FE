@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import React from "react";
 import { FaBriefcase, FaUsers, FaRegCalendarAlt, FaRegFileAlt } from "react-icons/fa";
+import { getDashboardStats } from '../../services/api/statsService';
 
 const StatsSection = () => {
   const [statsData, setStatsData] = useState({
@@ -13,14 +14,12 @@ const StatsSection = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/stats/dashboard');
-        const data = await response.json();
+        const data = await getDashboardStats();
         setStatsData(data);
       } catch (error) {
         console.error("Error fetching dashboard stats:", error);
       }
     };
-
     fetchStats();
   }, []);
 

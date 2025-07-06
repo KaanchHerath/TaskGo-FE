@@ -6,10 +6,13 @@ import {
   FaPlus, FaTimes, FaSave, FaSpinner, FaLock, FaExpand, FaDownload,
   FaFilePdf, FaImage
 } from 'react-icons/fa';
-import { changePassword } from '../../services/api/profileService';
+import { changePassword, getUserProfile, updateUserProfile } from '../../services/api/userService';
 import { updateTaskerAvailability } from '../../services/api/taskerService';
 import { useToast, ToastContainer } from '../../components/common/Toast';
 import Modal from '../../components/common/Modal';
+import { getMyTasks, getMyRecentTasks, getAvailableTasks } from '../../services/api/taskService';
+import { getTaskerReviews } from '../../services/api/taskerService';
+import { APP_CONFIG, formatCurrency, formatTimeAgo } from '../../config/appConfig';
 
 const TaskerProfile = () => {
   const [user, setUser] = useState(null);
@@ -66,29 +69,11 @@ const TaskerProfile = () => {
     }
   }, [user]);
 
-
-
-    const fetchProfile = async () => {
+  const fetchProfile = async () => {
     try {
       setLoading(true);
-        const token = localStorage.getItem('token');
-        if (!token) {
-          setError('Not logged in');
-          return;
-        }
-
-      const response = await fetch('http://localhost:5000/api/users/profile', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-
-        if (!response.ok) {
-        throw new Error('Failed to load profile');
-      }
-
-        const data = await response.json();
-        setUser(data);
-      
-      // Initialize form data
+      const data = await getUserProfile();
+      setUser(data);
       setFormData({
         fullName: data.fullName || '',
         email: data.email || '',
@@ -101,49 +86,37 @@ const TaskerProfile = () => {
         advancePaymentAmount: data.taskerProfile?.advancePaymentAmount || '',
         isAvailable: data.taskerProfile?.isAvailable || true
       });
-      } catch (err) {
+    } catch (err) {
       setError('Failed to load profile');
       showError('Failed to load profile');
-      } finally {
-        setLoading(false);
-      }
-    };
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchStatistics = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/v1/tasks/my-tasks', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        const tasks = data.data || [];
-        
-        const completedTasks = tasks.filter(t => t.status === 'completed').length;
-        const activeTasks = tasks.filter(t => t.status === 'active' || t.status === 'scheduled').length;
-        const totalTasks = tasks.length;
-        const totalEarnings = tasks
-          .filter(t => t.status === 'completed')
-          .reduce((sum, t) => sum + (t.agreedPrice || t.maxPayment || 0), 0);
-        
-        // Calculate response rate based on completion rate and activity
-        let responseRate = 0;
-        if (totalTasks > 0) {
-          const completionRate = (completedTasks / totalTasks) * 100;
-          // Base response rate on completion rate, with a minimum for active users
-          responseRate = Math.min(Math.max(completionRate, totalTasks > 0 ? 85 : 0), 100);
-        }
-        
-        setStatistics({
-          completedTasks,
-          activeTasks,
-          totalEarnings,
-          responseRate: Math.round(responseRate),
-          avgRating: user?.rating?.average || 0,
-          totalReviews: user?.rating?.count || 0
-        });
+      const data = await getMyTasks();
+      const tasks = data.data || [];
+      const completedTasks = tasks.filter(t => t.status === 'completed').length;
+      const activeTasks = tasks.filter(t => t.status === 'active' || t.status === 'scheduled').length;
+      const totalTasks = tasks.length;
+      const totalEarnings = tasks
+        .filter(t => t.status === 'completed')
+        .reduce((sum, t) => sum + (t.agreedPrice || t.maxPayment || 0), 0);
+      let responseRate = 0;
+      if (totalTasks > 0) {
+        const completionRate = (completedTasks / totalTasks) * 100;
+        responseRate = Math.min(Math.max(completionRate, totalTasks > 0 ? 85 : 0), 100);
       }
+      setStatistics({
+        completedTasks,
+        activeTasks,
+        totalEarnings,
+        responseRate: Math.round(responseRate),
+        avgRating: user?.rating?.average || 0,
+        totalReviews: user?.rating?.count || 0
+      });
     } catch (err) {
       console.error('Error fetching statistics:', err);
     }
@@ -151,15 +124,8 @@ const TaskerProfile = () => {
 
   const fetchRecentTasks = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/v1/tasks/my-tasks?limit=5', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setRecentTasks(data.data || []);
-      }
+      const data = await getMyRecentTasks();
+      setRecentTasks(data.data || []);
     } catch (err) {
       console.error('Error fetching recent tasks:', err);
     }
@@ -167,18 +133,10 @@ const TaskerProfile = () => {
 
   const fetchReviews = async () => {
     try {
-      const token = localStorage.getItem('token');
       const userId = user?._id;
       if (!userId) return;
-
-      const response = await fetch(`http://localhost:5000/api/v1/taskers/${userId}/reviews?limit=5`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setReviews(data.data || []);
-      }
+      const data = await getTaskerReviews(userId);
+      setReviews(data.data || []);
     } catch (err) {
       console.error('Error fetching reviews:', err);
     }
@@ -186,26 +144,18 @@ const TaskerProfile = () => {
 
   const fetchJobAlerts = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/v1/tasks/available?limit=10', {
-        headers: { 'Authorization': `Bearer ${token}` }
+      const data = await getAvailableTasks();
+      const tasks = data.data || [];
+      const userSkills = user?.taskerProfile?.skills || [];
+      const relevantTasks = tasks.filter(task => {
+        if (userSkills.length === 0) return true;
+        return userSkills.some(skill => 
+          task.title?.toLowerCase().includes(skill.toLowerCase()) ||
+          task.description?.toLowerCase().includes(skill.toLowerCase()) ||
+          task.category?.toLowerCase().includes(skill.toLowerCase())
+        );
       });
-      
-      if (response.ok) {
-        const data = await response.json();
-        // Filter tasks that match user's skills or are recent
-        const tasks = data.data || [];
-        const userSkills = user?.taskerProfile?.skills || [];
-        const relevantTasks = tasks.filter(task => {
-          if (userSkills.length === 0) return true;
-          return userSkills.some(skill => 
-            task.title?.toLowerCase().includes(skill.toLowerCase()) ||
-            task.description?.toLowerCase().includes(skill.toLowerCase()) ||
-            task.category?.toLowerCase().includes(skill.toLowerCase())
-          );
-        });
-        setJobAlerts(relevantTasks.slice(0, 6));
-      }
+      setJobAlerts(relevantTasks.slice(0, 6));
     } catch (err) {
       console.error('Error fetching job alerts:', err);
     }
@@ -267,24 +217,15 @@ const TaskerProfile = () => {
   const handleSave = async () => {
     try {
       setSaving(true);
-      const token = localStorage.getItem('token');
-      
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-
       // Validate token before making API call
-      if (!validateToken(token)) {
-        // Token is invalid or expired, redirect to login
+      const token = localStorage.getItem('token');
+      if (!token || !validateToken(token)) {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         showError('Your session has expired. Please log in again.');
-        setTimeout(() => {
-          window.location.href = '/login';
-        }, 2000);
+        setTimeout(() => { window.location.href = '/login'; }, 2000);
         return;
       }
-
       const updateData = {
         fullName: formData.fullName,
         phone: formData.phone,
@@ -295,39 +236,9 @@ const TaskerProfile = () => {
           area: formData.area,
           hourlyRate: formData.hourlyRate,
           advancePaymentAmount: formData.advancePaymentAmount
-          // Note: isAvailable is handled separately by handleAvailabilityChange
         }
       };
-
-      const response = await fetch('http://localhost:5000/api/users/profile', {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(updateData)
-      });
-
-      if (!response.ok) {
-        const errorData = await response.text();
-        
-        // Handle specific error cases
-        if (response.status === 401) {
-          // Token is invalid, redirect to login
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          showError('Your session has expired. Please log in again.');
-          setTimeout(() => {
-            window.location.href = '/login';
-          }, 2000);
-          return;
-        }
-        
-        throw new Error(`Failed to update profile: ${response.status} ${response.statusText}`);
-      }
-
-      const updatedUser = await response.json();
-      
+      const updatedUser = await updateUserProfile(updateData);
       setUser(updatedUser);
       setIsEditing(false);
       showSuccess('Profile updated successfully!');
@@ -362,24 +273,18 @@ const TaskerProfile = () => {
         showError('New passwords do not match');
         return;
       }
-
       // Validate password strength
       if (passwordData.newPassword.length < 8) {
         showError('Password must be at least 8 characters long');
         return;
       }
-
       setChangingPassword(true);
-      
       await changePassword(passwordData.currentPassword, passwordData.newPassword);
-      
-      // Clear form
       setPasswordData({
         currentPassword: '',
         newPassword: '',
         confirmPassword: ''
       });
-      
       showSuccess('Password changed successfully!');
     } catch (err) {
       showError(err.message || 'Failed to change password');
@@ -388,9 +293,7 @@ const TaskerProfile = () => {
     }
   };
 
-  const formatCurrency = (amount) => {
-    return `LKR ${amount?.toLocaleString()}`;
-  };
+  // Use the centralized formatCurrency function from appConfig
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -419,8 +322,8 @@ const TaskerProfile = () => {
   const getDocumentUrl = (docPath) => {
     // Handle both absolute and relative paths
     return docPath.includes('uploads/') 
-      ? `http://localhost:5000/${docPath}`
-      : `http://localhost:5000/uploads/tasker-docs/${docPath.split(/[\\\/]/).pop()}`;
+      ? `${APP_CONFIG.API.BASE_URL}/${docPath}`
+      : `${APP_CONFIG.API.BASE_URL}/uploads/tasker-docs/${docPath.split(/[\\\/]/).pop()}`;
   };
 
   const getFileType = (filename) => {
@@ -1106,7 +1009,7 @@ const TaskerProfile = () => {
                       )}
                       {isEditing && (
                         <p className="text-xs text-gray-500 mt-1">
-                          Recommended range: LKR 500 - 50,000 per hour
+                          Recommended range: {APP_CONFIG.CURRENCY.CODE} {APP_CONFIG.TASK.MIN_PAYMENT} - {APP_CONFIG.TASK.MAX_PAYMENT} per hour
                         </p>
                       )}
                     </div>
@@ -1143,16 +1046,9 @@ const TaskerProfile = () => {
                           className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         >
                           <option value="">No advance payment required</option>
-                          <option value="1000">LKR 1,000</option>
-                          <option value="2000">LKR 2,000</option>
-                          <option value="3000">LKR 3,000</option>
-                          <option value="5000">LKR 5,000</option>
-                          <option value="7500">LKR 7,500</option>
-                          <option value="10000">LKR 10,000</option>
-                          <option value="15000">LKR 15,000</option>
-                          <option value="20000">LKR 20,000</option>
-                          <option value="25000">LKR 25,000</option>
-                          <option value="30000">LKR 30,000</option>
+                          {APP_CONFIG.TASK.DEFAULT_PAYMENT_RANGES.map(range => (
+                            <option key={range.value} value={range.value}>{range.label}</option>
+                          ))}
                         </select>
                       ) : (
                         <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-slate-700">

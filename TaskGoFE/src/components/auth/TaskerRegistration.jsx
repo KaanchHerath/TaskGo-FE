@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaGoogle, FaApple, FaFacebook } from 'react-icons/fa'; // Assuming these icons are needed
-import { registerUser } from '../../api/auth';
+import { registerUser } from '../../services/api/authService';
+import { categoryMetadata, defaultCategories } from '../../config/categories';
+import { ALL_DISTRICTS } from '../../config/locations';
 
 function parseJwt(token) {
   try {
@@ -42,6 +44,7 @@ const TaskerRegistration = () => {
     fullName: '',
     emailOrPhone: '',
     password: '',
+    category: '',
     skills: '',
     country: '',
     area: '',
@@ -178,15 +181,21 @@ const TaskerRegistration = () => {
           {step === 2 && (
             <form className="space-y-4" onSubmit={handleNextStep}>
               <div>
+                <label className="block text-sm font-medium text-gray-700">Category</label>
+                <select name="category" className="w-full p-3 border rounded-lg" value={formData.category} onChange={handleChange}>
+                  <option value="">Select Category</option>
+                  {defaultCategories.map((cat) => (
+                    <option key={cat} value={cat}>{categoryMetadata[cat].title}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
                 <label className="block text-sm font-medium text-gray-700">Your skills</label>
-                <select name="skills" className="w-full p-3 border rounded-lg" value={formData.skills} onChange={handleChange}>
-                  <option value="">Skill</option>
-                  <option value="Plumber">Plumber</option>
-                  <option value="Electrician">Electrician</option>
-                  <option value="Gardener">Gardener</option>
-                  <option value="Cleaner">Cleaner</option>
-                  <option value="Repair">Repair</option>
-                  <option value="Maintainer">Maintainer</option>
+                <select name="skills" className="w-full p-3 border rounded-lg" value={formData.skills} onChange={handleChange} disabled={!formData.category}>
+                  <option value="">{formData.category ? 'Select Skill' : 'Select category first'}</option>
+                  {formData.category && categoryMetadata[formData.category]?.skills.map((skill) => (
+                    <option key={skill} value={skill}>{skill}</option>
+                  ))}
                 </select>
               </div>
               <div>
@@ -203,9 +212,9 @@ const TaskerRegistration = () => {
                 <label className="block text-sm font-medium text-gray-700">Area</label>
                 <select name="area" className="w-full p-3 border rounded-lg" value={formData.area} onChange={handleChange}>
                   <option value="">Select Area</option>
-                  <option value="Central Province">Central Province</option>
-                  <option value="Western Province">Western Province</option>
-                  <option value="Southern Province">Southern Province</option>
+                  {ALL_DISTRICTS.map(district => (
+                    <option key={district} value={district}>{district}</option>
+                  ))}
                 </select>
               </div>
               <div className="flex items-center">

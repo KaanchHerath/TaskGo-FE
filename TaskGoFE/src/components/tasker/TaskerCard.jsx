@@ -20,9 +20,9 @@ const TaskerCard = ({ tasker, onClick, showContactInfo = false, className = "" }
   const formatResponseTime = (hours) => {
     if (hours < 1) return '< 1 hour';
     if (hours === 1) return '1 hour';
-    if (hours < 24) return `${hours} hours`;
+    if (hours < 24) return `${hours} hour(s)`;
     const days = Math.ceil(hours / 24);
-    return `${days} day${days > 1 ? 's' : ''}`;
+    return `${days} day(s)`;
   };
 
   const handleHireSuccess = () => {
@@ -138,14 +138,6 @@ const TaskerCard = ({ tasker, onClick, showContactInfo = false, className = "" }
             <div className="text-xs text-slate-500 font-medium">Advance Payment</div>
           </div>
         </div>
-        <div className="text-center mt-3 pt-3 border-t border-slate-200">
-          <div className="flex items-center justify-center text-slate-600">
-            <FaClock className="text-blue-500 mr-2" />
-            <span className="text-sm font-medium">
-              Response: {formatResponseTime(tasker.avgResponseTime || 2)}
-            </span>
-          </div>
-        </div>
       </div>
 
       {/* Contact Info (if shown) */}
@@ -168,32 +160,16 @@ const TaskerCard = ({ tasker, onClick, showContactInfo = false, className = "" }
         </div>
       )}
 
-      {/* Response Rate Badge */}
-      {tasker.responseRate && tasker.responseRate >= 95 && (
-        <div className="mb-4">
-          <div className="inline-flex items-center bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 px-3 py-1 rounded-full text-sm font-semibold border border-green-200">
-            <FaCheckCircle className="mr-2" />
-            {tasker.responseRate}% Response Rate
-          </div>
-        </div>
-      )}
-      
       {/* Action Buttons */}
       <div className="flex gap-3">
         <button 
           className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 rounded-xl font-semibold shadow-lg"
-          onClick={handleHireClick}
-        >
-          {isLoggedIn() && isCustomer() ? 'Hire Now' : 'Login to Hire'}
-        </button>
-        <button 
-          className="px-4 bg-white/70 border-2 border-blue-600/30 text-blue-600 rounded-xl shadow-lg"
           onClick={(e) => {
             e.stopPropagation();
             navigate(`/taskers/${tasker._id}`);
           }}
         >
-          <FaEye className="text-lg" />
+          View
         </button>
       </div>
 

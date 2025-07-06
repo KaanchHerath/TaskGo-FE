@@ -19,6 +19,7 @@ import {
   FaEye
 } from 'react-icons/fa';
 import { useToast, ToastContainer } from '../../components/common/Toast';
+import { getTaskerProfile, getTaskerReviews } from '../../services/api/taskerService';
 
 const TaskerProfile = () => {
   const { id } = useParams();
@@ -42,13 +43,7 @@ const TaskerProfile = () => {
   const fetchTaskerProfile = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:5000/api/v1/taskers/${id}/profile`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch tasker profile');
-      }
-      
-      const data = await response.json();
+      const data = await getTaskerProfile(id);
       setTasker(data.data);
     } catch (err) {
       setError('Failed to load tasker profile');
@@ -62,13 +57,9 @@ const TaskerProfile = () => {
   const fetchTaskerReviews = async () => {
     try {
       setReviewsLoading(true);
-      const response = await fetch(`http://localhost:5000/api/v1/taskers/${id}/reviews?limit=10`);
-      
-      if (response.ok) {
-        const data = await response.json();
-        setReviews(data.data || []);
-        setReviewStats(data.statistics || null);
-      }
+      const data = await getTaskerReviews(id);
+      setReviews(data.data || []);
+      setReviewStats(data.statistics || null);
     } catch (err) {
       console.error('Error fetching reviews:', err);
     } finally {
@@ -92,7 +83,7 @@ const TaskerProfile = () => {
     const diffInHours = Math.floor((now - date) / (1000 * 60 * 60));
     
     if (diffInHours < 1) return 'Just now';
-    if (diffInHours < 24) return `${diffInHours} hours ago`;
+    if (diffInHours < 24) return `${diffInHours} hour(s) ago`;
     
     const diffInDays = Math.floor(diffInHours / 24);
     if (diffInDays < 7) return `${diffInDays} days ago`;

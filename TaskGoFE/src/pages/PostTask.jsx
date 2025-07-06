@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createTask, uploadTaskPhotos, TASK_CATEGORIES, CANADIAN_PROVINCES } from '../services/api/taskService';
+import { createTask, uploadTaskPhotos, TASK_CATEGORIES } from '../services/api/taskService';
+import { ALL_DISTRICTS } from '../config/locations';
 
 const PostTask = () => {
   const navigate = useNavigate();
@@ -162,7 +163,7 @@ const PostTask = () => {
       
       setSuccess(true);
       setTimeout(() => {
-        navigate('/tasks');
+        navigate('/my-tasks');
       }, 2000);
 
     } catch (err) {
@@ -303,7 +304,6 @@ const PostTask = () => {
                     Min Payment
                   </label>
                   <div className="relative">
-                    <span className="absolute left-3 top-3 text-gray-500">$</span>
                     <input
                       type="number"
                       id="minPayment"
@@ -317,7 +317,6 @@ const PostTask = () => {
                         errors.minPayment ? 'border-red-500' : 'border-gray-300'
                       }`}
                     />
-                    <span className="absolute right-3 top-3 text-gray-500">CAD</span>
                   </div>
                   {errors.minPayment && <p className="text-red-500 text-sm mt-1">{errors.minPayment}</p>}
                 </div>
@@ -327,7 +326,6 @@ const PostTask = () => {
                     Max Payment
                   </label>
                   <div className="relative">
-                    <span className="absolute left-3 top-3 text-gray-500">$</span>
                     <input
                       type="number"
                       id="maxPayment"
@@ -341,7 +339,6 @@ const PostTask = () => {
                         errors.maxPayment ? 'border-red-500' : 'border-gray-300'
                       }`}
                     />
-                    <span className="absolute right-3 top-3 text-gray-500">CAD</span>
                   </div>
                   {errors.maxPayment && <p className="text-red-500 text-sm mt-1">{errors.maxPayment}</p>}
                 </div>
@@ -372,8 +369,8 @@ const PostTask = () => {
                     }`}
                   >
                     <option value="">Select...</option>
-                    {CANADIAN_PROVINCES.map(province => (
-                      <option key={province} value={province}>{province}</option>
+                    {ALL_DISTRICTS.map(district => (
+                      <option key={district} value={district}>{district}</option>
                     ))}
                   </select>
                 </div>

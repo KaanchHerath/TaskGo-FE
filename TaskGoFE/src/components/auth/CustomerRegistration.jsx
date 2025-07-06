@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { registerUser } from '../../api/auth';
+import { registerUser } from '../../services/api/authService';
 
 function parseJwt(token) {
   try {

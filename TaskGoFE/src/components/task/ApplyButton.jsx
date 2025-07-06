@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { FaCheck, FaSpinner, FaDollarSign, FaStickyNote } from 'react-icons/fa';
 import Modal from '../common/Modal';
 
-const ApplyButton = ({ task, applying, onApply }) => {
+const ApplyButton = ({ task, applying, onApply, alreadyApplied = false }) => {
   const [showModal, setShowModal] = useState(false);
   const [applicationData, setApplicationData] = useState({
     proposedPayment: '',
@@ -108,19 +108,18 @@ const ApplyButton = ({ task, applying, onApply }) => {
           </p>
         </div>
 
-        <button 
+        <button
           onClick={() => setShowModal(true)}
-          disabled={applying}
+          disabled={applying || alreadyApplied}
           className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 font-semibold shadow-lg transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
         >
           <div className="flex items-center justify-center">
             <FaCheck className="mr-2" />
-            Apply for Task
+            {alreadyApplied ? 'Applied' : 'Apply for Task'}
           </div>
         </button>
-        
         <p className="text-xs text-slate-500 text-center mt-3">
-          Click to submit your application for this task
+          {alreadyApplied ? 'You have already applied for this task.' : 'Click to submit your application for this task'}
         </p>
       </div>
 

@@ -1,9 +1,9 @@
 import axiosInstance from './axiosConfig';
 
-// Send a new chat message
+// Send a message
 export const sendMessage = async (messageData) => {
   try {
-    const response = await axiosInstance.post('/v1/chat', messageData);
+    const response = await axiosInstance.post('/chat', messageData);
     return response.data;
   } catch (error) {
     console.error('Error sending message:', error);
@@ -11,26 +11,26 @@ export const sendMessage = async (messageData) => {
   }
 };
 
-// Get conversation between two users for a specific task
-export const getConversation = async (taskId, userId, options = {}) => {
+// Get messages for a specific task and user
+export const getMessages = async (taskId, userId, options = {}) => {
   try {
     const { page = 1, limit = 50 } = options;
     const params = new URLSearchParams();
     params.append('page', page);
     params.append('limit', limit);
 
-    const response = await axiosInstance.get(`/v1/chat/${taskId}/${userId}?${params.toString()}`);
+    const response = await axiosInstance.get(`/chat/${taskId}/${userId}?${params.toString()}`);
     return response.data;
   } catch (error) {
-    console.error('Error fetching conversation:', error);
+    console.error('Error fetching messages:', error);
     throw error;
   }
 };
 
-// Get unread message count for the authenticated user
+// Get unread message count
 export const getUnreadCount = async () => {
   try {
-    const response = await axiosInstance.get('/v1/chat/unread-count');
+    const response = await axiosInstance.get('/chat/unread-count');
     return response.data;
   } catch (error) {
     console.error('Error fetching unread count:', error);
@@ -41,7 +41,7 @@ export const getUnreadCount = async () => {
 // Mark messages as read for a specific task
 export const markMessagesAsRead = async (taskId) => {
   try {
-    const response = await axiosInstance.put(`/v1/chat/${taskId}/mark-read`);
+    const response = await axiosInstance.put(`/chat/${taskId}/mark-read`);
     return response.data;
   } catch (error) {
     console.error('Error marking messages as read:', error);
@@ -52,7 +52,7 @@ export const markMessagesAsRead = async (taskId) => {
 // Default export with all methods
 export const chatService = {
   sendMessage,
-  getConversation,
+  getMessages,
   getUnreadCount,
   markMessagesAsRead
 };

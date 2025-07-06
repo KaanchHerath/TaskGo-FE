@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { FaEdit, FaUser, FaEnvelope, FaPhone, FaMapMarkerAlt, FaTasks, FaStar } from 'react-icons/fa';
+import { getUserProfile } from '../../services/api/userService';
 
 const CustomerProfile = () => {
   const [user, setUser] = useState(null);
@@ -18,21 +19,7 @@ const CustomerProfile = () => {
           setLoading(false);
           return;
         }
-        const response = await fetch('/api/users/profile', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (!response.ok) {
-          if (response.status === 404) {
-            setError('User not found.');
-          } else if (response.status === 401) {
-            setError('Not authorized. Please log in again.');
-          } else {
-            setError('Failed to load profile.');
-          }
-          setLoading(false);
-          return;
-        }
-        const data = await response.json();
+        const data = await getUserProfile();
         setUser(data);
       } catch (err) {
         setError('An unexpected error occurred.');

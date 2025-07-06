@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FaArrowLeft, FaUsers, FaEye, FaCalendarAlt, FaDollarSign, FaMapMarkerAlt, FaClock, FaUser, FaCheckCircle, FaHourglass, FaTimesCircle, FaComments, FaCamera, FaStar, FaBriefcase, FaAward, FaUserTie } from 'react-icons/fa';
+import { FaArrowLeft, FaUsers, FaEye, FaCalendarAlt, FaDollarSign, FaMapMarkerAlt, FaClock, FaUser, FaCheckCircle, FaHourglass, FaTimesCircle, FaComments, FaCamera, FaStar, FaBriefcase, FaAward, FaUserTie, FaCheck, FaCreditCard } from 'react-icons/fa';
 import { getTask, applyForTask, getTaskApplications, markTaskComplete, cancelScheduledTask, selectTasker } from '../services/api/taskService';
 import { useToast, ToastContainer } from '../components/common/Toast';
 import TaskChatWindow from '../components/task/TaskChatWindow';
 import ApplyButton from '../components/task/ApplyButton';
+import { getTaskerProfile, getTaskerReviews } from '../services/api/taskerService';
+import Modal from '../components/common/Modal';
+import PaymentModal from '../components/common/PaymentModal';
 
 // Helper function to get current user from token
 const getCurrentUser = () => {
@@ -39,6 +42,8 @@ const TaskDetails = () => {
   const [taskerProfile, setTaskerProfile] = useState(null);
   const [taskerReviews, setTaskerReviews] = useState([]);
   const [loadingTaskerData, setLoadingTaskerData] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedApplication, setSelectedApplication] = useState(null);
   const currentUser = getCurrentUser();
 
   // Define computed values before useEffect hooks
@@ -51,6 +56,13 @@ const TaskDetails = () => {
   
   // Get the current tasker (either selected or targeted)
   const currentTasker = isTargetedTask ? task?.targetedTasker : task?.selectedTasker;
+
+  // Check if payment needs to be retried (task has selected tasker but no advance payment)
+  const needsPaymentRetry = task && 
+                           task.status === 'active' && 
+                           task.selectedTasker && 
+                           (!task.advancePaymentStatus || task.advancePaymentStatus === 'pending') &&
+                           isTaskOwner;
 
   useEffect(() => {
     fetchTaskDetails();
@@ -104,20 +116,12 @@ const TaskDetails = () => {
   const fetchTaskerProfile = async (taskerId) => {
     try {
       setLoadingTaskerData(true);
-      
       // Fetch tasker profile
-      const profileResponse = await fetch(`http://localhost:5000/api/v1/taskers/${taskerId}/profile`);
-      if (profileResponse.ok) {
-        const profileData = await profileResponse.json();
-        setTaskerProfile(profileData.data);
-      }
-
+      const profileData = await getTaskerProfile(taskerId);
+      setTaskerProfile(profileData.data);
       // Fetch tasker reviews/feedback
-      const reviewsResponse = await fetch(`http://localhost:5000/api/v1/taskers/${taskerId}/reviews`);
-      if (reviewsResponse.ok) {
-        const reviewsData = await reviewsResponse.json();
-        setTaskerReviews(reviewsData.data || []);
-      }
+      const reviewsData = await getTaskerReviews(taskerId);
+      setTaskerReviews(reviewsData.data || []);
     } catch (err) {
       console.error('Error fetching tasker profile:', err);
       // Don't show error for tasker profile as it's secondary content
@@ -180,15 +184,26 @@ const TaskDetails = () => {
 
     try {
       setActionLoading(true);
-      await selectTasker(
+
+      const response = await selectTasker(
         id, 
         application.tasker._id, 
         application.confirmedTime, 
         application.confirmedPayment
       );
       
-      showSuccess('Tasker selected successfully! The task has been scheduled.');
-      await fetchTaskDetails(); // Refresh task data
+      // Check if payment is required
+      if (response.requiresPayment) {
+        // Update task with the response data to ensure we have agreedPayment
+        setTask(response.data);
+        // Store the selected application and show payment modal
+        setSelectedApplication(application);
+        setShowPaymentModal(true);
+        showSuccess('Tasker selected! Please complete the advance payment to schedule the task.');
+      } else {
+        showSuccess('Tasker selected successfully! The task has been scheduled.');
+        await fetchTaskDetails(); // Refresh task data
+      }
       
     } catch (error) {
       console.error('Error selecting tasker:', error);
@@ -196,6 +211,15 @@ const TaskDetails = () => {
     } finally {
       setActionLoading(false);
     }
+  };
+
+  const handlePaymentSuccess = async (paymentData) => {
+    showSuccess('Payment successful! Your task has been scheduled.');
+    await fetchTaskDetails(); // Refresh task data
+  };
+
+  const handlePaymentError = (errorMessage) => {
+    showError(errorMessage || 'Payment failed. Please try again.');
   };
 
   const handleMarkComplete = async () => {
@@ -268,7 +292,7 @@ const TaskDetails = () => {
     const diffInHours = Math.floor((now - date) / (1000 * 60 * 60));
     
     if (diffInHours < 1) return 'Just now';
-    if (diffInHours < 24) return `${diffInHours} hours ago`;
+    if (diffInHours < 24) return `${diffInHours} hour(s) ago`;
     
     const diffInDays = Math.floor(diffInHours / 24);
     if (diffInDays < 7) return `${diffInDays} days ago`;
@@ -1086,6 +1110,59 @@ const TaskDetails = () => {
                 </div>
               </div>
             )}
+
+            {/* Retry Payment Section */}
+            {needsPaymentRetry && (
+              <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20">
+                <h3 className="text-lg font-bold mb-4 text-slate-800">Payment Required</h3>
+                
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <FaCreditCard className="text-orange-600" />
+                    <span className="font-medium text-orange-800">Advance Payment Pending</span>
+                  </div>
+                  <p className="text-sm text-orange-700 mb-3">
+                    You have selected a tasker for this task, but the advance payment is still pending. 
+                    Complete the payment to schedule the task.
+                  </p>
+                  
+                  {task.agreedPayment && (
+                    <div className="bg-white rounded-lg p-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Advance Payment (20%):</span>
+                        <span className="font-semibold text-orange-700">
+                          LKR {Math.round(task.agreedPayment * 0.2).toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center mt-1">
+                        <span className="text-sm text-gray-600">Total Agreed Payment:</span>
+                        <span className="font-semibold text-gray-800">
+                          LKR {task.agreedPayment.toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-3">
+                  <button
+                    onClick={() => setShowPaymentModal(true)}
+                    className="w-full px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors flex items-center justify-center space-x-2"
+                  >
+                    <FaCreditCard />
+                    <span>Complete Payment</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => setShowCancelModal(true)}
+                    className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center space-x-2"
+                  >
+                    <FaTimesCircle />
+                    <span>Cancel Selection</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Sidebar */}
@@ -1136,7 +1213,7 @@ const TaskDetails = () => {
                 {task.status !== 'completed' && !isTargetedTask && (
                   <div className="flex justify-between">
                     <span className="text-gray-600">Applications</span>
-                    <span className="font-medium text-gray-800">{applications.length}</span>
+                    <span className="font-medium text-gray-800">{task.applicationCount || 0}</span>
                   </div>
                 )}
                 {isTargetedTask && (
@@ -1158,13 +1235,26 @@ const TaskDetails = () => {
 
             {/* Apply Button for Taskers */}
             {canApply && (
-              <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20">
-                <ApplyButton
-                  task={task}
-                  onApply={handleApply}
-                  applying={applying}
-                />
-              </div>
+              !task?.hasApplied ? (
+                <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20">
+                  <ApplyButton
+                    task={task}
+                    onApply={handleApply}
+                    applying={applying}
+                    alreadyApplied={false}
+                  />
+                </div>
+              ) : (
+                <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20 text-center">
+                  <div className="flex flex-col items-center">
+                    <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center mb-4">
+                      <FaCheck className="text-2xl text-white" />
+                    </div>
+                    <h3 className="text-lg font-bold text-green-700 mb-2">You have already applied for this task</h3>
+                    <p className="text-sm text-slate-600">Your application is pending review by the customer.</p>
+                  </div>
+                </div>
+              )
             )}
 
             {/* Task Owner Actions - Regular Tasks */}
@@ -1337,169 +1427,167 @@ const TaskDetails = () => {
       )}
 
       {/* Complete Task Modal */}
-      {showCompleteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-gray-800">Mark Task as Complete</h3>
-                <button
-                  onClick={() => setShowCompleteModal(false)}
-                  className="text-gray-400 hover:text-gray-600 text-2xl"
-                >
-                  ×
-                </button>
+      <Modal
+        isOpen={showCompleteModal}
+        onClose={() => setShowCompleteModal(false)}
+        title="Mark Task as Complete"
+        subtitle="Confirm task completion and provide feedback"
+        icon={FaCheckCircle}
+        iconColor="text-green-600"
+        iconBgColor="bg-green-100"
+        maxWidth="max-w-md"
+      >
+        <div className="space-y-4">
+          {/* Show different fields based on user role */}
+          {isTaskOwner && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Rate the Tasker (1-5 stars)
+                </label>
+                <div className="flex space-x-1">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      onClick={() => setCompletionData({...completionData, rating: star})}
+                      className={`text-2xl ${
+                        star <= completionData.rating ? 'text-yellow-400' : 'text-gray-300'
+                      } hover:text-yellow-400 transition-colors`}
+                    >
+                      ★
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              <div className="space-y-4">
-                {/* Show different fields based on user role */}
-                {isTaskOwner && (
-                  <>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Rate the Tasker (1-5 stars)
-                      </label>
-                      <div className="flex space-x-1">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <button
-                            key={star}
-                            onClick={() => setCompletionData({...completionData, rating: star})}
-                            className={`text-2xl ${
-                              star <= completionData.rating ? 'text-yellow-400' : 'text-gray-300'
-                            } hover:text-yellow-400 transition-colors`}
-                          >
-                            ★
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Review (optional)
-                      </label>
-                      <textarea
-                        value={completionData.review}
-                        onChange={(e) => setCompletionData({...completionData, review: e.target.value})}
-                        placeholder="Share your experience with this tasker..."
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        rows="3"
-                      />
-                    </div>
-                  </>
-                )}
-
-                {currentUser && currentTasker && currentUser._id === currentTasker._id && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Completion Notes (optional)
-                    </label>
-                    <textarea
-                      value={completionData.completionNotes}
-                      onChange={(e) => setCompletionData({...completionData, completionNotes: e.target.value})}
-                      placeholder="Add any notes about the completed task..."
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      rows="3"
-                    />
-                  </div>
-                )}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Review (optional)
+                </label>
+                <textarea
+                  value={completionData.review}
+                  onChange={(e) => setCompletionData({...completionData, review: e.target.value})}
+                  placeholder="Share your experience with this tasker..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  rows="3"
+                />
               </div>
+            </>
+          )}
 
-              <div className="flex space-x-3 mt-6">
-                <button
-                  onClick={() => setShowCompleteModal(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                  disabled={actionLoading}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleMarkComplete}
-                  disabled={actionLoading}
-                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-                >
-                  {actionLoading ? (
-                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                  ) : (
-                    <>
-                      <FaCheckCircle />
-                      <span>Complete Task</span>
-                    </>
-                  )}
-                </button>
-              </div>
+          {currentUser && currentTasker && currentUser._id === currentTasker._id && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Completion Notes (optional)
+              </label>
+              <textarea
+                value={completionData.completionNotes}
+                onChange={(e) => setCompletionData({...completionData, completionNotes: e.target.value})}
+                placeholder="Add any notes about the completed task..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                rows="3"
+              />
             </div>
-          </div>
+          )}
         </div>
-      )}
+
+        <div className="flex space-x-3 mt-6">
+          <button
+            onClick={() => setShowCompleteModal(false)}
+            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+            disabled={actionLoading}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleMarkComplete}
+            disabled={actionLoading}
+            className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+          >
+            {actionLoading ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+            ) : (
+              <>
+                <FaCheckCircle />
+                <span>Complete Task</span>
+              </>
+            )}
+          </button>
+        </div>
+      </Modal>
 
       {/* Cancel Schedule Modal */}
-      {showCancelModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-gray-800">Cancel Schedule</h3>
-                <button
-                  onClick={() => setShowCancelModal(false)}
-                  className="text-gray-400 hover:text-gray-600 text-2xl"
-                >
-                  ×
-                </button>
-              </div>
-
-              <div className="mb-6">
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-                  <div className="flex items-center space-x-2">
-                    <FaTimesCircle className="text-red-600" />
-                    <span className="font-medium text-red-800">Cancel this scheduled task?</span>
-                  </div>
-                  <p className="text-sm text-red-700 mt-1">
-                    This will make the task active again and remove the current schedule.
-                  </p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Reason for cancellation (optional)
-                  </label>
-                  <textarea
-                    value={cancellationReason}
-                    onChange={(e) => setCancellationReason(e.target.value)}
-                    placeholder="Please provide a reason for canceling the schedule..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                    rows="3"
-                  />
-                </div>
-              </div>
-
-              <div className="flex space-x-3">
-                <button
-                  onClick={() => setShowCancelModal(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                  disabled={actionLoading}
-                >
-                  Keep Schedule
-                </button>
-                <button
-                  onClick={handleCancelSchedule}
-                  disabled={actionLoading}
-                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-                >
-                  {actionLoading ? (
-                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                  ) : (
-                    <>
-                      <FaTimesCircle />
-                      <span>Cancel Schedule</span>
-                    </>
-                  )}
-                </button>
-              </div>
+      <Modal
+        isOpen={showCancelModal}
+        onClose={() => setShowCancelModal(false)}
+        title="Cancel Schedule"
+        subtitle="Are you sure you want to cancel this scheduled task?"
+        icon={FaTimesCircle}
+        iconColor="text-red-600"
+        iconBgColor="bg-red-100"
+        maxWidth="max-w-md"
+      >
+        <div className="space-y-6">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-center space-x-2">
+              <FaTimesCircle className="text-red-600" />
+              <span className="font-medium text-red-800">Cancel this scheduled task?</span>
             </div>
+            <p className="text-sm text-red-700 mt-1">
+              This will make the task active again and remove the current schedule.
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Reason for cancellation (optional)
+            </label>
+            <textarea
+              value={cancellationReason}
+              onChange={(e) => setCancellationReason(e.target.value)}
+              placeholder="Please provide a reason for canceling the schedule..."
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+              rows="3"
+            />
+          </div>
+
+          <div className="flex space-x-3">
+            <button
+              onClick={() => setShowCancelModal(false)}
+              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              disabled={actionLoading}
+            >
+              Keep Schedule
+            </button>
+            <button
+              onClick={handleCancelSchedule}
+              disabled={actionLoading}
+              className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+            >
+              {actionLoading ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+              ) : (
+                <>
+                  <FaTimesCircle />
+                  <span>Cancel Schedule</span>
+                </>
+              )}
+            </button>
           </div>
         </div>
-      )}
+      </Modal>
+
+      {/* Payment Modal */}
+      <PaymentModal
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        task={task}
+        applicationId={selectedApplication?._id}
+        onPaymentSuccess={handlePaymentSuccess}
+        onPaymentError={handlePaymentError}
+      />
+      
+
 
       <ToastContainer toasts={toasts} removeToast={removeToast} />
     </div>

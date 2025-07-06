@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { FaPaperPlane, FaTimes, FaSpinner, FaComments, FaUser, FaMinus, FaExpand, FaPhone, FaVideo } from 'react-icons/fa';
-import { getConversation, sendMessage, markMessagesAsRead } from '../../services/api/chatService';
+import { getMessages, sendMessage, markMessagesAsRead } from '../../services/api/chatService';
 
 const TaskChatWindow = ({ taskId, receiverId, receiverName, isOpen, onClose, currentUser }) => {
   const [messages, setMessages] = useState([]);
@@ -33,7 +33,7 @@ const TaskChatWindow = ({ taskId, receiverId, receiverName, isOpen, onClose, cur
     try {
       setLoading(true);
       setError(null);
-      const response = await getConversation(taskId, receiverId);
+      const response = await getMessages(taskId, receiverId);
       setMessages(response.data || []);
     } catch (error) {
       console.error('Error fetching conversation:', error);

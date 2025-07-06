@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import loginImage from '../assets/login.png';
-import { loginUser } from '../api/auth';
+import { login } from '../services/api/authService';
 
 function parseJwt(token) {
   try {
@@ -32,7 +32,7 @@ const Login = () => {
     setError(null);
 
     try {
-      const response = await loginUser(credentials);
+      const response = await login(credentials);
       localStorage.setItem('token', response.token);
       const payload = parseJwt(response.token);
       const dashboard = roleToDashboard[payload?.role] || '/';

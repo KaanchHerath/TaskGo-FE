@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FaArrowLeft, FaUsers, FaComments, FaCheck, FaClock, FaSpinner, FaStar, FaDollarSign, FaCalendarAlt, FaUser } from 'react-icons/fa';
+import { FaArrowLeft, FaUsers, FaComments, FaCheck, FaClock, FaSpinner, FaStar, FaDollarSign, FaCalendarAlt, FaUser, FaCreditCard } from 'react-icons/fa';
 import { getTask, getTaskApplications, selectTasker } from '../../services/api/taskService';
 import TaskChatWindow from '../../components/task/TaskChatWindow';
 import { useToast, ToastContainer } from '../../components/common/Toast';
+import PaymentModal from '../../components/common/PaymentModal';
 
 // Mock function to get current user - replace with actual auth context
 const getCurrentUser = () => {
@@ -31,6 +32,7 @@ const TaskApplicationsPage = () => {
   const [chatOpen, setChatOpen] = useState(false);
   const [chatReceiver, setChatReceiver] = useState(null);
   const [selecting, setSelecting] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const currentUser = getCurrentUser();
 
   useEffect(() => {
@@ -84,18 +86,26 @@ const TaskApplicationsPage = () => {
 
     try {
       setSelecting(true);
-      await selectTasker(
+
+      const response = await selectTasker(
         taskId, 
         application.tasker._id, 
         application.confirmedTime, 
         application.confirmedPayment
       );
       
-      // Show success message
-      showSuccess('Tasker selected successfully! The task has been scheduled.');
-      
-      // Refresh data
-      await fetchTaskAndApplications();
+      // Check if payment is required
+      if (response.requiresPayment) {
+        // Update task with the response data to ensure we have agreedPayment
+        setTask(response.data);
+        // Store the selected application and show payment modal
+        setSelectedApplication(application);
+        setShowPaymentModal(true);
+        showSuccess('Tasker selected! Please complete the advance payment to schedule the task.');
+      } else {
+        showSuccess('Tasker selected successfully! The task has been scheduled.');
+        await fetchTaskAndApplications(); // Refresh task data
+      }
       
     } catch (error) {
       console.error('Error selecting tasker:', error);
@@ -103,6 +113,15 @@ const TaskApplicationsPage = () => {
     } finally {
       setSelecting(false);
     }
+  };
+
+  const handlePaymentSuccess = async (paymentData) => {
+    showSuccess('Payment successful! Your task has been scheduled.');
+    await fetchTaskAndApplications(); // Refresh task data
+  };
+
+  const handlePaymentError = (errorMessage) => {
+    showError(errorMessage || 'Payment failed. Please try again.');
   };
 
   const getAvailabilityStatus = (application) => {
@@ -251,7 +270,7 @@ const TaskApplicationsPage = () => {
                         {application.estimatedDuration && (
                           <div>
                             <p className="text-sm font-medium text-gray-700">Estimated Duration</p>
-                            <p className="text-gray-800">{application.estimatedDuration} hours</p>
+                            <p className="text-gray-800">{application.estimatedDuration} hour(s)</p>
                           </div>
                         )}
                         {application.confirmedTime && (
@@ -324,6 +343,50 @@ const TaskApplicationsPage = () => {
             </p>
           </div>
         )}
+
+        {/* Payment Retry Section */}
+        {task && 
+         task.status === 'active' && 
+         task.selectedTasker && 
+         (!task.advancePaymentStatus || task.advancePaymentStatus === 'pending') && (
+          <div className="mt-6 bg-orange-50 border border-orange-200 rounded-lg p-6">
+            <div className="flex items-center space-x-2 mb-3">
+              <FaCreditCard className="text-orange-600" />
+              <h3 className="text-lg font-semibold text-orange-800">Payment Required</h3>
+            </div>
+            <p className="text-orange-700 mb-4">
+              You have selected a tasker for this task, but the advance payment is still pending. 
+              Complete the payment to schedule the task.
+            </p>
+            
+            {task.agreedPayment && (
+              <div className="bg-white rounded-lg p-4 mb-4">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm text-gray-600">Advance Payment (20%):</span>
+                  <span className="font-semibold text-orange-700">
+                    LKR {Math.round(task.agreedPayment * 0.2).toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Total Agreed Payment:</span>
+                  <span className="font-semibold text-gray-800">
+                    LKR {task.agreedPayment.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            <div className="flex space-x-3">
+              <button
+                onClick={() => setShowPaymentModal(true)}
+                className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors flex items-center justify-center space-x-2"
+              >
+                <FaCreditCard />
+                <span>Complete Payment</span>
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Chat Window */}
@@ -337,6 +400,16 @@ const TaskApplicationsPage = () => {
           currentUser={currentUser}
         />
       )}
+
+             {/* Payment Modal */}
+       <PaymentModal
+         isOpen={showPaymentModal}
+         onClose={() => setShowPaymentModal(false)}
+         task={task}
+         applicationId={selectedApplication?._id}
+         onPaymentSuccess={handlePaymentSuccess}
+         onPaymentError={handlePaymentError}
+       />
 
       {/* Toast Container */}
       <ToastContainer toasts={toasts} removeToast={removeToast} />
