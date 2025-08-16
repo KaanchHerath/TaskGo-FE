@@ -31,4 +31,15 @@ export const changePassword = async (passwordData) => {
     console.error('Error changing password:', error);
     throw error;
   }
+};
+
+// Get approval status for taskers
+export const getApprovalStatus = async () => {
+  try {
+    const response = await axiosInstance.get('/users/approval-status');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching approval status:', error);
+    throw error;
+  }
 }; 

@@ -11,8 +11,10 @@ import { updateTaskerAvailability } from '../../services/api/taskerService';
 import { useToast, ToastContainer } from '../../components/common/Toast';
 import Modal from '../../components/common/Modal';
 import { getMyTasks, getMyRecentTasks, getAvailableTasks } from '../../services/api/taskService';
+import { PROVINCES, getDistrictsForProvince, formatLocation } from '../../config/locations';
 import { getTaskerReviews } from '../../services/api/taskerService';
 import { APP_CONFIG, formatCurrency, formatTimeAgo } from '../../config/appConfig';
+import { getToken } from '../../utils/auth';
 
 const TaskerProfile = () => {
   const [user, setUser] = useState(null);
@@ -35,7 +37,8 @@ const TaskerProfile = () => {
     bio: '',
     experience: '',
     skills: [],
-    area: '',
+    province: '',
+    district: '',
     hourlyRate: '',
     advancePaymentAmount: '',
     isAvailable: true
@@ -81,7 +84,8 @@ const TaskerProfile = () => {
         bio: data.taskerProfile?.bio || '',
         experience: data.taskerProfile?.experience || '',
         skills: data.taskerProfile?.skills || [],
-        area: data.taskerProfile?.area || '',
+        province: data.taskerProfile?.province || '',
+        district: data.taskerProfile?.district || '',
         hourlyRate: data.taskerProfile?.hourlyRate || '',
         advancePaymentAmount: data.taskerProfile?.advancePaymentAmount || '',
         isAvailable: data.taskerProfile?.isAvailable || true
@@ -101,9 +105,17 @@ const TaskerProfile = () => {
       const completedTasks = tasks.filter(t => t.status === 'completed').length;
       const activeTasks = tasks.filter(t => t.status === 'active' || t.status === 'scheduled').length;
       const totalTasks = tasks.length;
+      
+      // Calculate total earnings as sum of advance payments (20% of agreed payment)
+      // Only count tasks that are completed and have advance payment released
       const totalEarnings = tasks
-        .filter(t => t.status === 'completed')
-        .reduce((sum, t) => sum + (t.agreedPrice || t.maxPayment || 0), 0);
+        .filter(t => t.status === 'completed' && t.advancePaymentStatus === 'released' && t.agreedPayment)
+        .reduce((sum, t) => {
+          // Calculate advance payment (20% of agreed payment)
+          const advanceAmount = Math.round(t.agreedPayment * 0.2);
+          return sum + advanceAmount;
+        }, 0);
+      
       let responseRate = 0;
       if (totalTasks > 0) {
         const completionRate = (completedTasks / totalTasks) * 100;
@@ -218,7 +230,7 @@ const TaskerProfile = () => {
     try {
       setSaving(true);
       // Validate token before making API call
-      const token = localStorage.getItem('token');
+      const token = getToken();
       if (!token || !validateToken(token)) {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
@@ -233,7 +245,8 @@ const TaskerProfile = () => {
           bio: formData.bio,
           experience: formData.experience,
           skills: formData.skills,
-          area: formData.area,
+          province: formData.province,
+          district: formData.district,
           hourlyRate: formData.hourlyRate,
           advancePaymentAmount: formData.advancePaymentAmount
         }
@@ -959,18 +972,42 @@ const TaskerProfile = () => {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-3">Service Area</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-3">Province</label>
                       {isEditing ? (
-                        <input
-                          type="text"
-                          value={formData.area}
-                          onChange={(e) => setFormData({...formData, area: e.target.value})}
+                        <select
+                          value={formData.province}
+                          onChange={(e) => setFormData({ ...formData, province: e.target.value, district: '' })}
                           className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="e.g., Colombo, Kandy, Galle"
-                        />
+                        >
+                          <option value="">Select province</option>
+                          {PROVINCES.map((p) => (
+                            <option key={p} value={p}>{p}</option>
+                          ))}
+                        </select>
                       ) : (
                         <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-slate-700">
-                          {formData.area || 'Not specified'}
+                          {formData.province || 'Not specified'}
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-3">District</label>
+                      {isEditing ? (
+                        <select
+                          value={formData.district}
+                          onChange={(e) => setFormData({ ...formData, district: e.target.value })}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          disabled={!formData.province}
+                        >
+                          <option value="">{formData.province ? 'Select district' : 'Select province first'}</option>
+                          {getDistrictsForProvince(formData.province).map((d) => (
+                            <option key={d} value={d}>{d}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-slate-700">
+                          {formatLocation(formData.province, formData.district) || 'Not specified'}
                         </div>
                       )}
                     </div>

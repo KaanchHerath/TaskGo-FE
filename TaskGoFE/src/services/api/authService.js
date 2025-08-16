@@ -11,20 +11,16 @@ export const login = async (credentials) => {
     return response.data;
   } catch (error) {
     console.error('Error logging in:', error);
-    
-    // Handle rate limit errors specifically
-    if (error.response?.status === 429) {
-      const retryAfter = error.response.data?.retryAfter || 900; // 15 minutes default
-      const minutes = Math.ceil(retryAfter / 60);
-      throw new Error(`Too many login attempts. Please try again in ${minutes} minutes.`);
+
+    // Normalize error so caller can inspect status and payload
+    if (error.response) {
+      const normalized = new Error(error.response.data?.message || 'Login failed');
+      normalized.status = error.response.status;
+      normalized.data = error.response.data;
+      throw normalized;
     }
-    
-    // Handle other specific errors
-    if (error.response?.data?.message) {
-      throw new Error(error.response.data.message);
-    }
-    
-    throw error;
+
+    throw new Error('Network error while logging in');
   }
 };
 
@@ -75,16 +71,4 @@ export const registerUser = async (userData) => {
   }
 };
 
-/**
- * Reset rate limit (development only)
- * @returns {Promise<Object>} Reset response
- */
-export const resetRateLimit = async () => {
-  try {
-    const response = await axiosInstance.post('/auth/reset-rate-limit');
-    return response.data;
-  } catch (error) {
-    console.error('Error resetting rate limit:', error);
-    throw error;
-  }
-}; 
+ 

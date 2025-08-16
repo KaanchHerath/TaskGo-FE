@@ -44,11 +44,40 @@ const CategoriesGrid = ({
     try {
       apiCallMadeRef.current = true;
       const response = await apiEndpoint();
-      if (response?.data) {
-        setCategoriesData(response.data);
+      console.log('Category stats response:', response); // Debug log
+      
+      // Handle different response formats
+      let categoriesData;
+      if (response?.data?.data) {
+        // Backend returns { success: true, data: [...] }
+        categoriesData = response.data.data;
+      } else if (response?.data) {
+        // Direct data array
+        categoriesData = response.data;
+      } else if (Array.isArray(response)) {
+        // Direct array response
+        categoriesData = response;
       } else {
-        setCategoriesData(fallbackCategoriesRef.current);
+        categoriesData = fallbackCategoriesRef.current;
       }
+      
+      // Transform the data to match the expected format
+      const transformedData = categoriesData.map(cat => {
+        const metadata = fallbackCategoriesRef.current.find(fallback => 
+          fallback.title.toLowerCase().includes(cat.category?.toLowerCase()) ||
+          cat.category?.toLowerCase().includes(fallback.title.toLowerCase())
+        );
+        
+        return {
+          title: metadata?.title || cat.category || 'Unknown Category',
+          tasks: `${cat.count || 0} Open Tasks`,
+          count: cat.count || 0,
+          icon: metadata?.icon || fallbackCategoriesRef.current[0]?.icon,
+          color: metadata?.color || fallbackCategoriesRef.current[0]?.color
+        };
+      });
+      
+      setCategoriesData(transformedData);
     } catch (err) {
       console.error('Error fetching categories:', err);
       setCategoriesData(fallbackCategoriesRef.current);

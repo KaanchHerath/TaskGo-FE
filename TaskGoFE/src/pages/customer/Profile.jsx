@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { FaEdit, FaUser, FaEnvelope, FaPhone, FaMapMarkerAlt, FaTasks, FaStar } from 'react-icons/fa';
 import { getUserProfile } from '../../services/api/userService';
+import { getToken } from '../../utils/auth';
 
 const CustomerProfile = () => {
   const [user, setUser] = useState(null);
@@ -13,7 +14,7 @@ const CustomerProfile = () => {
       setLoading(true);
       setError('');
       try {
-        const token = localStorage.getItem('token');
+        const token = getToken();
         if (!token) {
           setError('Not logged in');
           setLoading(false);

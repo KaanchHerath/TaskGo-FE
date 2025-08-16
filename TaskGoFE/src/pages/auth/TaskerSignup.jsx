@@ -70,7 +70,9 @@ const TaskerSignup = () => {
       // Dispatch custom event to notify navbar of auth change
       window.dispatchEvent(new Event('authStateChanged'));
       
-      navigate('/tasker/dashboard');
+      // Redirect new taskers to waiting approval page instead of dashboard
+      // since they need admin approval before accessing the platform
+      navigate('/tasker/waiting-approval');
     } catch (error) {
       console.error('Registration error:', error);
       setSubmitError(error.message || 'Registration failed. Please try again.');

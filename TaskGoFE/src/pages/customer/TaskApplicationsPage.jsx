@@ -6,18 +6,17 @@ import TaskChatWindow from '../../components/task/TaskChatWindow';
 import { useToast, ToastContainer } from '../../components/common/Toast';
 import PaymentModal from '../../components/common/PaymentModal';
 
-// Mock function to get current user - replace with actual auth context
+// Helper to get current user from token
+import { getToken } from '../../utils/auth';
 const getCurrentUser = () => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      return { _id: payload.userId, role: payload.role };
-    } catch (e) {
-      return null;
-    }
+  const token = getToken();
+  if (!token) return null;
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return { _id: payload.userId, role: payload.role };
+  } catch (e) {
+    return null;
   }
-  return null;
 };
 
 const TaskApplicationsPage = () => {

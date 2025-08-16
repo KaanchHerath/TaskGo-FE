@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createTask, uploadTaskPhotos, TASK_CATEGORIES } from '../services/api/taskService';
 import { ALL_DISTRICTS } from '../config/locations';
+import { getToken } from '../utils/auth';
 
 const PostTask = () => {
   const navigate = useNavigate();
@@ -23,6 +24,67 @@ const PostTask = () => {
   });
 
   const [errors, setErrors] = useState({});
+  const descriptionRef = useRef(null);
+
+  const wrapSelection = (prefix, suffix = prefix) => {
+    const textarea = descriptionRef.current;
+    if (!textarea) return;
+    const start = textarea.selectionStart || 0;
+    const end = textarea.selectionEnd || 0;
+    const value = formData.description || '';
+    const before = value.slice(0, start);
+    const selected = value.slice(start, end) || 'text';
+    const after = value.slice(end);
+    const newValue = `${before}${prefix}${selected}${suffix}${after}`;
+    setFormData(prev => ({ ...prev, description: newValue }));
+    // restore selection roughly after update
+    setTimeout(() => {
+      const pos = start + prefix.length + selected.length + suffix.length;
+      textarea.focus();
+      textarea.setSelectionRange(pos, pos);
+    }, 0);
+  };
+
+  const makeList = (ordered = false) => {
+    const textarea = descriptionRef.current;
+    if (!textarea) return;
+    const start = textarea.selectionStart || 0;
+    const end = textarea.selectionEnd || 0;
+    const value = formData.description || '';
+    const before = value.slice(0, start);
+    const selected = value.slice(start, end) || 'Item 1\nItem 2';
+    const after = value.slice(end);
+    const lines = selected.split(/\r?\n/);
+    const formatted = lines
+      .map((line, idx) => ordered ? `${idx + 1}. ${line || 'Item ' + (idx + 1)}` : `- ${line || 'Item'}`)
+      .join('\n');
+    const newValue = `${before}${formatted}${after}`;
+    setFormData(prev => ({ ...prev, description: newValue }));
+    setTimeout(() => {
+      const pos = before.length + formatted.length;
+      textarea.focus();
+      textarea.setSelectionRange(pos, pos);
+    }, 0);
+  };
+
+  const insertLink = () => {
+    const textarea = descriptionRef.current;
+    if (!textarea) return;
+    const start = textarea.selectionStart || 0;
+    const end = textarea.selectionEnd || 0;
+    const value = formData.description || '';
+    const before = value.slice(0, start);
+    const selected = value.slice(start, end) || 'link text';
+    const after = value.slice(end);
+    const markdown = `[${selected}](https://example.com)`;
+    const newValue = `${before}${markdown}${after}`;
+    setFormData(prev => ({ ...prev, description: newValue }));
+    setTimeout(() => {
+      const pos = before.length + markdown.length;
+      textarea.focus();
+      textarea.setSelectionRange(pos, pos);
+    }, 0);
+  };
 
   // Handle input changes
   const handleInputChange = (e) => {
@@ -123,7 +185,7 @@ const PostTask = () => {
     e.preventDefault();
     
     // Check if user is authenticated
-    const token = localStorage.getItem('token');
+    const token = getToken();
     if (!token) {
       setError('You must be logged in to post a task. Please log in first.');
       return;
@@ -440,6 +502,7 @@ const PostTask = () => {
               <p className="text-sm text-gray-600 mb-3">Description</p>
               <textarea
                 id="description"
+                ref={descriptionRef}
                 name="description"
                 value={formData.description}
                 onChange={handleInputChange}
@@ -453,25 +516,25 @@ const PostTask = () => {
               
               {/* Text formatting toolbar (visual only) */}
               <div className="flex items-center space-x-2 mt-2 p-2 border-t border-gray-200">
-                <button type="button" className="p-1 text-gray-500 hover:text-gray-700">
+                <button type="button" onClick={() => wrapSelection('**')} className="p-1 text-gray-500 hover:text-gray-700" aria-label="Bold">
                   <strong>B</strong>
                 </button>
-                <button type="button" className="p-1 text-gray-500 hover:text-gray-700">
+                <button type="button" onClick={() => wrapSelection('*')} className="p-1 text-gray-500 hover:text-gray-700" aria-label="Italic">
                   <em>I</em>
                 </button>
-                <button type="button" className="p-1 text-gray-500 hover:text-gray-700">
+                <button type="button" onClick={() => wrapSelection('<u>','</u>')} className="p-1 text-gray-500 hover:text-gray-700" aria-label="Underline">
                   <u>U</u>
                 </button>
-                <button type="button" className="p-1 text-gray-500 hover:text-gray-700">
+                <button type="button" onClick={() => wrapSelection('~~')} className="p-1 text-gray-500 hover:text-gray-700" aria-label="Strikethrough">
                   <s>S</s>
                 </button>
-                <button type="button" className="p-1 text-gray-500 hover:text-gray-700">
+                <button type="button" onClick={insertLink} className="p-1 text-gray-500 hover:text-gray-700" aria-label="Insert link">
                   🔗
                 </button>
-                <button type="button" className="p-1 text-gray-500 hover:text-gray-700">
+                <button type="button" onClick={() => makeList(false)} className="p-1 text-gray-500 hover:text-gray-700" aria-label="Bulleted list">
                   •
                 </button>
-                <button type="button" className="p-1 text-gray-500 hover:text-gray-700">
+                <button type="button" onClick={() => makeList(true)} className="p-1 text-gray-500 hover:text-gray-700" aria-label="Numbered list">
                   1.
                 </button>
               </div>

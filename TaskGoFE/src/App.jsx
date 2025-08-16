@@ -1,5 +1,13 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { parseJwt, roleToDashboard, getToken } from "./utils/auth";
 import Layout from "./components/layout/Layout";
+import useScrollToTop from "./hooks/useScrollToTop";
+
+// ScrollToTop component
+const ScrollToTop = () => {
+  useScrollToTop();
+  return null;
+};
 
 // Common Pages
 import Home from "./pages/common/Home";
@@ -33,9 +41,13 @@ import TaskerDashboard from "./pages/tasker/Dashboard";
 import TaskerProfile from "./pages/tasker/Profile";
 import TaskerCategories from "./pages/tasker/Categories";
 import TaskerTaskView from "./pages/tasker/TaskerTaskView";
+import WaitingApprovalPage from "./pages/tasker/WaitingApprovalPage";
 
 // Admin Pages
 import AdminDashboard from "./pages/admin/Dashboard";
+import TaskerApproval from "./pages/admin/TaskerApproval";
+import UserManagementPage from "./pages/admin/UserManagementPage";
+import TaskManagementPage from "./pages/admin/TaskManagementPage";
 
 // Payment Pages
 import PaymentSuccess from "./pages/PaymentSuccess";
@@ -43,11 +55,40 @@ import PaymentFailed from "./pages/PaymentFailed";
 import PaymentCancelled from "./pages/PaymentCancelled";
 
 // Components
-import PrivateRoute from "./components/common/PrivateRoute";
+import PrivateRoute from "./utils/PrivateRoute";
+import TaskerApprovalCheck from "./components/common/TaskerApprovalCheck";
+
+// Dashboard redirect component
+const DashboardRedirect = () => {
+  const token = getToken();
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  const payload = parseJwt(token);
+  const userRole = payload?.role;
+  
+  // For taskers, we need to check if they can access the dashboard
+  // Since the backend prevents unapproved taskers from logging in,
+  // if they have a token, they should be approved
+  // But we'll add a safety check here
+  if (userRole === 'tasker') {
+    // Check if tasker is approved by looking at the token payload
+    // If not approved, redirect to waiting approval page
+    const isApproved = payload?.isApproved;
+    if (!isApproved) {
+      return <Navigate to="/tasker/waiting-approval" replace />;
+    }
+  }
+  
+  const dashboard = roleToDashboard[userRole] || '/';
+  return <Navigate to={dashboard} replace />;
+};
 
 function App() {
   return (
     <Router>
+      <ScrollToTop />
       <Layout>
         <Routes>
           {/* Public Routes */}
@@ -62,6 +103,11 @@ function App() {
             <Route path="/post-task" element={<PostTask />} />
           </Route>
           <Route path="/tasks/:id" element={<TaskDetails />} />
+          
+          {/* General Dashboard Route - Redirects to role-specific dashboard */}
+          <Route element={<PrivateRoute allowedRoles={["customer", "tasker", "admin"]} />}>
+            <Route path="/dashboard" element={<DashboardRedirect />} />
+          </Route>
           
           {/* My Tasks - Protected route for customers and taskers */}
           <Route element={<PrivateRoute allowedRoles={['customer', 'tasker']} />}>
@@ -89,15 +135,25 @@ function App() {
 
           {/* Tasker Protected Routes */}
           <Route element={<PrivateRoute allowedRoles={["tasker"]} />}>
-            <Route path="/tasker/dashboard" element={<TaskerDashboard />} />
-            <Route path="/tasker/profile" element={<TaskerProfile />} />
-            <Route path="/tasker/categories" element={<TaskerCategories />} />
-            <Route path="/tasker/task/:taskId" element={<TaskerTaskView />} />
+            <Route path="/tasker/waiting-approval" element={<WaitingApprovalPage />} />
+            <Route element={<TaskerApprovalCheck />}>
+              <Route path="/tasker/dashboard" element={<TaskerDashboard />} />
+              <Route path="/tasker/profile" element={<TaskerProfile />} />
+              <Route path="/tasker/categories" element={<TaskerCategories />} />
+              <Route path="/tasker/task/:taskId" element={<TaskerTaskView />} />
+            </Route>
           </Route>
 
           {/* Admin Protected Routes */}
           <Route element={<PrivateRoute allowedRoles={["admin"]} />}>
+            <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            <Route path="/admin/taskers" element={<AdminDashboard />} />
+            <Route path="/admin/tasks" element={<AdminDashboard />} />
+            <Route path="/admin/users" element={<AdminDashboard />} />
+            <Route path="/admin/tasker-approval" element={<TaskerApproval />} />
+            <Route path="/admin/user-management" element={<UserManagementPage />} />
+            <Route path="/admin/task-management" element={<TaskManagementPage />} />
           </Route>
 
           {/* Legacy redirects for backward compatibility */}

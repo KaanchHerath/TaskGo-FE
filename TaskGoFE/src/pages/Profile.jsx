@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getUserProfile } from '../services/api/profileService';
+import { getToken } from '../utils/auth';
 
 const Profile = () => {
   const [user, setUser] = useState(null);
@@ -11,7 +12,7 @@ const Profile = () => {
       setLoading(true);
       setError('');
       try {
-        const token = localStorage.getItem('token');
+        const token = getToken();
         if (!token) {
           setError('Not logged in');
           setLoading(false);

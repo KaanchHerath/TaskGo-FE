@@ -2,22 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaGoogle, FaApple, FaFacebook } from 'react-icons/fa'; // Assuming these icons are needed
 import { registerUser } from '../../services/api/authService';
+import { parseJwt, roleToDashboard, setToken } from '../../utils/auth';
 import { categoryMetadata, defaultCategories } from '../../config/categories';
 import { ALL_DISTRICTS } from '../../config/locations';
 
-function parseJwt(token) {
-  try {
-    return JSON.parse(atob(token.split('.')[1]));
-  } catch (e) {
-    return null;
-  }
-}
-
-const roleToDashboard = {
-  customer: '/customer-dashboard',
-  tasker: '/tasker-dashboard',
-  admin: '/admin-dashboard',
-};
+ 
 
 const steps = [
   'Account Info',
@@ -128,11 +117,19 @@ const TaskerRegistration = () => {
     };
     try {
       const response = await registerUser(registrationPayload);
-      localStorage.setItem('token', response.token);
+      setToken(response.token);
       const payload = parseJwt(response.token);
-      const dashboard = roleToDashboard[payload?.role] || '/';
+      
+      // For taskers, redirect to waiting approval page instead of dashboard
+      // since they need admin approval before accessing the platform
+      if (payload?.role === 'tasker') {
+        navigate('/tasker/waiting-approval');
+      } else {
+        const dashboard = roleToDashboard[payload?.role] || '/';
+        navigate(dashboard);
+      }
+      
       sessionStorage.removeItem('registrationData');
-      navigate(dashboard);
     } catch (err) {
       setError(err.message);
     } finally {

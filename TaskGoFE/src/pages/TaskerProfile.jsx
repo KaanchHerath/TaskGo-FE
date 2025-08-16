@@ -14,6 +14,7 @@ import {
   FaUserTie
 } from 'react-icons/fa';
 import HireTaskerModal from '../components/tasker/HireTaskerModal';
+import { getToken, parseJwt } from '../utils/auth';
 import { getTaskerProfile, getTaskerReviews } from '../services/api/taskerService';
 
 const TaskerProfile = () => {
@@ -83,31 +84,22 @@ const TaskerProfile = () => {
     }, 5000);
   };
 
-  // Helper function to parse JWT token
-  const parseJwt = (token) => {
-    try {
-      return JSON.parse(atob(token.split('.')[1]));
-    } catch (e) {
-      return null;
-    }
-  };
-
   const isCustomer = () => {
-    const token = localStorage.getItem('token');
+    const token = getToken();
     if (!token) return false;
     const payload = parseJwt(token);
     return payload?.role === 'customer';
   };
 
   const isLoggedIn = () => {
-    const token = localStorage.getItem('token');
+    const token = getToken();
     if (!token) return false;
     const payload = parseJwt(token);
     return !!payload && !!payload.userId;
   };
 
   const getCurrentUser = () => {
-    const token = localStorage.getItem('token');
+    const token = getToken();
     if (!token) return null;
     return parseJwt(token);
   };
@@ -445,7 +437,7 @@ const TaskerProfile = () => {
                  <p>Is Customer: {isCustomer() ? 'Yes' : 'No'}</p>
                  <p>User Role: {getCurrentUser()?.role || 'None'}</p>
                  <p>User Name: {getCurrentUser()?.fullName || 'None'}</p>
-                 <p>Token exists: {!!localStorage.getItem('token') ? 'Yes' : 'No'}</p>
+                 <p>Token exists: {!!getToken() ? 'Yes' : 'No'}</p>
                </div>
             </div>
           </div>

@@ -6,20 +6,16 @@ import { taskService } from '../../services/api/taskService';
 import { getUserProfile } from '../../services/api/userService';
 import FeaturedTaskers from '../../components/tasker/FeaturedTaskers';
 import { dashboardCategories, generateCategoriesWithMetadata } from '../../config/categories';
+import { parseJwt, getToken, getCachedUserName, setCachedUserName } from '../../utils/auth';
 import { customerActions } from '../../config/dashboardActions';
 
 // Import reusable components
 import HeroSection from '../../components/common/HeroSection';
 import StatsSection from '../../components/common/StatsSection';
 import CategoriesGrid from '../../components/common/CategoriesGrid';
+import RecentReviews from '../../components/common/RecentReviews';
 
-function parseJwt(token) {
-  try {
-    return JSON.parse(atob(token.split('.')[1]));
-  } catch (e) {
-    return null;
-  }
-}
+ 
 
 const RecentTasks = () => {
   const [tasks, setTasks] = useState([]);
@@ -28,7 +24,7 @@ const RecentTasks = () => {
   const [currentUserId, setCurrentUserId] = useState(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = getToken();
     if (token) {
       const payload = parseJwt(token);
       if (payload && payload.userId) {
@@ -232,29 +228,36 @@ const CustomerDashboard = () => {
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = getToken();
         if (token) {
           const payload = parseJwt(token);
           if (payload) {
             setCurrentUserId(payload.userId || payload.id || payload._id || payload.sub);
-            
-            // Fetch user profile to get the actual name
-            const userProfile = await getUserProfile();
-            const fullName = userProfile.fullName || userProfile.name || 'Customer';
-            const displayName = fullName.split(' ')[0]; // Get only the first name
-            setUserName(displayName);
+
+            // Use cached name if available; otherwise fetch and cache
+            const cached = getCachedUserName();
+            if (cached) {
+              setUserName(cached);
+            } else {
+              const userProfile = await getUserProfile();
+              const fullName = userProfile.fullName || userProfile.name || 'Customer';
+              const displayName = fullName.split(' ')[0];
+              setUserName(displayName);
+              setCachedUserName(displayName);
+            }
           }
         }
       } catch (error) {
         console.error('Error fetching user profile:', error);
         // Fallback to JWT token data if profile fetch fails
-        const token = localStorage.getItem('token');
+        const token = getToken();
         if (token) {
           const payload = parseJwt(token);
           if (payload) {
             const fallbackName = payload.name || payload.username || 'Customer';
-            const displayName = fallbackName.split(' ')[0]; // Get only the first name
+            const displayName = fallbackName.split(' ')[0];
             setUserName(displayName);
+            setCachedUserName(displayName);
             setCurrentUserId(payload.userId || payload.id || payload._id || payload.sub);
           }
         }
@@ -268,7 +271,7 @@ const CustomerDashboard = () => {
 
   // Hero section configuration
   const heroConfig = {
-    title: "Welcome back,",
+    title: "Welcome Back,",
     subtitle: `${userName}!`,
     description: "Post your task and get quotes from verified taskers in your area. From home repairs to personal assistance, we've got you covered.",
     primaryButton: {
@@ -323,7 +326,7 @@ const CustomerDashboard = () => {
         fallbackValue: 0
       }
     ],
-    apiEndpoint: currentUserId ? `http://localhost:5000/api/stats/customer/${currentUserId}` : null,
+    apiEndpoint: currentUserId ? `/stats/customer/${currentUserId}` : null,
     fallbackStats: {
       activeTasks: 0,
       completedTasks: 0,
@@ -344,6 +347,13 @@ const CustomerDashboard = () => {
         <HeroSection {...heroConfig} />
         <StatsSection {...statsConfig} />
         <RecentTasks />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <RecentReviews 
+            title="Recent Community Reviews"
+            limit={6}
+            className="mb-8"
+          />
+        </div>
         <CategoriesGrid 
           title="Popular Categories"
           description="Discover the most in-demand services"
@@ -360,3 +370,4 @@ const CustomerDashboard = () => {
 };
 
 export default CustomerDashboard; 
+ 

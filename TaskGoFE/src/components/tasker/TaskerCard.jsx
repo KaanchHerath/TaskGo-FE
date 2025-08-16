@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { FaStar, FaMapMarkerAlt, FaClock, FaEye, FaPhone, FaEnvelope, FaCheckCircle } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
+import { formatLocation } from '../../config/locations';
 import HireTaskerModal from './HireTaskerModal';
+import { getToken, parseJwt } from '../../utils/auth';
 
 const TaskerCard = ({ tasker, onClick, showContactInfo = false, className = "" }) => {
   const navigate = useNavigate();
@@ -32,24 +34,15 @@ const TaskerCard = ({ tasker, onClick, showContactInfo = false, className = "" }
     }, 3000);
   };
 
-  // Helper function to parse JWT token
-  const parseJwt = (token) => {
-    try {
-      return JSON.parse(atob(token.split('.')[1]));
-    } catch (e) {
-      return null;
-    }
-  };
-
   const isCustomer = () => {
-    const token = localStorage.getItem('token');
+    const token = getToken();
     if (!token) return false;
     const payload = parseJwt(token);
     return payload?.role === 'customer';
   };
 
   const isLoggedIn = () => {
-    const token = localStorage.getItem('token');
+    const token = getToken();
     if (!token) return false;
     const payload = parseJwt(token);
     return !!payload && !!payload.userId;
@@ -87,7 +80,7 @@ const TaskerCard = ({ tasker, onClick, showContactInfo = false, className = "" }
           </h3>
           <div className="flex items-center text-slate-600 mb-1">
             <FaMapMarkerAlt className="text-blue-500 mr-2" />
-            <span className="font-medium">{tasker.taskerProfile?.area || 'Location not specified'}</span>
+            <span className="font-medium">{formatLocation(tasker.taskerProfile?.province, tasker.taskerProfile?.district) || 'Location not specified'}</span>
           </div>
           <div className="text-sm text-slate-500 font-medium">
             {tasker.completedTasks || 0} tasks completed

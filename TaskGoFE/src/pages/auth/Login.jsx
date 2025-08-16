@@ -3,20 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { FaEye, FaEyeSlash, FaEnvelope, FaLock, FaGoogle, FaApple, FaFacebook, FaArrowLeft, FaSpinner } from 'react-icons/fa';
 import loginImage from '../../assets/login.png';
 import { login } from '../../services/api/authService';
-
-function parseJwt(token) {
-  try {
-    return JSON.parse(atob(token.split('.')[1]));
-  } catch (e) {
-    return null;
-  }
-}
-
-const roleToDashboard = {
-  customer: '/customer/dashboard',
-  tasker: '/tasker/dashboard',
-  admin: '/admin/dashboard',
-};
+import { parseJwt, roleToDashboard, setToken } from '../../utils/auth';
 
 const Login = () => {
   const [credentials, setCredentials] = useState({
@@ -34,13 +21,33 @@ const Login = () => {
     setError(null);
     try {
       const data = await login(credentials);
-      localStorage.setItem('token', data.token);
+      setToken(data.token);
       window.dispatchEvent(new Event('authStateChanged'));
       const payload = parseJwt(data.token);
       const dashboard = roleToDashboard[payload?.role] || '/';
       navigate(dashboard);
     } catch (err) {
-      setError(err.message);
+      // Show special message for rejected taskers
+      const approvalStatus = err?.data?.approvalStatus;
+      const rejectionReason = err?.data?.rejectionReason;
+      if (err.status === 403 && approvalStatus === 'rejected') {
+        setError( <>
+          Your account approval has been rejected by the admin.
+          <br />
+          Note: {rejectionReason || 'No note provided.'}
+          <br />
+          If you have any questions, please contact us at info@taskgo.com
+        </>);
+      } else if (err.status === 403 && err?.data?.accountStatus === 'not_approved') {
+        // For pending taskers, redirect to waiting approval page instead of showing error
+        if (err?.data?.approvalStatus === 'pending') {
+          navigate('/tasker/waiting-approval');
+          return;
+        }
+        setError('Your account is pending approval. You will be notified once approved.');
+      } else {
+        setError(err.message || 'Login failed');
+      }
       console.error('Login Error:', err);
     } finally {
       setLoading(false);

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { FaSearch, FaMapMarkerAlt, FaPlus, FaUsers, FaTasks, FaDollarSign, FaCheck, FaTools, FaWrench, FaBroom, FaCog, FaPlug, FaHammer, FaLeaf, FaTree, FaShieldAlt, FaClock, FaThumbsUp, FaAward, FaHandshake, FaUserCheck } from "react-icons/fa";
 import homeImage from "../../assets/homeimage.png";
 import { taskService } from "../../services/api/taskService";
+import { getToken } from '../../utils/auth';
 import { dashboardCategories, generateCategoriesWithMetadata } from '../../config/categories';
 import { getDashboardStats } from '../../services/api/statsService';
 
@@ -10,114 +11,9 @@ import { getDashboardStats } from '../../services/api/statsService';
 import HeroSection from '../../components/common/HeroSection';
 import StatsSection from '../../components/common/StatsSection';
 import CategoriesGrid from '../../components/common/CategoriesGrid';
+import RecentReviews from '../../components/common/RecentReviews';
 
-// Platform Stats Section
-const PlatformStats = () => {
-  const [stats, setStats] = useState({
-    liveJobs: 0,
-    taskers: 0,
-    customers: 0,
-    completedTasks: 0,
-    loading: true
-  });
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const data = await getDashboardStats();
-        setStats({
-          liveJobs: data.liveJobs || 0,
-          taskers: data.taskers || 0,
-          customers: data.customers || 0,
-          completedTasks: data.completedTasks || 0,
-          loading: false
-        });
-      } catch (error) {
-        console.error("Error fetching dashboard stats:", error);
-        setStats({
-          liveJobs: 1247,
-          taskers: 5634,
-          customers: 8921,
-          completedTasks: 12567,
-          loading: false
-        });
-      }
-    };
-    fetchStats();
-  }, []);
-
-  const platformStats = [
-    {
-      title: "Active Tasks",
-      count: stats.liveJobs,
-      icon: <FaTasks className="text-2xl text-white" />,
-      color: "from-blue-500 to-blue-600",
-      description: "Ready to be completed"
-    },
-    {
-      title: "Skilled Taskers",
-      count: stats.taskers,
-      icon: <FaUsers className="text-2xl text-white" />,
-      color: "from-green-500 to-green-600",
-      description: "Verified professionals"
-    },
-    {
-      title: "Happy Customers",
-      count: stats.customers,
-      icon: <FaThumbsUp className="text-2xl text-white" />,
-      color: "from-purple-500 to-purple-600",
-      description: "Satisfied users"
-    },
-    {
-      title: "Tasks Completed",
-      count: stats.completedTasks,
-      icon: <FaCheck className="text-2xl text-white" />,
-      color: "from-orange-500 to-orange-600",
-      description: "Successfully finished"
-    }
-  ];
-
-  return (
-    <section className="py-16 bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20 relative">
-      <div className="absolute top-0 left-0 w-full h-full opacity-10">
-        <div className="absolute top-10 right-10 w-20 h-20 bg-blue-300 rounded-full blur-2xl"></div>
-        <div className="absolute bottom-10 left-10 w-16 h-16 bg-indigo-300 rounded-full blur-xl"></div>
-      </div>
-      
-      <div className="max-w-7xl mx-auto px-4 relative z-10">
-        <div className="text-center mb-12">
-          <h2 className="text-4xl font-bold mb-4">
-            <span className="bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
-              Trusted by Thousands
-            </span>
-          </h2>
-          <p className="text-slate-600 text-lg max-w-2xl mx-auto">
-            Join our growing community of customers and taskers who are getting things done every day
-          </p>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          {platformStats.map((stat, index) => (
-            <div key={index} className="group bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20 hover:shadow-xl hover:scale-105 transition-all duration-300">
-              <div className="flex items-center justify-between mb-4">
-                <div className={`p-3 bg-gradient-to-r ${stat.color} rounded-xl shadow-lg`}>
-                  {stat.icon}
-                </div>
-                <div className="text-right">
-                  <div className={`text-2xl font-bold bg-gradient-to-r ${stat.color} bg-clip-text text-transparent`}>
-                    {stats.loading ? '...' : stat.count.toLocaleString()}
-                  </div>
-                </div>
-              </div>
-              <div className="text-slate-800 font-semibold text-lg">{stat.title}</div>
-              <div className="text-sm text-slate-600 mt-1">{stat.description}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-};
 
 // How It Works Section
 const HowItWorksSection = () => {
@@ -307,7 +203,7 @@ const Home = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    const token = getToken();
     setIsLoggedIn(!!token);
   }, []);
 
@@ -332,6 +228,8 @@ const Home = () => {
 
   // Stats configuration
   const statsConfig = {
+    title: "Trusted by Thousands",
+    description: "Join our growing community of customers and taskers who are getting things done every day",
     stats: [
       {
         title: "Active Tasks",
@@ -339,7 +237,7 @@ const Home = () => {
         icon: <FaTasks className="text-2xl text-white" />,
         color: "from-blue-500 to-blue-600",
         description: "Ready to be completed",
-        fallbackValue: 1247
+        fallbackValue: 0
       },
       {
         title: "Skilled Taskers",
@@ -347,7 +245,7 @@ const Home = () => {
         icon: <FaUsers className="text-2xl text-white" />,
         color: "from-green-500 to-green-600",
         description: "Verified professionals",
-        fallbackValue: 5634
+        fallbackValue: 0
       },
       {
         title: "Happy Customers",
@@ -355,7 +253,7 @@ const Home = () => {
         icon: <FaThumbsUp className="text-2xl text-white" />,
         color: "from-purple-500 to-purple-600",
         description: "Satisfied users",
-        fallbackValue: 8921
+        fallbackValue: 0
       },
       {
         title: "Tasks Completed",
@@ -363,15 +261,15 @@ const Home = () => {
         icon: <FaCheck className="text-2xl text-white" />,
         color: "from-orange-500 to-orange-600",
         description: "Successfully finished",
-        fallbackValue: 12567
+        fallbackValue: 0
       }
     ],
-    apiEndpoint: 'http://localhost:5000/api/stats/dashboard',
+    apiEndpoint: '/stats/dashboard',
     fallbackStats: {
-      liveJobs: 1247,
-      taskers: 5634,
-      customers: 8921,
-      completedTasks: 12567
+      liveJobs: 0,
+      taskers: 0,
+      customers: 0,
+      completedTasks: 0
     }
   };
 
@@ -387,6 +285,13 @@ const Home = () => {
         <HeroSection {...heroConfig} />
         <StatsSection {...statsConfig} />
         <HowItWorksSection />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <RecentReviews 
+            title="What Our Community Says"
+            limit={4}
+            className="mb-8"
+          />
+        </div>
         <CategoriesGrid 
           apiEndpoint={getCategoryStats}
           fallbackCategories={fallbackCategories}

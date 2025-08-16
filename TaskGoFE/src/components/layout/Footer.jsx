@@ -8,11 +8,11 @@ const Footer = () => {
             <div className="flex items-center mb-6">
               <h3 className="text-xl font-bold">TaskGo</h3>
             </div>
-            <p className="text-gray-400 mb-4">Call Now: (011) 555-0115</p>
+            <p className="text-gray-400 mb-4">Call Now: +94 11 234 5678</p>
             <p className="text-gray-400">
-              1234 New Street, New Orleans Estate, West
+              No. 123, Galle Road, Colombo 03
               <br />
-              California, US
+              Western Province, Sri Lanka
             </p>
           </div>
 

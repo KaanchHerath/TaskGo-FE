@@ -8,21 +8,17 @@ import { useJobs } from '../../hooks/useJobs';
 import AvailableTaskCard from '../../components/task/AvailableTaskCard';
 import { dashboardCategories, generateCategoriesWithMetadata } from '../../config/categories';
 import { taskerActions } from '../../config/dashboardActions';
+import { parseJwt, getToken, getCachedUserName, setCachedUserName } from '../../utils/auth';
 import { APP_CONFIG } from '../../config/appConfig';
 
 // Import reusable components
 import HeroSection from '../../components/common/HeroSection';
 import StatsSection from '../../components/common/StatsSection';
 import CategoriesGrid from '../../components/common/CategoriesGrid';
+import RecentReviews from '../../components/common/RecentReviews';
 
 
-function parseJwt(token) {
-  try {
-    return JSON.parse(atob(token.split('.')[1]));
-  } catch (e) {
-    return null;
-  }
-}
+ 
 
 const RecentActivity = () => {
   const [activities, setActivities] = useState([]);
@@ -41,29 +37,49 @@ const RecentActivity = () => {
         const applications = Array.isArray(applicationsResponse) ? applicationsResponse : (applicationsResponse?.data || []);
         const tasks = Array.isArray(tasksResponse) ? tasksResponse : (tasksResponse?.data || []);
         
-        // Combine and sort activities
-        const allActivities = [
-          ...applications.map(app => ({
-            id: app._id,
-            type: 'application',
-            title: app.task?.title || 'Task Application',
-            description: `Applied for ${app.task?.title || 'a task'}`,
-            date: app.createdAt,
-            status: app.status,
-            amount: app.proposedPayment,
-            taskId: app.task?._id
-          })),
-          ...tasks.map(task => ({
-            id: task._id,
-            type: 'task',
-            title: task.title,
-            description: task.description,
-            date: task.updatedAt,
-            status: task.status,
-            amount: task.agreedPayment,
-            taskId: task._id
-          }))
-        ]
+        // Combine activities and remove duplicates
+        const applicationActivities = applications.map(app => ({
+          id: app._id,
+          type: 'application',
+          title: app.task?.title || 'Task Application',
+          description: `Applied for ${app.task?.title || 'a task'}`,
+          date: app.createdAt,
+          status: app.status,
+          amount: app.proposedPayment,
+          taskId: app.task?._id
+        }));
+
+        const taskActivities = tasks.map(task => ({
+          id: task._id,
+          type: 'task',
+          title: task.title,
+          description: task.description,
+          date: task.updatedAt,
+          status: task.status,
+          amount: task.agreedPayment,
+          taskId: task._id
+        }));
+
+        // Create a map to track tasks by taskId and prioritize tasks over applications
+        const activityMap = new Map();
+        
+        // First add applications (only if they have a taskId)
+        applicationActivities.forEach(activity => {
+          if (activity.taskId) {
+            activityMap.set(activity.taskId, activity);
+          }
+        });
+        
+        // Then add tasks (this will overwrite applications for the same taskId if both exist)
+        // This ensures that if a tasker applied and got selected, we show the task status instead of application
+        taskActivities.forEach(activity => {
+          if (activity.taskId) {
+            activityMap.set(activity.taskId, activity);
+          }
+        });
+        
+        // Convert back to array and sort
+        const allActivities = Array.from(activityMap.values())
           .sort((a, b) => new Date(b.date) - new Date(a.date))
           .slice(0, 6);
         
@@ -346,30 +362,37 @@ const TaskerDashboard = () => {
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = getToken();
         if (token) {
           const payload = parseJwt(token);
           if (payload) {
             setCurrentUserId(payload.userId || payload.id || payload._id || payload.sub);
             setIsLoggedIn(true);
             
-            // Fetch user profile to get the actual name
-            const userProfile = await getUserProfile();
-            const fullName = userProfile.fullName || userProfile.name || 'Tasker';
-            const displayName = fullName.split(' ')[0]; // Get only the first name
-            setUserName(displayName);
+            // Use cached name if available; otherwise fetch and cache
+            const cached = getCachedUserName();
+            if (cached) {
+              setUserName(cached);
+            } else {
+              const userProfile = await getUserProfile();
+              const fullName = userProfile.fullName || userProfile.name || 'Tasker';
+              const displayName = fullName.split(' ')[0];
+              setUserName(displayName);
+              setCachedUserName(displayName);
+            }
           }
         }
       } catch (error) {
         console.error('Error fetching user profile:', error);
         // Fallback to JWT token data if profile fetch fails
-        const token = localStorage.getItem('token');
+        const token = getToken();
         if (token) {
           const payload = parseJwt(token);
           if (payload) {
             const fallbackName = payload.name || payload.username || payload.fullName || 'Tasker';
-            const displayName = fallbackName.split(' ')[0]; // Get only the first name
+            const displayName = fallbackName.split(' ')[0];
             setUserName(displayName);
+            setCachedUserName(displayName);
             setIsLoggedIn(true);
             setCurrentUserId(payload.userId || payload.id || payload._id || payload.sub);
           }
@@ -447,7 +470,7 @@ const TaskerDashboard = () => {
         fallbackValue: 0
       }
     ],
-                apiEndpoint: currentUserId ? `${APP_CONFIG.API.BASE_URL}/api/stats/tasker/${currentUserId}` : null,
+    apiEndpoint: currentUserId ? `/stats/tasker/${currentUserId}` : null,
     fallbackStats: {
       thisMonth: 0,
       totalEarnings: 0,
@@ -469,6 +492,13 @@ const TaskerDashboard = () => {
         {isLoggedIn && <StatsSection {...statsConfig} />}
 
         {isLoggedIn && <RecentActivity />}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <RecentReviews 
+            title="Recent Community Reviews"
+            limit={6}
+            className="mb-8"
+          />
+        </div>
         <AvailableTasks />
         <CategoriesGrid 
           title="Popular Categories"

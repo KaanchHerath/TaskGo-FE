@@ -1,20 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { registerUser } from '../../services/api/authService';
-
-function parseJwt(token) {
-  try {
-    return JSON.parse(atob(token.split('.')[1]));
-  } catch (e) {
-    return null;
-  }
-}
-
-const roleToDashboard = {
-  customer: '/customer-dashboard',
-  tasker: '/tasker-dashboard',
-  admin: '/admin-dashboard',
-};
+import { parseJwt, roleToDashboard, setToken } from '../../utils/auth';
 
 const CustomerRegistration = () => {
   const navigate = useNavigate();
@@ -76,11 +63,19 @@ const CustomerRegistration = () => {
 
     try {
       const response = await registerUser(registrationPayload);
-      localStorage.setItem('token', response.token);
+      setToken(response.token);
       const payload = parseJwt(response.token);
-      const dashboard = roleToDashboard[payload?.role] || '/';
+      
+      // For taskers, redirect to waiting approval page instead of dashboard
+      // since they need admin approval before accessing the platform
+      if (payload?.role === 'tasker') {
+        navigate('/tasker/waiting-approval');
+      } else {
+        const dashboard = roleToDashboard[payload?.role] || '/';
+        navigate(dashboard);
+      }
+      
       sessionStorage.removeItem('registrationData'); // Clear temporary data
-      navigate(dashboard); // Navigate to home or dashboard
     } catch (err) {
       setError(err.message);
       console.error('Customer Registration Error:', err);

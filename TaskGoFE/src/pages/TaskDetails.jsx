@@ -10,17 +10,16 @@ import Modal from '../components/common/Modal';
 import PaymentModal from '../components/common/PaymentModal';
 
 // Helper function to get current user from token
+import { getToken } from '../utils/auth';
 const getCurrentUser = () => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      return { _id: payload.userId, role: payload.role };
-    } catch (e) {
-      return null;
-    }
+  const token = getToken();
+  if (!token) return null;
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return { _id: payload.userId, role: payload.role };
+  } catch (e) {
+    return null;
   }
-  return null;
 };
 
 const TaskDetails = () => {
@@ -241,7 +240,11 @@ const TaskDetails = () => {
       const response = await markTaskComplete(id, payload);
       
       if (response.bothCompleted) {
-        showSuccess('🎉 Task completed successfully by both parties! Payment will be processed.');
+        const remainingAmount = task.agreedPayment ? (task.agreedPayment - Math.round(task.agreedPayment * 0.2)) : 0;
+        const paymentMessage = task.agreedPayment 
+          ? ` The remaining payment of LKR ${remainingAmount.toLocaleString()} should be paid directly to the tasker.`
+          : '';
+        showSuccess(`🎉 Task completed successfully by both parties!${paymentMessage}`);
       } else {
         const message = isTaskOwner 
           ? 'Task marked as complete. Waiting for tasker confirmation.'
@@ -970,6 +973,18 @@ const TaskDetails = () => {
                                 alt={`Completion photo ${index + 1}`}
                                 className="w-full h-32 object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-90 transition-opacity shadow-md"
                                 onClick={() => window.open(photo, '_blank')}
+                                onError={(e) => {
+                                  // Handle broken/invalid image URLs
+                                  e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEyOCIgdmlld0JveD0iMCAwIDIwMCAxMjgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMTI4IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik04MCA2NEw5NiA0OEwxMjAgNzJMMTQ0IDQ4TDE2MCA2NEwxNDQgODBMMTIwIDU2TDk2IDgwTDgwIDY0WiIgZmlsbD0iIzlDQTNBRiIvPgo8dGV4dCB4PSIxMDAiIHk9IjEwMCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEyIiBmaWxsPSIjNkI3MjgwIj5JbWFnZSBub3QgYXZhaWxhYmxlPC90ZXh0Pgo8L3N2Zz4K';
+                                  e.target.style.cursor = 'default';
+                                  e.target.onclick = null;
+                                }}
+                                onLoad={(e) => {
+                                  // Check if image actually loaded content
+                                  if (e.target.naturalWidth === 0) {
+                                    e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEyOCIgdmlld0JveD0iMCAwIDIwMCAxMjgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMTI4IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik04MCA2NEw5NiA0OEwxMjAgNzJMMTQ0IDQ4TDE2MCA2NEwxNDQgODBMMTIwIDU2TDk2IDgwTDgwIDY0WiIgZmlsbD0iIzlDQTNBRiIvPgo8dGV4dCB4PSIxMDAiIHk9IjEwMCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEyIiBmaWxsPSIjNkI3MjgwIj5JbWFnZSBub3QgYXZhaWxhYmxlPC90ZXh0Pgo8L3N2Zz4K';
+                                  }
+                                }}
                               />
                               <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded-lg flex items-center justify-center">
                                 <span className="text-white opacity-0 group-hover:opacity-100 text-sm font-medium">
@@ -1438,6 +1453,38 @@ const TaskDetails = () => {
         maxWidth="max-w-md"
       >
         <div className="space-y-4">
+          {/* Payment Information */}
+          {task.agreedPayment && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h4 className="font-semibold text-blue-900 mb-3 flex items-center">
+                <FaDollarSign className="mr-2" />
+                Payment Information
+              </h4>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-blue-700">Total Agreed Payment:</span>
+                  <span className="font-semibold text-blue-900">LKR {task.agreedPayment.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-blue-700">Advance Paid (20%):</span>
+                  <span className="font-semibold text-blue-900">LKR {Math.round(task.agreedPayment * 0.2).toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between border-t border-blue-200 pt-2">
+                  <span className="text-blue-700 font-medium">Remaining Payment:</span>
+                  <span className="font-bold text-blue-900">LKR {(task.agreedPayment - Math.round(task.agreedPayment * 0.2)).toLocaleString()}</span>
+                </div>
+              </div>
+              <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                <p className="text-yellow-800 text-xs">
+                  {isTaskOwner 
+                    ? '💰 Customer: Please arrange to pay the remaining amount directly to the tasker upon task completion.'
+                    : '💰 Tasker: Please collect the remaining payment amount from the customer after completing this task.'
+                  }
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Show different fields based on user role */}
           {isTaskOwner && (
             <>

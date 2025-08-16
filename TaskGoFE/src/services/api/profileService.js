@@ -1,32 +1,12 @@
-import { APP_CONFIG } from '../../config/appConfig';
-
-const API_BASE_URL = APP_CONFIG.API.BASE_URL;
+import axiosInstance from './axiosConfig';
 
 /**
  * Get user's profile information
  * @returns {Promise<Object>} User profile data
  */
 export const getProfile = async () => {
-  const token = localStorage.getItem('token');
-  
-  if (!token) {
-    throw new Error('No authentication token found');
-  }
-
-  const response = await fetch(`${API_BASE_URL}/api/users/profile`, {
-    method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    }
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Failed to fetch profile');
-  }
-
-  return await response.json();
+  const response = await axiosInstance.get('/users/profile');
+  return response.data;
 };
 
 /**
@@ -35,27 +15,8 @@ export const getProfile = async () => {
  * @returns {Promise<Object>} Updated profile data
  */
 export const updateProfile = async (profileData) => {
-  const token = localStorage.getItem('token');
-  
-  if (!token) {
-    throw new Error('No authentication token found');
-  }
-
-  const response = await fetch(`${API_BASE_URL}/api/users/profile`, {
-    method: 'PUT',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(profileData)
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Failed to update profile');
-  }
-
-  return await response.json();
+  const response = await axiosInstance.put('/users/profile', profileData);
+  return response.data;
 };
 
 /**
@@ -65,30 +26,11 @@ export const updateProfile = async (profileData) => {
  * @returns {Promise<Object>} Success message
  */
 export const changePassword = async (currentPassword, newPassword) => {
-  const token = localStorage.getItem('token');
-  
-  if (!token) {
-    throw new Error('No authentication token found');
-  }
-
-  const response = await fetch(`${API_BASE_URL}/api/users/change-password`, {
-    method: 'PUT',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      currentPassword,
-      newPassword
-    })
+  const response = await axiosInstance.put('/users/change-password', {
+    currentPassword,
+    newPassword
   });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Failed to change password');
-  }
-
-  return await response.json();
+  return response.data;
 };
 
 /**

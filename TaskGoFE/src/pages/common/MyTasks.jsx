@@ -2,14 +2,9 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaTasks, FaUser, FaUsers, FaEye, FaEdit, FaTrash, FaCalendar, FaDollarSign, FaMapMarkerAlt, FaClock, FaCheckCircle, FaTimesCircle, FaHourglass, FaList, FaBars, FaUserCheck, FaStar, FaFileAlt, FaClipboardList, FaHandshake } from 'react-icons/fa';
 import { getMyTasks, getMyApplications } from '../../services/api/taskService';
+import { parseJwt, getToken } from '../../utils/auth';
 
-function parseJwt(token) {
-  try {
-    return JSON.parse(atob(token.split('.')[1]));
-  } catch (e) {
-    return null;
-  }
-}
+ 
 
 const MyTasks = () => {
   const [tasks, setTasks] = useState([]);
@@ -23,7 +18,7 @@ const MyTasks = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = getToken();
     if (token) {
       const payload = parseJwt(token);
       if (payload) {
@@ -45,7 +40,7 @@ const MyTasks = () => {
     try {
       setLoading(true);
       // Only apply status filter for status-specific tabs
-      const statusTabs = ['cancelled'];
+      const statusTabs = ['cancelled', 'completed'];
       const statusFilter = statusTabs.includes(activeTab) ? activeTab : undefined;
       const data = await getMyTasks(statusFilter);
       const allTasks = data.data || [];
@@ -73,7 +68,7 @@ const MyTasks = () => {
   const fetchMyApplications = async () => {
     try {
       // Only apply status filter for status-specific tabs
-      const statusTabs = ['cancelled'];
+      const statusTabs = ['cancelled', 'completed'];
       const statusFilter = statusTabs.includes(activeTab) ? activeTab : undefined;
       const data = await getMyApplications(statusFilter);
       setApplications(data.data || []);
@@ -149,10 +144,11 @@ const MyTasks = () => {
     { id: 'completed', label: 'Completed', count: tasks.filter(t => t.status === 'completed').length + targetedTasks.filter(t => t.status === 'completed').length },
     { id: 'cancelled', label: 'Cancelled', count: tasks.filter(t => t.status === 'cancelled').length + targetedTasks.filter(t => t.status === 'cancelled').length }
   ] : [
-    { id: 'all', label: 'All', count: applications.filter(app => app.task.status !== 'completed' && app.task.status !== 'scheduled').length + targetedTasks.length + tasks.length },
-    { id: 'targeted', label: 'Hired Tasks', count: targetedTasks.length },
-    { id: 'selected', label: 'Scheduled Tasks', count: tasks.length },
-    { id: 'applications', label: 'Applications', count: applications.filter(app => app.task.status !== 'completed' && app.task.status !== 'scheduled').length },
+    { id: 'all', label: 'All Active', count: applications.filter(app => app.task.status !== 'completed' && app.task.status !== 'cancelled').length + targetedTasks.filter(t => t.status !== 'completed' && t.status !== 'cancelled').length + tasks.filter(t => t.status !== 'completed' && t.status !== 'cancelled').length },
+    { id: 'targeted', label: 'Hired Tasks', count: targetedTasks.filter(t => t.status !== 'completed' && t.status !== 'cancelled').length },
+    { id: 'selected', label: 'Scheduled Tasks', count: tasks.filter(t => t.status !== 'completed' && t.status !== 'cancelled').length },
+    { id: 'applications', label: 'Applications', count: applications.filter(app => app.task.status !== 'completed' && app.task.status !== 'cancelled').length },
+    { id: 'completed', label: 'Completed Tasks', count: applications.filter(a => a.task.status === 'completed').length + targetedTasks.filter(t => t.status === 'completed').length + tasks.filter(t => t.status === 'completed').length },
     { id: 'cancelled', label: 'Cancelled', count: applications.filter(a => a.task.status === 'cancelled').length + targetedTasks.filter(t => t.status === 'cancelled').length + tasks.filter(t => t.status === 'cancelled').length }
   ];
 
@@ -225,16 +221,22 @@ const MyTasks = () => {
       switch (activeTab) {
         case 'all':
           return [
-            ...targetedTasks.map(task => ({ ...task, type: 'targeted' })),
-            ...tasks.map(task => ({ ...task, type: 'selected' })),
-            ...applications.filter(app => app.task.status !== 'completed' && app.task.status !== 'scheduled').map(app => ({ ...app, type: 'application' }))
+            ...targetedTasks.filter(t => t.status !== 'completed' && t.status !== 'cancelled').map(task => ({ ...task, type: 'targeted' })),
+            ...tasks.filter(t => t.status !== 'completed' && t.status !== 'cancelled').map(task => ({ ...task, type: 'selected' })),
+            ...applications.filter(app => app.task.status !== 'completed' && app.task.status !== 'cancelled').map(app => ({ ...app, type: 'application' }))
           ];
         case 'targeted':
-          return targetedTasks.map(task => ({ ...task, type: 'targeted' }));
+          return targetedTasks.filter(t => t.status !== 'completed' && t.status !== 'cancelled').map(task => ({ ...task, type: 'targeted' }));
         case 'selected':
-          return tasks.map(task => ({ ...task, type: 'selected' }));
+          return tasks.filter(t => t.status !== 'completed' && t.status !== 'cancelled').map(task => ({ ...task, type: 'selected' }));
         case 'applications':
-          return applications.filter(app => app.task.status !== 'completed' && app.task.status !== 'scheduled').map(app => ({ ...app, type: 'application' }));
+          return applications.filter(app => app.task.status !== 'completed' && app.task.status !== 'cancelled').map(app => ({ ...app, type: 'application' }));
+        case 'completed':
+          return [
+            ...targetedTasks.filter(t => t.status === 'completed').map(task => ({ ...task, type: 'targeted' })),
+            ...tasks.filter(t => t.status === 'completed').map(task => ({ ...task, type: 'selected' })),
+            ...applications.filter(a => a.task.status === 'completed').map(app => ({ ...app, type: 'application' }))
+          ];
         case 'cancelled':
           return [
             ...targetedTasks.filter(t => t.status === 'cancelled').map(task => ({ ...task, type: 'targeted' })),
@@ -418,12 +420,16 @@ const MyTasks = () => {
                 <FaTasks className="w-8 h-8 text-slate-500" />
               </div>
               <h3 className="text-xl font-bold text-slate-800 mb-3">
-                {activeTab === 'all' ? 'No tasks found' : `No ${activeTab} tasks`}
+                {activeTab === 'all' ? 'No tasks found' : 
+                 activeTab === 'completed' && userRole === 'tasker' ? 'No completed tasks yet' :
+                 `No ${activeTab} tasks`}
               </h3>
               <p className="text-slate-600 mb-6 leading-relaxed">
                 {userRole === 'customer' 
                   ? 'You haven\'t posted any tasks yet. Start by posting your first task!'
-                  : 'You haven\'t applied for any tasks yet. Browse available tasks to get started!'
+                  : activeTab === 'completed' 
+                    ? 'You haven\'t completed any tasks yet. Keep working on your current tasks!'
+                    : 'You haven\'t applied for any tasks yet. Browse available tasks to get started!'
                 }
               </p>
               {userRole === 'customer' ? (
@@ -444,7 +450,29 @@ const MyTasks = () => {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <>
+            {/* Section Header for Completed Tasks */}
+            {activeTab === 'completed' && userRole === 'tasker' && (
+              <div className="mb-8">
+                <div className="bg-gradient-to-r from-green-50/50 to-emerald-50/50 backdrop-blur-sm rounded-2xl p-6 border border-green-100/50 shadow-lg">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-12 h-12 bg-gradient-to-r from-green-500/80 to-emerald-600/80 rounded-2xl flex items-center justify-center shadow-md">
+                      <FaCheckCircle className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold bg-gradient-to-r from-green-700 to-emerald-600 bg-clip-text text-transparent">
+                        Completed Tasks
+                      </h2>
+                      <p className="text-green-700/70">
+                        Tasks you have successfully completed and received payment for
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredData.map((item) => {
               let task, isApplication, isTargeted, isSelected, taskType;
               
@@ -491,7 +519,7 @@ const MyTasks = () => {
                         }`}>
                           {userRole === 'customer' && isTargeted ? 'Direct Hire' :
                            userRole === 'tasker' && isTargeted ? 'Hired' :
-                           userRole === 'tasker' && isSelected ? 'Scheduled' :
+                           userRole === 'tasker' && isSelected ? 'Selected' :
                            userRole === 'tasker' && isApplication ? 'Applied' : ''}
                         </span>
                       )}
@@ -579,7 +607,8 @@ const MyTasks = () => {
                 </div>
               );
             })}
-          </div>
+            </div>
+          </>
         )}
           </div>
         </div>

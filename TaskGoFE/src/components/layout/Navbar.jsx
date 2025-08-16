@@ -2,14 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { FaUser, FaChevronDown, FaBell, FaPlus, FaSearch, FaTasks } from "react-icons/fa";
 import TaskGoLogo from "../common/TaskGoLogo";
-
-function parseJwt(token) {
-  try {
-    return JSON.parse(atob(token.split('.')[1]));
-  } catch (e) {
-    return null;
-  }
-}
+import { parseJwt, getToken, clearToken } from "../../utils/auth";
 
 const Navbar = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -21,7 +14,7 @@ const Navbar = () => {
   const location = useLocation();
 
   const checkAuthState = () => {
-    const token = localStorage.getItem('token');
+    const token = getToken();
     if (token) {
       const payload = parseJwt(token);
       if (payload) {
@@ -30,7 +23,7 @@ const Navbar = () => {
         setUserName(payload.fullName || payload.name || payload.email || 'User');
       } else {
         // Invalid token
-        localStorage.removeItem('token');
+        clearToken();
         setIsLoggedIn(false);
         setUserRole(null);
         setUserName('');
@@ -91,7 +84,7 @@ const Navbar = () => {
   }, [isProfileMenuOpen]);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
+    clearToken();
     setIsLoggedIn(false);
     setUserRole(null);
     setUserName('');
@@ -153,72 +146,121 @@ const Navbar = () => {
 
           {/* Center Navigation Links - Absolutely Centered */}
           <div className="hidden md:flex items-center space-x-1 absolute left-1/2 transform -translate-x-1/2">
-            <Link 
-              to={getDashboardPath()} 
-              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
-                isActiveLink(getDashboardPath()) 
-                  ? 'bg-blue-50 text-blue-600 shadow-sm' 
-                  : 'text-slate-600 hover:text-blue-600 hover:bg-slate-50'
-              }`}
-            >
-              Home
-            </Link>
-            {userRole === 'tasker' && (
-              <Link 
-                to="/tasks" 
-                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
-                  isActiveLink('/tasks') 
-                    ? 'bg-blue-50 text-blue-600 shadow-sm' 
-                    : 'text-slate-600 hover:text-blue-600 hover:bg-slate-50'
-                }`}
-              >
-                Tasks
-              </Link>
+            {/* Admin Navigation */}
+            {userRole === 'admin' ? (
+              <>
+                <Link 
+                  to="/admin" 
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                    isActiveLink('/admin') 
+                      ? 'bg-blue-50 text-blue-600 shadow-sm' 
+                      : 'text-slate-600 hover:text-blue-600 hover:bg-slate-50'
+                  }`}
+                >
+                  Dashboard
+                </Link>
+                <Link 
+                  to="/admin/taskers" 
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                    isActiveLink('/admin/taskers') 
+                      ? 'bg-blue-50 text-blue-600 shadow-sm' 
+                      : 'text-slate-600 hover:text-blue-600 hover:bg-slate-50'
+                  }`}
+                >
+                  Taskers
+                </Link>
+                <Link 
+                  to="/admin/tasks" 
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                    isActiveLink('/admin/tasks') 
+                      ? 'bg-blue-50 text-blue-600 shadow-sm' 
+                      : 'text-slate-600 hover:text-blue-600 hover:bg-slate-50'
+                  }`}
+                >
+                  Tasks
+                </Link>
+                <Link 
+                  to="/admin/users" 
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                    isActiveLink('/admin/users') 
+                      ? 'bg-blue-50 text-blue-600 shadow-sm' 
+                      : 'text-slate-600 hover:text-blue-600 hover:bg-slate-50'
+                  }`}
+                >
+                  Users
+                </Link>
+              </>
+            ) : (
+              <>
+                {/* Regular User Navigation */}
+                <Link 
+                  to={getDashboardPath()} 
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                    isActiveLink(getDashboardPath()) 
+                      ? 'bg-blue-50 text-blue-600 shadow-sm' 
+                      : 'text-slate-600 hover:text-blue-600 hover:bg-slate-50'
+                  }`}
+                >
+                  Home
+                </Link>
+                {userRole === 'tasker' && (
+                  <Link 
+                    to="/tasks" 
+                    className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                      isActiveLink('/tasks') 
+                        ? 'bg-blue-50 text-blue-600 shadow-sm' 
+                        : 'text-slate-600 hover:text-blue-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    Tasks
+                  </Link>
+                )}
+                {(userRole === 'customer' || userRole === 'tasker') && (
+                  <Link 
+                    to="/my-tasks" 
+                    className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                      isActiveLink('/my-tasks') 
+                        ? 'bg-blue-50 text-blue-600 shadow-sm' 
+                        : 'text-slate-600 hover:text-blue-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    My Tasks
+                  </Link>
+                )}
+                <Link 
+                  to="/categories" 
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                    isActiveLink('/categories') 
+                      ? 'bg-blue-50 text-blue-600 shadow-sm' 
+                      : 'text-slate-600 hover:text-blue-600 hover:bg-slate-50'
+                  }`}
+                >
+                  Categories
+                </Link>
+                {userRole === 'customer' && (
+                  <Link 
+                    to="/taskers" 
+                    className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                      isActiveLink('/taskers') 
+                        ? 'bg-blue-50 text-blue-600 shadow-sm' 
+                        : 'text-slate-600 hover:text-blue-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    Taskers
+                  </Link>
+                )}
+                <Link 
+                  to="/contact" 
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                    isActiveLink('/contact') 
+                      ? 'bg-blue-50 text-blue-600 shadow-sm' 
+                      : 'text-slate-600 hover:text-blue-600 hover:bg-slate-50'
+                  }`}
+                >
+                  Contact
+                </Link>
+              </>
             )}
-            {(userRole === 'customer' || userRole === 'tasker') && (
-              <Link 
-                to="/my-tasks" 
-                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
-                  isActiveLink('/my-tasks') 
-                    ? 'bg-blue-50 text-blue-600 shadow-sm' 
-                    : 'text-slate-600 hover:text-blue-600 hover:bg-slate-50'
-                }`}
-              >
-                My Tasks
-              </Link>
-            )}
-            <Link 
-              to="/categories" 
-              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
-                isActiveLink('/categories') 
-                  ? 'bg-blue-50 text-blue-600 shadow-sm' 
-                  : 'text-slate-600 hover:text-blue-600 hover:bg-slate-50'
-              }`}
-            >
-              Categories
-            </Link>
-            {userRole === 'customer' && (
-              <Link 
-                to="/taskers" 
-                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
-                  isActiveLink('/taskers') 
-                    ? 'bg-blue-50 text-blue-600 shadow-sm' 
-                    : 'text-slate-600 hover:text-blue-600 hover:bg-slate-50'
-                }`}
-              >
-                Taskers
-              </Link>
-            )}
-            <Link 
-              to="/contact" 
-              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
-                isActiveLink('/contact') 
-                  ? 'bg-blue-50 text-blue-600 shadow-sm' 
-                  : 'text-slate-600 hover:text-blue-600 hover:bg-slate-50'
-              }`}
-            >
-              Contact
-            </Link>
           </div>
 
           {/* Right Side - Authentication Section */}

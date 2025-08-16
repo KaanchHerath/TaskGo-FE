@@ -154,7 +154,13 @@ const CustomerSignup = () => {
       // Dispatch custom event to notify navbar of auth change
       window.dispatchEvent(new Event('authStateChanged'));
       
-      navigate('/customer/dashboard');
+      // For taskers, redirect to waiting approval page instead of dashboard
+      // since they need admin approval before accessing the platform
+      if (data.user.role === 'tasker') {
+        navigate('/tasker/waiting-approval');
+      } else {
+        navigate('/customer/dashboard');
+      }
     } catch (err) {
       setSubmitError(err.message || 'Registration failed. Please try again.');
       // Scroll to top to show error

@@ -2,14 +2,15 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { FaTools, FaWrench, FaBroom, FaCog, FaPlug, FaHammer, FaLeaf, FaTree, FaLock } from 'react-icons/fa';
 import { getCategoryStats } from '../../services/api/taskService';
+import { getToken } from '../../utils/auth';
 
 // This is now a general categories page - will redirect based on user role
 const Categories = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Get user role from localStorage
-    const token = localStorage.getItem('token');
+    // Get user role from centralized auth util
+    const token = getToken();
     if (token) {
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
