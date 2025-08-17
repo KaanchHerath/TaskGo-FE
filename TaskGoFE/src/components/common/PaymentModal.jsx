@@ -22,10 +22,11 @@ const PaymentModal = ({
     script.async = true;
     document.head.appendChild(script);
 
-    // Set up PayHere event handlers
-    // Note: The actual task update happens in the backend via notify_url callback
-    // This frontend callback is just for user experience
-    if (window.payhere) {
+    const attachHandlers = () => {
+      if (!window.payhere) return;
+      // Set up PayHere event handlers
+      // Note: The actual task update happens in the backend via notify_url callback
+      // This frontend callback is just for user experience
       window.payhere.onCompleted = function onCompleted(orderId) {
         console.log("Payment completed. OrderID:" + orderId);
         // Payment completed - start checking payment status
@@ -43,6 +44,13 @@ const PaymentModal = ({
         console.log("Error:" + error);
         setError('Payment error occurred. Please try again.');
       };
+    };
+
+    // If already loaded
+    if (window.payhere) {
+      attachHandlers();
+    } else {
+      script.onload = attachHandlers;
     }
 
     return () => {
@@ -77,8 +85,6 @@ const PaymentModal = ({
             if (onPaymentSuccess) {
               onPaymentSuccess();
             }
-            // Show success message
-            alert('Payment successful! Your task has been scheduled.');
             return;
           } else if (data.success && data.data.paymentStatus === 'failed') {
             console.log('Payment failed');
@@ -92,7 +98,7 @@ const PaymentModal = ({
         
         // If not successful and haven't reached max attempts, try again
         if (attempts < maxAttempts) {
-          setTimeout(checkStatus, 2000); // Check again in 2 seconds
+          setTimeout(checkStatus, 5000); // Check again in 5 seconds (reduced frequency)
         } else {
           console.log('Max attempts reached, payment status unknown');
           setPaymentStatus('unknown');
@@ -144,7 +150,7 @@ const PaymentModal = ({
           "merchant_id": "1231112", // TODO: Replace with your actual PayHere Merchant ID
           "return_url": undefined, // Important - set to undefined for popup
           "cancel_url": undefined, // Important - set to undefined for popup
-          "notify_url": "https://e35ac3324b95.ngrok-free.app/api/payments/notify", // ngrok URL for local development
+          "notify_url": "https://916dbf2a3718.ngrok-free.app/api/payments/notify", // ngrok URL for local development
           "order_id": response.data.orderId, // Use the orderId from backend (IMPORTANT!)
           "items": `Advance Payment - ${task.title}`,
           "amount": advanceAmount.toFixed(2),

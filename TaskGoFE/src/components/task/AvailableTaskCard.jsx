@@ -1,4 +1,6 @@
 import React from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { FaUser, FaMapMarkerAlt, FaClock, FaUsers, FaTools, FaWrench, FaBroom, FaCog, FaPlug, FaHammer, FaLeaf, FaTree, FaTruck, FaPaintBrush, FaLaptop } from 'react-icons/fa';
 
 const AvailableTaskCard = ({ 
@@ -64,7 +66,22 @@ const AvailableTaskCard = ({
           </div>
         </div>
         
-        <p className="text-slate-600 text-sm mb-4 line-clamp-2">{task.description}</p>
+        <div className="text-slate-600 text-sm mb-4 line-clamp-2">
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            linkTarget="_blank"
+            // Limit to inline-style formatting only in cards
+            allowedElements={[
+              'p', 'strong', 'em', 'del', 'code', 'span', 'a'
+            ]}
+            components={{
+              p: ({node, ...props}) => <span {...props} />,
+              a: ({node, ...props}) => <span {...props} />
+            }}
+          >
+            {task.description || ''}
+          </ReactMarkdown>
+        </div>
         
         <div className="space-y-3 mb-6">
           <div className="flex items-center text-slate-600 text-sm">

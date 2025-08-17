@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FaClock, FaMapMarkerAlt, FaPhone, FaEnvelope, FaStar, FaShare, FaFacebook, FaTwitter, FaPinterest, FaDollarSign, FaCalendar, FaUser, FaTag, FaEye, FaHeart, FaFlag, FaArrowLeft, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 import { useJob } from '../hooks/useJob';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { applyForTask } from '../services/api/taskService';
 import ApplyButton from '../components/task/ApplyButton';
 
@@ -230,10 +232,8 @@ const TaskDescription = () => {
                   Task Description
                 </span>
               </h2>
-              <div className="prose prose-slate max-w-none">
-                <p className="text-slate-700 leading-relaxed whitespace-pre-line text-lg">
-                  {job.description}
-                </p>
+              <div className="prose prose-slate max-w-none text-lg">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{job.description || ''}</ReactMarkdown>
               </div>
             </div>
 

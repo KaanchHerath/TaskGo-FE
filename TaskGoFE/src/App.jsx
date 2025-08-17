@@ -57,6 +57,7 @@ import PaymentCancelled from "./pages/PaymentCancelled";
 // Components
 import PrivateRoute from "./utils/PrivateRoute";
 import TaskerApprovalCheck from "./components/common/TaskerApprovalCheck";
+import GlobalApprovalGate from "./components/common/GlobalApprovalGate";
 
 // Dashboard redirect component
 const DashboardRedirect = () => {
@@ -91,6 +92,8 @@ function App() {
       <ScrollToTop />
       <Layout>
         <Routes>
+          {/* Global gate: any logged-in unapproved tasker is redirected */}
+          <Route element={<GlobalApprovalGate />}>
           {/* Public Routes */}
           <Route path="/" element={<Home />} />
           <Route path="/contact" element={<Contact />} />
@@ -164,6 +167,7 @@ function App() {
           {/* Profile route accessible to all logged-in users */}
           <Route element={<PrivateRoute allowedRoles={["customer", "tasker", "admin"]} />}>
             <Route path="/profile" element={<CustomerProfile />} />
+          </Route>
           </Route>
         </Routes>
       </Layout>

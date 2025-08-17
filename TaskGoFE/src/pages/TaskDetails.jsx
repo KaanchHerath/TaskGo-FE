@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaUsers, FaEye, FaCalendarAlt, FaDollarSign, FaMapMarkerAlt, FaClock, FaUser, FaCheckCircle, FaHourglass, FaTimesCircle, FaComments, FaCamera, FaStar, FaBriefcase, FaAward, FaUserTie, FaCheck, FaCreditCard } from 'react-icons/fa';
 import { getTask, applyForTask, getTaskApplications, markTaskComplete, cancelScheduledTask, selectTasker } from '../services/api/taskService';
@@ -8,6 +10,7 @@ import ApplyButton from '../components/task/ApplyButton';
 import { getTaskerProfile, getTaskerReviews } from '../services/api/taskerService';
 import Modal from '../components/common/Modal';
 import PaymentModal from '../components/common/PaymentModal';
+import SelectTaskerModal from '../components/task/SelectTaskerModal';
 
 // Helper function to get current user from token
 import { getToken } from '../utils/auth';
@@ -43,6 +46,7 @@ const TaskDetails = () => {
   const [loadingTaskerData, setLoadingTaskerData] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedApplication, setSelectedApplication] = useState(null);
+  const [showSelectTaskerModal, setShowSelectTaskerModal] = useState(false);
   const currentUser = getCurrentUser();
 
   // Define computed values before useEffect hooks
@@ -75,7 +79,7 @@ const TaskDetails = () => {
     if (task && task.isTargeted && task.status === 'active' && isTaskOwner) {
       intervalId = setInterval(() => {
         fetchTaskDetails();
-      }, 10000); // Poll every 10 seconds
+      }, 30000); // Poll every 30 seconds (reduced frequency)
     }
     
     return () => {
@@ -198,10 +202,12 @@ const TaskDetails = () => {
         // Store the selected application and show payment modal
         setSelectedApplication(application);
         setShowPaymentModal(true);
+        setShowSelectTaskerModal(false);
         showSuccess('Tasker selected! Please complete the advance payment to schedule the task.');
       } else {
         showSuccess('Tasker selected successfully! The task has been scheduled.');
         await fetchTaskDetails(); // Refresh task data
+        setShowSelectTaskerModal(false);
       }
       
     } catch (error) {
@@ -215,6 +221,12 @@ const TaskDetails = () => {
   const handlePaymentSuccess = async (paymentData) => {
     showSuccess('Payment successful! Your task has been scheduled.');
     await fetchTaskDetails(); // Refresh task data
+    // Ensure any PayHere popups are closed
+    try {
+      if (window.payhere && typeof window.payhere.closePayment === 'function') {
+        window.payhere.closePayment();
+      }
+    } catch (_) {}
   };
 
   const handlePaymentError = (errorMessage) => {
@@ -417,10 +429,8 @@ const TaskDetails = () => {
             {/* Task Description */}
             <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-white/20">
               <h2 className="text-2xl font-bold mb-6 text-slate-800">Task Description</h2>
-              <div className="prose prose-slate max-w-none">
-                <p className="text-slate-700 leading-relaxed whitespace-pre-line text-lg">
-                  {task.description}
-                </p>
+              <div className="prose prose-slate max-w-none text-lg">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{task.description || ''}</ReactMarkdown>
               </div>
             </div>
 
@@ -627,11 +637,11 @@ const TaskDetails = () => {
                   </h3>
                   {applications.length > 0 && (
                     <button
-                      onClick={handleViewAllApplications}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+                      onClick={() => setShowSelectTaskerModal(true)}
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
                     >
-                      <FaEye />
-                      <span>View All</span>
+                      <FaCheckCircle />
+                      <span>Select Tasker</span>
                     </button>
                   )}
                 </div>
@@ -1632,6 +1642,15 @@ const TaskDetails = () => {
         applicationId={selectedApplication?._id}
         onPaymentSuccess={handlePaymentSuccess}
         onPaymentError={handlePaymentError}
+      />
+
+      {/* Select Tasker Modal */}
+      <SelectTaskerModal
+        isOpen={showSelectTaskerModal}
+        onClose={() => setShowSelectTaskerModal(false)}
+        applications={applications}
+        onSelect={handleSelectTasker}
+        isSelecting={actionLoading}
       />
       
 

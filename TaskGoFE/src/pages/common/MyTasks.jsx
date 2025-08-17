@@ -136,6 +136,13 @@ const MyTasks = () => {
     navigate(`/edit-task/${taskId}`);
   };
 
+  const ownedTaskIds = new Set([
+    ...targetedTasks.map(t => t._id),
+    ...tasks.map(t => t._id)
+  ]);
+
+  const applicationsExcludingOwned = applications.filter(app => !ownedTaskIds.has(app.task?._id));
+
   const tabs = userRole === 'customer' ? [
     { id: 'all', label: 'All', count: tasks.length + targetedTasks.length },
     { id: 'targeted', label: 'Direct Hires', count: targetedTasks.length },
@@ -144,12 +151,12 @@ const MyTasks = () => {
     { id: 'completed', label: 'Completed', count: tasks.filter(t => t.status === 'completed').length + targetedTasks.filter(t => t.status === 'completed').length },
     { id: 'cancelled', label: 'Cancelled', count: tasks.filter(t => t.status === 'cancelled').length + targetedTasks.filter(t => t.status === 'cancelled').length }
   ] : [
-    { id: 'all', label: 'All Active', count: applications.filter(app => app.task.status !== 'completed' && app.task.status !== 'cancelled').length + targetedTasks.filter(t => t.status !== 'completed' && t.status !== 'cancelled').length + tasks.filter(t => t.status !== 'completed' && t.status !== 'cancelled').length },
+    { id: 'all', label: 'All Active', count: applicationsExcludingOwned.filter(app => app.task.status !== 'completed' && app.task.status !== 'cancelled').length + targetedTasks.filter(t => t.status !== 'completed' && t.status !== 'cancelled').length + tasks.filter(t => t.status !== 'completed' && t.status !== 'cancelled').length },
     { id: 'targeted', label: 'Hired Tasks', count: targetedTasks.filter(t => t.status !== 'completed' && t.status !== 'cancelled').length },
     { id: 'selected', label: 'Scheduled Tasks', count: tasks.filter(t => t.status !== 'completed' && t.status !== 'cancelled').length },
-    { id: 'applications', label: 'Applications', count: applications.filter(app => app.task.status !== 'completed' && app.task.status !== 'cancelled').length },
-    { id: 'completed', label: 'Completed Tasks', count: applications.filter(a => a.task.status === 'completed').length + targetedTasks.filter(t => t.status === 'completed').length + tasks.filter(t => t.status === 'completed').length },
-    { id: 'cancelled', label: 'Cancelled', count: applications.filter(a => a.task.status === 'cancelled').length + targetedTasks.filter(t => t.status === 'cancelled').length + tasks.filter(t => t.status === 'cancelled').length }
+    { id: 'applications', label: 'Applications', count: applicationsExcludingOwned.filter(app => app.task.status !== 'completed' && app.task.status !== 'cancelled').length },
+    { id: 'completed', label: 'Completed Tasks', count: applicationsExcludingOwned.filter(a => a.task.status === 'completed').length + targetedTasks.filter(t => t.status === 'completed').length + tasks.filter(t => t.status === 'completed').length },
+    { id: 'cancelled', label: 'Cancelled', count: applicationsExcludingOwned.filter(a => a.task.status === 'cancelled').length + targetedTasks.filter(t => t.status === 'cancelled').length + tasks.filter(t => t.status === 'cancelled').length }
   ];
 
   if (loading) {
@@ -223,25 +230,25 @@ const MyTasks = () => {
           return [
             ...targetedTasks.filter(t => t.status !== 'completed' && t.status !== 'cancelled').map(task => ({ ...task, type: 'targeted' })),
             ...tasks.filter(t => t.status !== 'completed' && t.status !== 'cancelled').map(task => ({ ...task, type: 'selected' })),
-            ...applications.filter(app => app.task.status !== 'completed' && app.task.status !== 'cancelled').map(app => ({ ...app, type: 'application' }))
+            ...applicationsExcludingOwned.filter(app => app.task.status !== 'completed' && app.task.status !== 'cancelled').map(app => ({ ...app, type: 'application' }))
           ];
         case 'targeted':
           return targetedTasks.filter(t => t.status !== 'completed' && t.status !== 'cancelled').map(task => ({ ...task, type: 'targeted' }));
         case 'selected':
           return tasks.filter(t => t.status !== 'completed' && t.status !== 'cancelled').map(task => ({ ...task, type: 'selected' }));
         case 'applications':
-          return applications.filter(app => app.task.status !== 'completed' && app.task.status !== 'cancelled').map(app => ({ ...app, type: 'application' }));
+          return applicationsExcludingOwned.filter(app => app.task.status !== 'completed' && app.task.status !== 'cancelled').map(app => ({ ...app, type: 'application' }));
         case 'completed':
           return [
             ...targetedTasks.filter(t => t.status === 'completed').map(task => ({ ...task, type: 'targeted' })),
             ...tasks.filter(t => t.status === 'completed').map(task => ({ ...task, type: 'selected' })),
-            ...applications.filter(a => a.task.status === 'completed').map(app => ({ ...app, type: 'application' }))
+            ...applicationsExcludingOwned.filter(a => a.task.status === 'completed').map(app => ({ ...app, type: 'application' }))
           ];
         case 'cancelled':
           return [
             ...targetedTasks.filter(t => t.status === 'cancelled').map(task => ({ ...task, type: 'targeted' })),
             ...tasks.filter(t => t.status === 'cancelled').map(task => ({ ...task, type: 'selected' })),
-            ...applications.filter(a => a.task.status === 'cancelled').map(app => ({ ...app, type: 'application' }))
+            ...applicationsExcludingOwned.filter(a => a.task.status === 'cancelled').map(app => ({ ...app, type: 'application' }))
           ];
         default:
           return [];
@@ -514,13 +521,14 @@ const MyTasks = () => {
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                           isTargeted ? 'bg-purple-100 text-purple-800' :
                           isSelected ? 'bg-indigo-100 text-indigo-800' :
+                          (isApplication && item.status === 'rejected') ? 'bg-red-100 text-red-800' :
                           isApplication ? 'bg-orange-100 text-orange-800' :
                           'bg-gray-100 text-gray-800'
                         }`}>
                           {userRole === 'customer' && isTargeted ? 'Direct Hire' :
                            userRole === 'tasker' && isTargeted ? 'Hired' :
                            userRole === 'tasker' && isSelected ? 'Selected' :
-                           userRole === 'tasker' && isApplication ? 'Applied' : ''}
+                           userRole === 'tasker' && isApplication ? (item.status === 'rejected' ? 'Rejected' : 'Applied') : ''}
                         </span>
                       )}
                     </div>

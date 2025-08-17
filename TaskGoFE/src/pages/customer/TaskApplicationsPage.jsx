@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FaArrowLeft, FaUsers, FaComments, FaCheck, FaClock, FaSpinner, FaStar, FaDollarSign, FaCalendarAlt, FaUser, FaCreditCard } from 'react-icons/fa';
+import { FaArrowLeft, FaUsers, FaComments, FaCheck, FaClock, FaSpinner, FaStar, FaDollarSign, FaCalendarAlt, FaUser, FaCreditCard, FaCheckCircle } from 'react-icons/fa';
 import { getTask, getTaskApplications, selectTasker } from '../../services/api/taskService';
 import TaskChatWindow from '../../components/task/TaskChatWindow';
 import { useToast, ToastContainer } from '../../components/common/Toast';
 import PaymentModal from '../../components/common/PaymentModal';
+import Modal from '../../components/common/Modal';
 
 // Helper to get current user from token
 import { getToken } from '../../utils/auth';
@@ -32,6 +33,8 @@ const TaskApplicationsPage = () => {
   const [chatReceiver, setChatReceiver] = useState(null);
   const [selecting, setSelecting] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [applicationToConfirm, setApplicationToConfirm] = useState(null);
   const currentUser = getCurrentUser();
 
   useEffect(() => {
@@ -69,43 +72,39 @@ const TaskApplicationsPage = () => {
     setChatOpen(true);
   };
 
-  const handleConfirmTasker = async (application) => {
+  const handleConfirmTasker = (application) => {
     if (!application.confirmedByTasker || !application.confirmedTime || !application.confirmedPayment) {
       showError('This tasker has not confirmed their availability yet.');
       return;
     }
+    setApplicationToConfirm(application);
+    setShowConfirmModal(true);
+  };
 
-    const confirmed = window.confirm(
-      `Are you sure you want to select ${application.tasker.fullName} for this task?\n\n` +
-      `Time: ${new Date(application.confirmedTime).toLocaleString()}\n` +
-              `Payment: LKR ${application.confirmedPayment?.toLocaleString()}`
-    );
-
-    if (!confirmed) return;
-
+  const confirmSelectTasker = async () => {
+    if (!applicationToConfirm) return;
+    const application = applicationToConfirm;
     try {
       setSelecting(true);
 
       const response = await selectTasker(
-        taskId, 
-        application.tasker._id, 
-        application.confirmedTime, 
+        taskId,
+        application.tasker._id,
+        application.confirmedTime,
         application.confirmedPayment
       );
-      
-      // Check if payment is required
+
       if (response.requiresPayment) {
-        // Update task with the response data to ensure we have agreedPayment
         setTask(response.data);
-        // Store the selected application and show payment modal
         setSelectedApplication(application);
         setShowPaymentModal(true);
         showSuccess('Tasker selected! Please complete the advance payment to schedule the task.');
       } else {
         showSuccess('Tasker selected successfully! The task has been scheduled.');
-        await fetchTaskAndApplications(); // Refresh task data
+        await fetchTaskAndApplications();
       }
-      
+      setShowConfirmModal(false);
+      setApplicationToConfirm(null);
     } catch (error) {
       console.error('Error selecting tasker:', error);
       showError(error.response?.data?.message || 'Failed to select tasker. Please try again.');
@@ -117,6 +116,12 @@ const TaskApplicationsPage = () => {
   const handlePaymentSuccess = async (paymentData) => {
     showSuccess('Payment successful! Your task has been scheduled.');
     await fetchTaskAndApplications(); // Refresh task data
+    // Ensure any PayHere popups are closed and refresh the view
+    try {
+      if (window.payhere && typeof window.payhere.closePayment === 'function') {
+        window.payhere.closePayment();
+      }
+    } catch (_) {}
   };
 
   const handlePaymentError = (errorMessage) => {
@@ -409,6 +414,51 @@ const TaskApplicationsPage = () => {
          onPaymentSuccess={handlePaymentSuccess}
          onPaymentError={handlePaymentError}
        />
+
+      {/* Confirm Select Tasker Modal */}
+      <Modal
+        isOpen={showConfirmModal}
+        onClose={() => { if (!selecting) { setShowConfirmModal(false); setApplicationToConfirm(null); } }}
+        title="Confirm Tasker Selection"
+        subtitle="Please review the details before confirming"
+        icon={FaCheckCircle}
+        iconColor="text-green-600"
+        iconBgColor="bg-green-100"
+      >
+        {applicationToConfirm && (
+          <div className="space-y-4">
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+              <p className="text-sm text-gray-700"><strong>Tasker:</strong> {applicationToConfirm.tasker.fullName}</p>
+              {applicationToConfirm.confirmedTime && (
+                <p className="text-sm text-gray-700"><strong>Time:</strong> {new Date(applicationToConfirm.confirmedTime).toLocaleString()}</p>
+              )}
+              {applicationToConfirm.confirmedPayment && (
+                <p className="text-sm text-gray-700"><strong>Payment:</strong> LKR {applicationToConfirm.confirmedPayment.toLocaleString()}</p>
+              )}
+              {applicationToConfirm.note && (
+                <p className="text-sm text-gray-700"><strong>Note:</strong> {applicationToConfirm.note}</p>
+              )}
+            </div>
+            <div className="flex space-x-3">
+              <button
+                onClick={() => setShowConfirmModal(false)}
+                disabled={selecting}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmSelectTasker}
+                disabled={selecting}
+                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+              >
+                {selecting ? <FaSpinner className="animate-spin" /> : <FaCheck />}
+                <span>Confirm Selection</span>
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
 
       {/* Toast Container */}
       <ToastContainer toasts={toasts} removeToast={removeToast} />
