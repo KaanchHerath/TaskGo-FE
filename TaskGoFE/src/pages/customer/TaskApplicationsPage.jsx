@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FaArrowLeft, FaUsers, FaComments, FaCheck, FaClock, FaSpinner, FaStar, FaDollarSign, FaCalendarAlt, FaUser, FaCreditCard, FaCheckCircle } from 'react-icons/fa';
+import { FaArrowLeft, FaUsers, FaComments, FaCheck, FaClock, FaSpinner, FaStar, FaDollarSign, FaCalendarAlt, FaUser, FaCreditCard, FaCheckCircle, FaEye } from 'react-icons/fa';
 import { getTask, getTaskApplications, selectTasker } from '../../services/api/taskService';
 import TaskChatWindow from '../../components/task/TaskChatWindow';
 import { useToast, ToastContainer } from '../../components/common/Toast';
 import PaymentModal from '../../components/common/PaymentModal';
 import Modal from '../../components/common/Modal';
+import TaskerProfilePopup from '../../components/task/TaskerProfilePopup';
 
 // Helper to get current user from token
 import { getToken } from '../../utils/auth';
@@ -35,6 +36,9 @@ const TaskApplicationsPage = () => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [applicationToConfirm, setApplicationToConfirm] = useState(null);
+  const [showProfilePopup, setShowProfilePopup] = useState(false);
+  const [selectedTaskerId, setSelectedTaskerId] = useState(null);
+  const [selectedTaskerName, setSelectedTaskerName] = useState('');
   const currentUser = getCurrentUser();
 
   useEffect(() => {
@@ -126,6 +130,18 @@ const TaskApplicationsPage = () => {
 
   const handlePaymentError = (errorMessage) => {
     showError(errorMessage || 'Payment failed. Please try again.');
+  };
+
+  const handleViewTaskerProfile = (taskerId, taskerName) => {
+    setSelectedTaskerId(taskerId);
+    setSelectedTaskerName(taskerName);
+    setShowProfilePopup(true);
+  };
+
+  const closeProfilePopup = () => {
+    setShowProfilePopup(false);
+    setSelectedTaskerId(null);
+    setSelectedTaskerName('');
   };
 
   const getAvailabilityStatus = (application) => {
@@ -255,10 +271,10 @@ const TaskApplicationsPage = () => {
                               <StatusIcon className="text-xs" />
                               <span>{availability.text}</span>
                             </div>
-                            {application.tasker.rating && typeof application.tasker.rating === 'number' && (
+                            {application.tasker.rating?.average && (
                               <div className="flex items-center space-x-1 text-sm text-gray-600">
                                 <FaStar className="text-yellow-500" />
-                                <span>{Number(application.tasker.rating).toFixed(1)}</span>
+                                <span>{Number(application.tasker.rating.average).toFixed(1)}</span>
                               </div>
                             )}
                           </div>
@@ -306,6 +322,13 @@ const TaskApplicationsPage = () => {
 
                     {/* Action Buttons */}
                     <div className="flex flex-col space-y-2 ml-4">
+                      <button
+                        onClick={() => handleViewTaskerProfile(application.tasker._id, application.tasker.fullName)}
+                        className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center space-x-2"
+                      >
+                        <FaEye />
+                        <span>View Profile</span>
+                      </button>
                       <button
                         onClick={() => handleChatOpen(application)}
                         className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
@@ -459,6 +482,14 @@ const TaskApplicationsPage = () => {
           </div>
         )}
       </Modal>
+
+      {/* Tasker Profile Popup */}
+      <TaskerProfilePopup
+        isOpen={showProfilePopup}
+        onClose={closeProfilePopup}
+        taskerId={selectedTaskerId}
+        taskerName={selectedTaskerName}
+      />
 
       {/* Toast Container */}
       <ToastContainer toasts={toasts} removeToast={removeToast} />

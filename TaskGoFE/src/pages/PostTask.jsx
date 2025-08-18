@@ -375,7 +375,7 @@ const PostTask = () => {
                       placeholder="0.00"
                       min="0"
                       step="0.01"
-                      className={`w-full pl-8 pr-16 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                      className={`w-full pl-8 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
                         errors.minPayment ? 'border-red-500' : 'border-gray-300'
                       }`}
                     />
@@ -397,7 +397,7 @@ const PostTask = () => {
                       placeholder="0.00"
                       min="0"
                       step="0.01"
-                      className={`w-full pl-8 pr-16 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                      className={`w-full pl-8 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
                         errors.maxPayment ? 'border-red-500' : 'border-gray-300'
                       }`}
                     />

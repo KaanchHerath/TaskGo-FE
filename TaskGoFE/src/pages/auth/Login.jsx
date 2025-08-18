@@ -27,6 +27,13 @@ const Login = () => {
       const dashboard = roleToDashboard[payload?.role] || '/';
       navigate(dashboard);
     } catch (err) {
+      console.log('Login Error Details:', {
+        message: err.message,
+        status: err.status,
+        data: err.data,
+        errorType: err.errorType
+      });
+      
       // Show special message for rejected taskers
       const approvalStatus = err?.data?.approvalStatus;
       const rejectionReason = err?.data?.rejectionReason;
@@ -45,8 +52,15 @@ const Login = () => {
           return;
         }
         setError('Your account is pending approval. You will be notified once approved.');
+      } else if (err.status === 401) {
+        // Handle invalid credentials specifically
+        setError(err.message || 'Invalid email or password. Please check your credentials and try again.');
+      } else if (err.status === 400) {
+        // Handle validation errors
+        setError(err.message || 'Please check your input and try again.');
       } else {
-        setError(err.message || 'Login failed');
+        // Handle other errors
+        setError(err.message || 'Login failed. Please try again.');
       }
       console.error('Login Error:', err);
     } finally {

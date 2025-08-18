@@ -86,11 +86,47 @@ export const updateTaskerAvailability = async (availabilityData) => {
   }
 };
 
+// Upload qualification documents for taskers
+export const uploadQualificationDocuments = async (documents) => {
+  try {
+    const formData = new FormData();
+    
+    // Add each document to the form data
+    documents.forEach((document, index) => {
+      formData.append('qualificationDocuments', document);
+    });
+
+    const response = await axiosInstance.post('/taskers/qualification-documents', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    
+    return response.data;
+  } catch (error) {
+    console.error('Error uploading qualification documents:', error);
+    throw error;
+  }
+};
+
+// Remove qualification document for taskers
+export const removeQualificationDocument = async (documentId) => {
+  try {
+    const response = await axiosInstance.delete(`/taskers/qualification-documents/${documentId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error removing qualification document:', error);
+    throw error;
+  }
+};
+
 export default {
   getAllTaskers,
   getTopRatedTaskers,
   getTaskerById,
   getTaskerProfile,
   getTaskerReviews,
-  updateTaskerAvailability
+  updateTaskerAvailability,
+  uploadQualificationDocuments,
+  removeQualificationDocument
 }; 

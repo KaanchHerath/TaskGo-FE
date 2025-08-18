@@ -4,10 +4,10 @@ import {
   FaFileAlt, FaCog, FaCamera, FaPhone, FaDollarSign, FaCheckCircle, 
   FaClock, FaAward, FaChartLine, FaEye, FaHeart, FaUpload, FaTrash,
   FaPlus, FaTimes, FaSave, FaSpinner, FaLock, FaExpand, FaDownload,
-  FaFilePdf, FaImage
+  FaFilePdf, FaImage, FaInfoCircle
 } from 'react-icons/fa';
 import { changePassword, getUserProfile, updateUserProfile } from '../../services/api/userService';
-import { updateTaskerAvailability } from '../../services/api/taskerService';
+import { updateTaskerAvailability, uploadQualificationDocuments, removeQualificationDocument } from '../../services/api/taskerService';
 import { useToast, ToastContainer } from '../../components/common/Toast';
 import Modal from '../../components/common/Modal';
 import { getMyTasks, getMyRecentTasks, getAvailableTasks } from '../../services/api/taskService';
@@ -15,6 +15,7 @@ import { PROVINCES, getDistrictsForProvince, formatLocation } from '../../config
 import { getTaskerReviews } from '../../services/api/taskerService';
 import { APP_CONFIG, formatCurrency, formatTimeAgo } from '../../config/appConfig';
 import { getToken } from '../../utils/auth';
+import ProfileCompletionPrompt from '../../components/common/ProfileCompletionPrompt';
 
 const TaskerProfile = () => {
   const [user, setUser] = useState(null);
@@ -55,9 +56,12 @@ const TaskerProfile = () => {
   const [changingPassword, setChangingPassword] = useState(false);
   const [updatingAvailability, setUpdatingAvailability] = useState(false);
   
-  // Document preview state
-  const [previewDocument, setPreviewDocument] = useState(null);
-  const [showPreview, setShowPreview] = useState(false);
+
+
+  // Document upload state
+  const [uploadingDocuments, setUploadingDocuments] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [showUploadModal, setShowUploadModal] = useState(false);
 
   useEffect(() => {
     fetchProfile();
@@ -368,6 +372,67 @@ const TaskerProfile = () => {
     document.body.removeChild(link);
   };
 
+  // File upload handling functions
+  const handleFileSelect = (event) => {
+    const files = Array.from(event.target.files);
+    setSelectedFiles(files);
+  };
+
+  const handleUploadDocuments = async () => {
+    if (selectedFiles.length === 0) {
+      showError('Please select files to upload');
+      return;
+    }
+
+    try {
+      setUploadingDocuments(true);
+      const response = await uploadQualificationDocuments(selectedFiles);
+      
+      // Update the user state with new documents
+      setUser(prev => ({
+        ...prev,
+        taskerProfile: {
+          ...prev.taskerProfile,
+          qualificationDocuments: [
+            ...(prev.taskerProfile?.qualificationDocuments || []),
+            ...response.data
+          ]
+        }
+      }));
+
+      setSelectedFiles([]);
+      setShowUploadModal(false);
+      showSuccess('Qualification documents uploaded successfully!');
+    } catch (error) {
+      showError('Failed to upload documents. Please try again.');
+      console.error('Error uploading documents:', error);
+    } finally {
+      setUploadingDocuments(false);
+    }
+  };
+
+  const handleRemoveDocument = async (documentPath, index) => {
+    try {
+      // Extract document ID from path or use index as fallback
+      const documentId = documentPath.split('/').pop().split('.')[0] || index;
+      await removeQualificationDocument(documentId);
+      
+      // Update the user state by removing the document
+      setUser(prev => ({
+        ...prev,
+        taskerProfile: {
+          ...prev.taskerProfile,
+          qualificationDocuments: prev.taskerProfile.qualificationDocuments.filter((_, i) => i !== index)
+        }
+      }));
+
+      showSuccess('Document removed successfully!');
+    } catch (error) {
+      showError('Failed to remove document. Please try again.');
+      console.error('Error removing document:', error);
+    }
+  };
+
   const tabs = [
     { id: 'overview', label: 'Overview', icon: FaChartLine },
     { id: 'personal', label: 'Personal', icon: FaUser },
@@ -427,6 +492,11 @@ const TaskerProfile = () => {
               </div>
                 </div>
               </div>
+            </div>
+
+            {/* Profile Completion Prompt */}
+            <div className="max-w-7xl mx-auto px-4 py-4">
+              <ProfileCompletionPrompt userProfile={user} />
             </div>
 
       <div className="max-w-7xl mx-auto px-4 py-8">
@@ -1074,30 +1144,7 @@ const TaskerProfile = () => {
                       )}
                     </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-3">Advance Payment Amount</label>
-                      {isEditing ? (
-                        <select
-                          value={formData.advancePaymentAmount || ''}
-                          onChange={(e) => setFormData({...formData, advancePaymentAmount: e.target.value})}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        >
-                          <option value="">No advance payment required</option>
-                          {APP_CONFIG.TASK.DEFAULT_PAYMENT_RANGES.map(range => (
-                            <option key={range.value} value={range.value}>{range.label}</option>
-                          ))}
-                        </select>
-                      ) : (
-                        <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-slate-700">
-                          {formData.advancePaymentAmount ? formatCurrency(formData.advancePaymentAmount) : 'No advance payment required'}
-                        </div>
-                      )}
-                      {isEditing && (
-                        <p className="text-xs text-gray-500 mt-1">
-                          Optional: Amount customers pay upfront before task begins
-                        </p>
-                      )}
-                    </div>
+                   
                 </div>
                 
                   {isEditing && (
@@ -1150,13 +1197,6 @@ const TaskerProfile = () => {
                           </p>
                           <div className="flex items-center space-x-3 mt-3">
                             <button 
-                              onClick={() => handlePreviewDocument(user.taskerProfile.idDocument, 'ID Document')}
-                              className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center space-x-1 bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors"
-                            >
-                              <FaEye className="w-4 h-4" />
-                              <span>Preview</span>
-                            </button>
-                            <button 
                               onClick={() => handleDownloadDocument(user.taskerProfile.idDocument, 'id-document')}
                               className="text-green-600 hover:text-green-700 text-sm font-medium flex items-center space-x-1 bg-green-50 px-3 py-1.5 rounded-lg hover:bg-green-100 transition-colors"
                             >
@@ -1174,6 +1214,7 @@ const TaskerProfile = () => {
                               <FaExpand className="w-4 h-4" />
                               <span>Open</span>
                             </button>
+                            
                           </div>
                         </div>
                       </div>
@@ -1188,10 +1229,19 @@ const TaskerProfile = () => {
 
                 {/* Qualification Documents Section */}
                 <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-8">
-                  <h3 className="text-xl font-bold text-slate-800 mb-6 flex items-center">
-                    <FaAward className="w-6 h-6 text-green-600 mr-3" />
-                    Qualification Documents
-                  </h3>
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-xl font-bold text-slate-800 flex items-center">
+                      <FaAward className="w-6 h-6 text-green-600 mr-3" />
+                      Qualification Documents
+                    </h3>
+                    <button
+                      onClick={() => setShowUploadModal(true)}
+                      className="bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-2 rounded-xl hover:from-green-600 hover:to-green-700 transition-all duration-200 flex items-center space-x-2 font-medium shadow-lg"
+                    >
+                      <FaPlus className="w-4 h-4" />
+                      <span>Add Documents</span>
+                    </button>
+                  </div>
                   
                   {user.taskerProfile?.qualificationDocuments && user.taskerProfile.qualificationDocuments.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1210,13 +1260,6 @@ const TaskerProfile = () => {
                               </p>
                               <div className="flex items-center space-x-3 mt-3">
                                 <button 
-                                  onClick={() => handlePreviewDocument(doc, `Qualification Document ${index + 1}`)}
-                                  className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center space-x-1 bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors"
-                                >
-                                  <FaEye className="w-4 h-4" />
-                                  <span>Preview</span>
-                                </button>
-                                <button 
                                   onClick={() => handleDownloadDocument(doc, `qualification-document-${index + 1}`)}
                                   className="text-green-600 hover:text-green-700 text-sm font-medium flex items-center space-x-1 bg-green-50 px-3 py-1.5 rounded-lg hover:bg-green-100 transition-colors"
                                 >
@@ -1233,6 +1276,14 @@ const TaskerProfile = () => {
                                   <FaExpand className="w-4 h-4" />
                                   <span>Open</span>
                                 </button>
+                                <button 
+                                  onClick={() => handleRemoveDocument(doc, index)}
+                                  className="text-red-600 hover:text-red-700 text-sm font-medium flex items-center space-x-1 bg-red-50 px-3 py-1.5 rounded-lg hover:bg-red-100 transition-colors"
+                                >
+                                  <FaTrash className="w-4 h-4" />
+                                  <span>Remove</span>
+                                </button>
+                                
                               </div>
                             </div>
                           </div>
@@ -1243,22 +1294,23 @@ const TaskerProfile = () => {
                     <div className="text-center py-8 text-gray-500">
                       <FaAward className="w-12 h-12 mx-auto mb-4 text-gray-300" />
                       <p>No qualification documents uploaded</p>
+                      <p className="text-sm text-gray-400 mt-2">Click "Add Documents" to upload your qualifications</p>
                     </div>
                   )}
-                </div>
 
-                {/* Document Upload Note */}
-                <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6">
-                  <div className="flex items-start space-x-3">
-                    <div className="w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center mt-0.5">
-                      <FaUpload className="w-3 h-3 text-white" />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-semibold text-yellow-800">Document Management</h4>
-                      <p className="text-sm text-yellow-700 mt-1">
-                        Documents were uploaded during registration and cannot be changed through this interface. 
-                        If you need to update your documents, please contact support.
-                      </p>
+                  {/* Document Upload Info */}
+                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mt-6">
+                    <div className="flex items-start space-x-3">
+                      <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center mt-0.5">
+                        <FaInfoCircle className="w-3 h-3 text-white" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-semibold text-blue-800">Document Management</h4>
+                        <p className="text-sm text-blue-700 mt-1">
+                          You can now add, remove, and manage your qualification documents directly from this interface. 
+                          Supported formats: PDF, JPG, PNG, GIF, WEBP (Max size: 10MB per file).
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1271,25 +1323,6 @@ const TaskerProfile = () => {
                 <h2 className="text-2xl font-bold text-slate-800 mb-8">Account Settings</h2>
                 
                 <div className="space-y-8">
-                  {/* Account Information */}
-                  <div>
-                    <h3 className="text-lg font-semibold text-slate-800 mb-4">Account Information</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">Account ID</label>
-                        <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-slate-700 font-mono text-sm">
-                          {user._id}
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">Account Type</label>
-                        <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-slate-700">
-                          Tasker Account
-                        </div>
-                      </div>
-                    </div>
-                  </div>
 
                   {/* Security Settings */}
                   <div>
@@ -1393,112 +1426,51 @@ const TaskerProfile = () => {
         </div>
       </div>
 
-      {/* Document Preview Modal */}
+     
+
+      {/* Document Upload Modal */}
       <Modal
-        isOpen={showPreview}
-        onClose={() => setShowPreview(false)}
-        title={previewDocument?.title || 'Document Preview'}
-        icon={previewDocument?.type === 'image' ? FaImage : previewDocument?.type === 'pdf' ? FaFilePdf : FaFileAlt}
-        iconColor={previewDocument?.type === 'image' ? 'text-blue-600' : previewDocument?.type === 'pdf' ? 'text-red-600' : 'text-gray-600'}
-        iconBgColor={previewDocument?.type === 'image' ? 'bg-blue-100' : previewDocument?.type === 'pdf' ? 'bg-red-100' : 'bg-gray-100'}
-        maxWidth="max-w-4xl"
+        isOpen={showUploadModal}
+        onClose={() => setShowUploadModal(false)}
+        title="Upload Qualification Documents"
+        icon={FaUpload}
+        iconColor="text-blue-600"
+        iconBgColor="bg-blue-100"
+        maxWidth="max-w-2xl"
         maxHeight="max-h-[90vh]"
       >
-        {previewDocument && (
-          <div className="space-y-4">
-            {/* Action Buttons */}
-            <div className="flex items-center justify-center space-x-3 pb-4 border-b border-gray-200">
-              <button
-                onClick={() => handleDownloadDocument(previewDocument.url, previewDocument.title)}
-                className="flex items-center space-x-2 px-4 py-2 text-green-600 hover:text-green-700 bg-green-50 hover:bg-green-100 rounded-lg transition-colors"
-              >
-                <FaDownload className="w-4 h-4" />
-                <span>Download</span>
-              </button>
-              <button
-                onClick={() => window.open(previewDocument.url, '_blank')}
-                className="flex items-center space-x-2 px-4 py-2 text-purple-600 hover:text-purple-700 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors"
-              >
-                <FaExpand className="w-4 h-4" />
-                <span>Open in New Tab</span>
-              </button>
-            </div>
-
-            {/* Document Content */}
-            <div className="min-h-[400px]">
-              {previewDocument.type === 'image' ? (
-                <div className="flex justify-center">
-                  <img
-                    src={previewDocument.url}
-                    alt={previewDocument.title}
-                    className="max-w-full max-h-[500px] object-contain rounded-lg shadow-lg"
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                      e.target.nextSibling.style.display = 'block';
-                    }}
-                  />
-                  <div className="hidden text-center py-12">
-                    <FaImage className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                    <p className="text-gray-500 mb-4">Unable to load image preview</p>
-                    <button
-                      onClick={() => window.open(previewDocument.url, '_blank')}
-                      className="text-blue-600 hover:text-blue-700 font-medium"
-                    >
-                      Open in new tab
-                    </button>
-                  </div>
-                </div>
-              ) : previewDocument.type === 'pdf' ? (
-                <div className="space-y-4">
-                  <div className="w-full h-96 border rounded-lg overflow-hidden">
-                    <iframe
-                      src={previewDocument.url}
-                      className="w-full h-full border-0"
-                      title={previewDocument.title}
-                    />
-                  </div>
-                  <div className="text-center text-sm text-gray-600">
-                    <p className="mb-2">If the PDF doesn't display properly, try:</p>
-                    <div className="flex justify-center space-x-4">
-                      <button
-                        onClick={() => window.open(previewDocument.url, '_blank')}
-                        className="text-blue-600 hover:text-blue-700 font-medium"
-                      >
-                        Opening in new tab
-                      </button>
-                      <span className="text-gray-400">or</span>
-                      <button
-                        onClick={() => handleDownloadDocument(previewDocument.url, previewDocument.title)}
-                        className="text-green-600 hover:text-green-700 font-medium"
-                      >
-                        Downloading the file
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <FaFileAlt className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500 mb-4">Preview not available for this file type</p>
-                  <div className="flex justify-center space-x-4">
-                    <button
-                      onClick={() => window.open(previewDocument.url, '_blank')}
-                      className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-                    >
-                      Open File
-                    </button>
-                    <button
-                      onClick={() => handleDownloadDocument(previewDocument.url, previewDocument.title)}
-                      className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
-                    >
-                      Download
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+        <div className="space-y-4">
+          <p className="text-sm text-slate-600">
+            You can upload multiple qualification documents here. Supported formats: PDF, JPG, PNG, GIF, WEBP (Max size: 10MB per file).
+          </p>
+          <input
+            type="file"
+            multiple
+            accept=".pdf,image/*"
+            onChange={handleFileSelect}
+            className="block w-full text-sm text-slate-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+          />
+          <p className="text-xs text-slate-500">
+            {selectedFiles.length} file(s) selected
+          </p>
+          <button
+            onClick={handleUploadDocuments}
+            disabled={selectedFiles.length === 0 || uploadingDocuments}
+            className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-6 py-3 rounded-xl hover:from-blue-600 hover:to-indigo-700 transition-all duration-200 flex items-center space-x-2 font-medium shadow-lg disabled:opacity-50"
+          >
+            {uploadingDocuments ? (
+              <>
+                <FaSpinner className="w-4 h-4 animate-spin" />
+                <span>Uploading...</span>
+              </>
+            ) : (
+              <>
+                <FaUpload className="w-4 h-4" />
+                <span>Upload Documents</span>
+              </>
+            )}
+          </button>
+        </div>
       </Modal>
 
       <ToastContainer toasts={toasts} removeToast={removeToast} />

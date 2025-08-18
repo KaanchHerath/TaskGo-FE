@@ -11,11 +11,14 @@ import {
   FaCheckCircle, 
   FaPhone,
   FaEnvelope,
-  FaUserTie
+  FaUserTie,
+  FaDownload,
+  FaEye
 } from 'react-icons/fa';
 import HireTaskerModal from '../components/tasker/HireTaskerModal';
 import { getToken, parseJwt } from '../utils/auth';
 import { getTaskerProfile, getTaskerReviews } from '../services/api/taskerService';
+import { APP_CONFIG } from '../config/appConfig';
 
 const TaskerProfile = () => {
   const { id } = useParams();
@@ -43,7 +46,6 @@ const TaskerProfile = () => {
       setTasker(data.data);
     } catch (err) {
       setError('Failed to load tasker profile');
-      console.error('Error fetching tasker profile:', err);
     } finally {
       setLoading(false);
     }
@@ -55,7 +57,7 @@ const TaskerProfile = () => {
       const data = await getTaskerReviews(id);
       setReviews(data.data || []);
     } catch (err) {
-      console.error('Error fetching reviews:', err);
+      // Error fetching reviews
     } finally {
       setReviewsLoading(false);
     }
@@ -101,7 +103,16 @@ const TaskerProfile = () => {
   const getCurrentUser = () => {
     const token = getToken();
     if (!token) return null;
-    return parseJwt(token);
+    const payload = parseJwt(token);
+    return payload;
+  };
+
+  // Helper function to construct document URLs
+  const getDocumentUrl = (docPath) => {
+    // Handle both absolute and relative paths
+    return docPath.includes('uploads/') 
+      ? `${APP_CONFIG.API.BASE_URL}/${docPath}`
+      : `${APP_CONFIG.API.BASE_URL}/uploads/tasker-docs/${docPath.split(/[\\\/]/).pop()}`;
   };
 
   if (loading) {
@@ -149,6 +160,8 @@ const TaskerProfile = () => {
           </button>
         </div>
 
+
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Profile Content */}
           <div className="lg:col-span-2 space-y-6">
@@ -174,10 +187,10 @@ const TaskerProfile = () => {
                         <span>{tasker.area}</span>
                       </span>
                     )}
-                    {tasker.hourlyRate && (
+                    {tasker.taskerProfile?.hourlyRate && (
                       <span className="flex items-center space-x-1">
                         <FaDollarSign className="text-green-500" />
-                        <span>LKR {tasker.hourlyRate}/hour</span>
+                        <span>LKR {tasker.taskerProfile.hourlyRate}/hour</span>
                       </span>
                     )}
                     {tasker.statistics?.completedTasks && (
@@ -214,11 +227,6 @@ const TaskerProfile = () => {
                       <span className="inline-flex items-center bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
                         <FaCheckCircle className="mr-1" />
                         Available for work
-                      </span>
-                    )}
-                    {tasker.statistics?.responseRate && (
-                      <span className="inline-flex items-center bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
-                        {tasker.statistics.responseRate}% Response Rate
                       </span>
                     )}
                   </div>
@@ -270,6 +278,48 @@ const TaskerProfile = () => {
                 </div>
               )}
             </div>
+
+            {/* Qualification Documents */}
+            {tasker.taskerProfile?.qualificationDocuments && tasker.taskerProfile.qualificationDocuments.length > 0 && (
+              <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-white/20">
+                <h3 className="text-2xl font-bold text-slate-800 mb-6 flex items-center">
+                  <FaAward className="text-green-600 mr-3" />
+                  Qualification Documents
+                </h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {tasker.taskerProfile.qualificationDocuments.map((doc, index) => (
+                    <div key={index} className="border border-gray-200 rounded-xl p-6 bg-green-50/30">
+                      <div className="flex items-start space-x-4">
+                        <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                          <FaAward className="w-6 h-6 text-green-600" />
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-slate-800">
+                            Qualification Document {index + 1}
+                          </h4>
+                          <p className="text-sm text-slate-600 mt-1">
+                            {doc.split('/').pop()}
+                          </p>
+                          <div className="flex items-center space-x-3 mt-3">
+                            <button 
+                              onClick={() => {
+                                const url = getDocumentUrl(doc);
+                                window.open(url, '_blank');
+                              }}
+                              className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center space-x-1 bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors"
+                            >
+                              <FaEye className="w-4 h-4" />
+                              <span>View Document</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Customer Reviews */}
             <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-white/20">
@@ -359,12 +409,14 @@ const TaskerProfile = () => {
             <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20">
               <h3 className="text-lg font-bold text-slate-800 mb-4">Performance Stats</h3>
               <div className="space-y-4">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">
-                    {tasker.statistics?.completedTasks || 0}
+                {tasker.statistics?.completedTasks !== undefined && (
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-blue-600">
+                      {tasker.statistics.completedTasks}
+                    </div>
+                    <div className="text-sm text-gray-600">Tasks Completed</div>
                   </div>
-                  <div className="text-sm text-gray-600">Tasks Completed</div>
-                </div>
+                )}
                 
                 {tasker.rating && (
                   <div className="text-center">
@@ -382,23 +434,6 @@ const TaskerProfile = () => {
                   <div className="text-sm text-gray-600">Customer Reviews</div>
                 </div>
                 
-                {tasker.statistics?.responseRate && (
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-green-600">
-                      {tasker.statistics.responseRate}%
-                    </div>
-                    <div className="text-sm text-gray-600">Response Rate</div>
-                  </div>
-                )}
-                
-                {tasker.taskerProfile?.advancePaymentAmount && (
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-orange-600">
-                      LKR {tasker.taskerProfile.advancePaymentAmount.toLocaleString()}
-                    </div>
-                    <div className="text-sm text-gray-600">Advance Payment</div>
-                  </div>
-                )}
               </div>
             </div>
 
@@ -430,15 +465,7 @@ const TaskerProfile = () => {
                 }
               </p>
               
-                             {/* Debug info - remove this later */}
-               <div className="mt-4 p-3 bg-gray-100 rounded-lg text-xs">
-                 <p>Debug Info:</p>
-                 <p>Logged in: {isLoggedIn() ? 'Yes' : 'No'}</p>
-                 <p>Is Customer: {isCustomer() ? 'Yes' : 'No'}</p>
-                 <p>User Role: {getCurrentUser()?.role || 'None'}</p>
-                 <p>User Name: {getCurrentUser()?.fullName || 'None'}</p>
-                 <p>Token exists: {!!getToken() ? 'Yes' : 'No'}</p>
-               </div>
+
             </div>
           </div>
         </div>

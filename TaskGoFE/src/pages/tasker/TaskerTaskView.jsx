@@ -22,6 +22,7 @@ import ConfirmScheduleModal from '../../components/task/ConfirmScheduleModal';
 import { getTask, markTaskComplete, cancelScheduledTask } from '../../services/api/taskService';
 import { useToast, ToastContainer } from '../../components/common/Toast';
 import { getMyApplications } from '../../services/api/taskService';
+import Modal from '../../components/common/Modal';
 
 // Helper function to get current user from token
 import { getToken } from '../../utils/auth';
@@ -34,6 +35,21 @@ const getCurrentUser = () => {
   } catch (error) {
     return null;
   }
+};
+
+// Normalize id comparisons where API may return either string ids or populated objects
+const getId = (value) => {
+  if (!value) return undefined;
+  if (typeof value === 'string') return value;
+  if (typeof value === 'object') return value._id || value.id;
+  return undefined;
+};
+
+const idsEqual = (a, b) => {
+  const aId = getId(a);
+  const bId = getId(b);
+  if (!aId || !bId) return false;
+  return String(aId) === String(bId);
 };
 
 const TaskerTaskView = () => {
@@ -104,28 +120,27 @@ const TaskerTaskView = () => {
   };
 
   const getApplicationStatus = () => {
-    // Check if this is a targeted task for the current user
-    const isTargetedTask = task?.isTargeted && task?.targetedTasker === currentUser.userId;
-    
+    const currentUserId = currentUser?.userId || currentUser?._id;
+    // Direct hire to this tasker
+    const isTargetedTask = task?.isTargeted && idsEqual(task?.targetedTasker, currentUserId);
+
     if (isTargetedTask) {
-      if (task.selectedTasker === currentUser.userId) {
+      if (idsEqual(task?.selectedTasker, currentUserId)) {
         return { text: 'Selected (Hired Directly)', color: 'text-green-700', bgColor: 'bg-green-100' };
       }
-      // For targeted tasks, check if tasker has confirmed (this would be stored differently)
-      // For now, we'll assume they need to confirm availability
       return { text: 'Hired Directly', color: 'text-purple-700', bgColor: 'bg-purple-100' };
     }
-    
+
     if (!application) return { text: 'Not Applied', color: 'text-gray-500', bgColor: 'bg-gray-100' };
-    
-    if (task.selectedTasker === currentUser.userId) {
+
+    if (idsEqual(task?.selectedTasker, currentUserId)) {
       return { text: 'Selected', color: 'text-green-700', bgColor: 'bg-green-100' };
     }
-    
+
     if (application.confirmedByTasker) {
       return { text: 'Availability Confirmed', color: 'text-blue-700', bgColor: 'bg-blue-100' };
     }
-    
+
     return { text: 'Application Pending', color: 'text-yellow-700', bgColor: 'bg-yellow-100' };
   };
 
@@ -300,10 +315,10 @@ const TaskerTaskView = () => {
   console.log('- task.targetedTasker:', task.targetedTasker);
   console.log('- currentUser.userId:', currentUser.userId);
   console.log('- task.selectedTasker:', task.selectedTasker);
-  console.log('- Is targeted task for current user:', task.isTargeted && task.targetedTasker === currentUser.userId);
+  console.log('- Is targeted task for current user:', task.isTargeted && idsEqual(task.targetedTasker, currentUser.userId));
   console.log('- Confirm button should show (old logic):', !application?.confirmedByTasker && task.status === 'active');
-  console.log('- Confirm button should show (targeted):', task.isTargeted && task.targetedTasker === currentUser.userId && task.status === 'active' && task.selectedTasker !== currentUser.userId);
-  console.log('- Chat button should show:', !!application || (task.isTargeted && task.targetedTasker === currentUser.userId));
+  console.log('- Confirm button should show (targeted):', task.isTargeted && idsEqual(task.targetedTasker, currentUser.userId) && task.status === 'active' && !idsEqual(task.selectedTasker, currentUser.userId));
+  console.log('- Chat button should show:', !!application || (task.isTargeted && idsEqual(task.targetedTasker, currentUser.userId)));
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -377,7 +392,7 @@ const TaskerTaskView = () => {
             </div>
 
             {/* Targeted Task Details */}
-            {task.isTargeted && task.targetedTasker === currentUser.userId && !application && (
+            {task.isTargeted && idsEqual(task.targetedTasker, currentUser.userId) && !application && (
               <div className="bg-white rounded-xl shadow-sm p-6">
                 <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
                   <FaStar className="text-purple-600 mr-2" />
@@ -431,7 +446,7 @@ const TaskerTaskView = () => {
 
                 {/* Action Button */}
                 {((!application?.confirmedByTasker && task.status === 'active') || 
-                  (task.isTargeted && task.targetedTasker === currentUser.userId && task.status === 'active' && task.selectedTasker !== currentUser.userId)) && (
+                  (task.isTargeted && idsEqual(task.targetedTasker, currentUser.userId) && task.status === 'active' && !idsEqual(task.selectedTasker, currentUser.userId))) && (
                   <button
                     onClick={handleConfirmAvailability}
                     className="w-full bg-gradient-to-r from-green-600 to-green-700 text-white py-3 rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-300 font-semibold shadow-lg flex items-center justify-center space-x-2"
@@ -444,8 +459,8 @@ const TaskerTaskView = () => {
             )}
 
             {/* Standalone Action Button for Targeted Tasks */}
-            {task.isTargeted && task.targetedTasker === currentUser.userId && !application && 
-             task.status === 'active' && task.selectedTasker !== currentUser.userId && (
+            {task.isTargeted && idsEqual(task.targetedTasker, currentUser.userId) && !application && 
+             task.status === 'active' && !idsEqual(task.selectedTasker, currentUser.userId) && (
               <div className="bg-white rounded-xl shadow-sm p-6">
                 <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
                   <FaCheckCircle className="text-green-600 mr-2" />
@@ -511,7 +526,7 @@ const TaskerTaskView = () => {
                         </svg>
                       ))}
                       <span className="ml-1 text-sm text-gray-600">
-                        {Number(task.customer.rating).toFixed(1)}
+                        {Number(task.customer.rating?.average || 0).toFixed(1)}
                       </span>
                     </div>
                   </div>
@@ -519,7 +534,7 @@ const TaskerTaskView = () => {
               </div>
 
               {/* Chat Button */}
-              {(application || (task.isTargeted && task.targetedTasker === currentUser.userId)) && (
+              {(application || (task.isTargeted && idsEqual(task.targetedTasker, currentUser.userId))) && (
                 <button
                   onClick={() => setChatOpen(true)}
                   className="w-full mt-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-300 font-semibold shadow-lg flex items-center justify-center space-x-2"
@@ -563,7 +578,7 @@ const TaskerTaskView = () => {
                   </div>
                 )}
 
-                {task.selectedTasker === currentUser.userId && task.status === 'active' && application && !application.confirmedByTasker && (
+                {idsEqual(task.selectedTasker, currentUser.userId) && task.status === 'active' && application && !application.confirmedByTasker && (
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4">
                     <p className="text-blue-700 text-sm font-medium">
                       ✅ You've been selected! Please confirm your availability to proceed.
@@ -571,7 +586,7 @@ const TaskerTaskView = () => {
                   </div>
                 )}
 
-                {task.isTargeted && task.targetedTasker === currentUser.userId && task.status === 'active' && task.selectedTasker !== currentUser.userId && (
+                {task.isTargeted && idsEqual(task.targetedTasker, currentUser.userId) && task.status === 'active' && !idsEqual(task.selectedTasker, currentUser.userId) && (
                   <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 mt-4">
                     <p className="text-purple-700 text-sm font-medium">
                       🎯 You were hired directly! Please confirm your availability to proceed.
@@ -583,7 +598,7 @@ const TaskerTaskView = () => {
 
             {/* Completed Task Details - Show customer feedback and tasker submission */}
             {task.status === 'completed' && task.selectedTasker && 
-             (task.selectedTasker._id === currentUser.userId || task.selectedTasker === currentUser.userId) && (
+             idsEqual(task.selectedTasker, currentUser.userId) && (
               <div className="bg-white rounded-xl shadow-sm p-6">
                 <h3 className="text-lg font-semibold text-gray-800 mb-6 flex items-center">
                   <FaCheckCircle className="text-green-600 mr-2" />
@@ -794,7 +809,7 @@ const TaskerTaskView = () => {
 
             {/* Scheduled Task Actions */}
             {task.status === 'scheduled' && task.selectedTasker && 
-             (task.selectedTasker._id === currentUser.userId || task.selectedTasker === currentUser.userId) && (
+             idsEqual(task.selectedTasker, currentUser.userId) && (
               <div className="bg-white rounded-xl shadow-sm p-6">
                 <h3 className="text-lg font-semibold text-gray-800 mb-4">Task Actions</h3>
                 
@@ -846,11 +861,25 @@ const TaskerTaskView = () => {
                     <span>{task.taskerCompletedAt ? 'Already Completed' : 'Mark as Complete'}</span>
                   </button>
                   <button
-                    onClick={() => setShowCancelModal(true)}
-                    className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center space-x-2"
+                    onClick={() => {
+                      if (!task.customerCompletedAt && !task.taskerCompletedAt) {
+                        setShowCancelModal(true);
+                      }
+                    }}
+                    disabled={task.customerCompletedAt || task.taskerCompletedAt}
+                    className={`w-full px-4 py-2 rounded-lg transition-colors flex items-center justify-center space-x-2 ${
+                      (task.customerCompletedAt || task.taskerCompletedAt)
+                        ? 'bg-gray-400 text-white cursor-not-allowed' 
+                        : 'bg-red-600 text-white hover:bg-red-700'
+                    }`}
                   >
                     <FaExclamationTriangle />
-                    <span>Cancel Schedule</span>
+                    <span>
+                      {(task.customerCompletedAt || task.taskerCompletedAt) 
+                        ? 'Cannot Cancel (Task Completed)' 
+                        : 'Cancel Schedule'
+                      }
+                    </span>
                   </button>
                 </div>
               </div>
@@ -1073,72 +1102,65 @@ const TaskerTaskView = () => {
       )}
 
       {/* Cancel Schedule Modal */}
-      {showCancelModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-gray-800">Cancel Schedule</h3>
-                <button
-                  onClick={() => setShowCancelModal(false)}
-                  className="text-gray-400 hover:text-gray-600 text-2xl"
-                >
-                  ×
-                </button>
-              </div>
-
-              <div className="mb-6">
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-                  <div className="flex items-center space-x-2">
-                    <FaExclamationTriangle className="text-red-600" />
-                    <span className="font-medium text-red-800">Cancel this scheduled task?</span>
-                  </div>
-                  <p className="text-sm text-red-700 mt-1">
-                    This will make the task active again and remove the current schedule.
-                  </p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Reason for cancellation (optional)
-                  </label>
-                  <textarea
-                    value={cancellationReason}
-                    onChange={(e) => setCancellationReason(e.target.value)}
-                    placeholder="Please provide a reason for canceling the schedule..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                    rows="3"
-                  />
-                </div>
-              </div>
-
-              <div className="flex space-x-3">
-                <button
-                  onClick={() => setShowCancelModal(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                  disabled={actionLoading}
-                >
-                  Keep Schedule
-                </button>
-                <button
-                  onClick={handleCancelSchedule}
-                  disabled={actionLoading}
-                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-                >
-                  {actionLoading ? (
-                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                  ) : (
-                    <>
-                      <FaExclamationTriangle />
-                      <span>Cancel Schedule</span>
-                    </>
-                  )}
-                </button>
-              </div>
+      <Modal
+        isOpen={showCancelModal}
+        onClose={() => setShowCancelModal(false)}
+        title="Cancel Schedule"
+        subtitle="Are you sure you want to cancel this scheduled task?"
+        icon={FaExclamationTriangle}
+        iconColor="text-red-600"
+        iconBgColor="bg-red-100"
+        maxWidth="max-w-md"
+      >
+        <div className="space-y-6">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-center space-x-2">
+              <FaExclamationTriangle className="text-red-600" />
+              <span className="font-medium text-red-800">Cancel this scheduled task?</span>
             </div>
+            <p className="text-sm text-red-700 mt-1">
+              This will make the task active again and remove the current schedule.
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Reason for cancellation (optional)
+            </label>
+            <textarea
+              value={cancellationReason}
+              onChange={(e) => setCancellationReason(e.target.value)}
+              placeholder="Please provide a reason for canceling the schedule..."
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+              rows="3"
+            />
+          </div>
+
+          <div className="flex space-x-3">
+            <button
+              onClick={() => setShowCancelModal(false)}
+              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              disabled={actionLoading}
+            >
+              Keep Schedule
+            </button>
+            <button
+              onClick={handleCancelSchedule}
+              disabled={actionLoading}
+              className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+            >
+              {actionLoading ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white border-t-transparent"></div>
+              ) : (
+                <>
+                  <FaExclamationTriangle />
+                  <span>Cancel Schedule</span>
+                </>
+              )}
+            </button>
           </div>
         </div>
-      )}
+      </Modal>
 
       {/* Toast Container */}
       <ToastContainer toasts={toasts} removeToast={removeToast} />

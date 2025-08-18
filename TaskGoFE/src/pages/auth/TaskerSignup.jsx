@@ -75,8 +75,34 @@ const TaskerSignup = () => {
       navigate('/tasker/waiting-approval');
     } catch (error) {
       console.error('Registration error:', error);
-      setSubmitError(error.message || 'Registration failed. Please try again.');
-      
+
+      // Normalize and show specific errors from backend
+      const errorType = error?.errorType || error?.data?.errorType;
+      const field = error?.field || error?.data?.field;
+      const message = error?.message || error?.data?.message || 'Registration failed. Please try again.';
+
+      setSubmitError(message);
+
+      // Navigate user to the step that likely contains the problematic field
+      if (field) {
+        if (['email', 'password', 'fullName', 'username', 'phone'].includes(field)) {
+          setCurrentStep(1);
+        } else if (['skills', 'province', 'district', 'country', 'area'].includes(field)) {
+          setCurrentStep(2);
+        } else if (['identificationDocument', 'qualificationDocuments', 'idDocument'].includes(field)) {
+          setCurrentStep(3);
+        }
+      } else if (errorType) {
+        // Fallback by error type grouping
+        if (['duplicate_email', 'duplicate_phone', 'duplicate_username', 'invalid_email', 'weak_password', 'missing_fields'].includes(errorType)) {
+          setCurrentStep(1);
+        } else if (['missing_skills', 'missing_country', 'missing_area', 'missing_province'].includes(errorType)) {
+          setCurrentStep(2);
+        } else if (['missing_id_document', 'missing_qualification_documents'].includes(errorType)) {
+          setCurrentStep(3);
+        }
+      }
+
       // Scroll to top to show error
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
@@ -153,7 +179,8 @@ const TaskerSignup = () => {
                   </svg>
                 </div>
                 <div className="ml-3">
-                  <p className="text-sm text-red-800">{submitError}</p>
+                  <h3 className="text-sm font-medium text-red-800 mb-1">Registration Error</h3>
+                  <p className="text-sm text-red-700">{submitError}</p>
                 </div>
               </div>
             </div>

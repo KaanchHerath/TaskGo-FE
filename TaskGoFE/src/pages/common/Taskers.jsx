@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FaUsers, FaStar, FaDollarSign } from 'react-icons/fa';
-import TaskerCard from '../../components/tasker/TaskerCard';
+import TaskerCard from '../../components/common/TaskerCard';
 import { getAllTaskers } from '../../services/api/taskerService';
 import SearchHeader from '../../components/common/SearchHeader';
 import SearchSection from '../../components/common/SearchSection';

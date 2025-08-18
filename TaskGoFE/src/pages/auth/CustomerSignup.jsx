@@ -162,7 +162,52 @@ const CustomerSignup = () => {
         navigate('/customer/dashboard');
       }
     } catch (err) {
-      setSubmitError(err.message || 'Registration failed. Please try again.');
+      console.log('Registration Error Details:', {
+        message: err.message,
+        status: err.status,
+        data: err.data,
+        errorType: err.errorType,
+        field: err.field
+      });
+      
+      // Handle specific error types
+      if (err.errorType === 'duplicate_email') {
+        setSubmitError('This email address is already registered. Please use a different email or try logging in.');
+        // Highlight the email field
+        setErrors(prev => ({ ...prev, email: 'Email already exists' }));
+      } else if (err.errorType === 'duplicate_phone') {
+        setSubmitError('This phone number is already registered. Please use a different phone number or contact support if this is your number.');
+        // Highlight the phone field
+        setErrors(prev => ({ ...prev, phone: 'Phone number already exists' }));
+      } else if (err.errorType === 'duplicate_username') {
+        setSubmitError('This username is already taken. Please choose a different username.');
+        // Highlight the username field
+        setErrors(prev => ({ ...prev, email: 'Username already taken' }));
+      } else if (err.errorType === 'missing_fields') {
+        setSubmitError('Please complete all required fields to continue with registration.');
+      } else if (err.errorType === 'invalid_email') {
+        setSubmitError('Please enter a valid email address.');
+        setErrors(prev => ({ ...prev, email: 'Invalid email format' }));
+      } else if (err.errorType === 'invalid_phone') {
+        setSubmitError('Please enter a valid phone number.');
+        setErrors(prev => ({ ...prev, phone: 'Invalid phone format' }));
+      } else if (err.errorType === 'weak_password') {
+        setSubmitError('Please create a stronger password that meets our security requirements.');
+        setErrors(prev => ({ ...prev, password: 'Password too weak' }));
+      } else if (err.errorType === 'missing_province') {
+        setSubmitError('Please select your province to continue.');
+        setErrors(prev => ({ ...prev, province: 'Province is required' }));
+      } else if (err.errorType === 'validation_error') {
+        setSubmitError('Please check your input and try again.');
+      } else if (err.errorType === 'db_timeout' || err.errorType === 'db_network_error') {
+        setSubmitError('We\'re experiencing connection issues. Please try again in a few moments.');
+      } else if (err.errorType === 'server_error') {
+        setSubmitError('We\'re experiencing technical difficulties. Please try again later or contact support if the problem persists.');
+      } else {
+        // Fallback to the message from the backend
+        setSubmitError(err.message || 'Registration failed. Please try again.');
+      }
+      
       // Scroll to top to show error
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
@@ -189,7 +234,8 @@ const CustomerSignup = () => {
                 </svg>
               </div>
               <div className="ml-3">
-                <p className="text-sm text-red-800">{submitError}</p>
+                <h3 className="text-sm font-medium text-red-800 mb-1">Registration Error</h3>
+                <p className="text-sm text-red-700">{submitError}</p>
               </div>
             </div>
           </div>

@@ -304,37 +304,6 @@ const WaitingApproval = () => {
                     </div>
                   </div>
                 </div>
-
-                {/* What you can do while waiting */}
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <h3 className="text-base font-semibold text-green-900 mb-3 flex items-center">
-                    <FaEdit className="mr-2" />
-                    While You Wait
-                  </h3>
-                  <div className="space-y-2">
-                    <div className="flex items-start space-x-3">
-                      <FaCheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
-                      <div>
-                        <p className="font-medium text-green-900">Update Your Profile</p>
-                        <p className="text-sm text-green-700">Keep your information current and complete</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start space-x-3">
-                      <FaCheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
-                      <div>
-                        <p className="font-medium text-green-900">Prepare Documents</p>
-                        <p className="text-sm text-green-700">Ensure all required documents are uploaded</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start space-x-3">
-                      <FaCheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
-                      <div>
-                        <p className="font-medium text-green-900">Review Platform</p>
-                        <p className="text-sm text-green-700">Familiarize yourself with how TaskGo works</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
               </div>
             )}
 

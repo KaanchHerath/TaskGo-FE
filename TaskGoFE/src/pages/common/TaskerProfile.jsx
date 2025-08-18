@@ -16,7 +16,8 @@ import {
   FaComments,
   FaCalendarAlt,
   FaThumbsUp,
-  FaEye
+  FaEye,
+  FaDownload
 } from 'react-icons/fa';
 import { useToast, ToastContainer } from '../../components/common/Toast';
 import { getTaskerProfile, getTaskerReviews } from '../../services/api/taskerService';
@@ -98,6 +99,14 @@ const TaskerProfile = () => {
   const formatCurrency = (amount) => {
     if (!amount) return 'Not specified';
     return `LKR ${Number(amount).toLocaleString()}`;
+  };
+
+  // Helper function to construct document URLs
+  const getDocumentUrl = (docPath) => {
+    // Handle both absolute and relative paths
+    return docPath.includes('uploads/') 
+      ? `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/${docPath}`
+      : `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/uploads/tasker-docs/${docPath.split(/[\\\/]/).pop()}`;
   };
 
   const getInitials = (name) => {
@@ -325,6 +334,47 @@ const TaskerProfile = () => {
               )}
             </div>
 
+            {/* Qualification Documents */}
+            {tasker.taskerProfile?.qualificationDocuments && tasker.taskerProfile.qualificationDocuments.length > 0 && (
+              <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-white/20">
+                <h3 className="text-2xl font-bold text-slate-800 mb-6 flex items-center">
+                  <FaAward className="text-green-600 mr-3" />
+                  Qualification Documents
+                </h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {tasker.taskerProfile.qualificationDocuments.map((doc, index) => (
+                    <div key={index} className="border border-gray-200 rounded-xl p-6 bg-green-50/30">
+                      <div className="flex items-start space-x-4">
+                        <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                          <FaAward className="w-6 h-6 text-green-600" />
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-slate-800">
+                            Qualification Document {index + 1}
+                          </h4>
+                          <p className="text-sm text-slate-600 mt-1">
+                            {doc.split('/').pop()}
+                          </p>
+                          <div className="flex items-center space-x-3 mt-3">
+                            <button 
+                              onClick={() => {
+                                window.open(getDocumentUrl(doc), '_blank');
+                              }}
+                              className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center space-x-1 bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors"
+                            >
+                              <FaEye className="w-4 h-4" />
+                              <span>View Document</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Customer Reviews */}
             <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-white/20">
               <h3 className="text-2xl font-bold text-slate-800 mb-6 flex items-center">
@@ -456,14 +506,7 @@ const TaskerProfile = () => {
                   </div>
                 )}
                 
-                {tasker.taskerProfile?.advancePaymentAmount && (
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-red-600">
-                      {formatCurrency(tasker.taskerProfile.advancePaymentAmount)}
-                    </div>
-                    <div className="text-sm text-gray-600">Advance Payment</div>
-                  </div>
-                )}
+
               </div>
             </div>
 

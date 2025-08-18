@@ -69,14 +69,13 @@ const AvailableTaskCard = ({
         <div className="text-slate-600 text-sm mb-4 line-clamp-2">
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
-            linkTarget="_blank"
             // Limit to inline-style formatting only in cards
             allowedElements={[
               'p', 'strong', 'em', 'del', 'code', 'span', 'a'
             ]}
             components={{
               p: ({node, ...props}) => <span {...props} />,
-              a: ({node, ...props}) => <span {...props} />
+              a: ({node, ...props}) => <a {...props} target="_blank" rel="noopener noreferrer" />
             }}
           >
             {task.description || ''}

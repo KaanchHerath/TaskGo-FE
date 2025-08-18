@@ -14,7 +14,7 @@ const Modal = ({
   maxWidth = 'max-w-md',
   maxHeight = 'max-h-[90vh]',
   showCloseButton = true,
-  closeOnOverlayClick = true
+  closeOnOverlayClick = false
 }) => {
   // Lock body scroll when modal is open
   useEffect(() => {
@@ -63,7 +63,9 @@ const Modal = ({
         className={`bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl w-full ${maxWidth} ${maxHeight} overflow-y-auto border border-white/20`}
         style={{ 
           position: 'relative',
-          maxWidth: maxWidth === 'max-w-md' ? '448px' : maxWidth === 'max-w-lg' ? '512px' : '448px',
+          maxWidth: maxWidth === 'max-w-full' ? '95vw' : 
+                    maxWidth === 'max-w-md' ? '448px' : 
+                    maxWidth === 'max-w-lg' ? '512px' : '448px',
           transform: 'translate3d(0, 0, 0)', // Force hardware acceleration
           margin: 'auto',
           maxHeight: '90vh'

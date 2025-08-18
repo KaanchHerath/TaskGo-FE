@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FaClock, FaMapMarkerAlt, FaPhone, FaEnvelope, FaStar, FaShare, FaFacebook, FaTwitter, FaPinterest, FaDollarSign, FaCalendar, FaUser, FaTag, FaEye, FaHeart, FaFlag, FaArrowLeft, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
-import { useJob } from '../hooks/useJob';
+import { useJobs } from '../hooks/useJobs';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { applyForTask } from '../services/api/taskService';
@@ -25,7 +25,7 @@ const TaskDescription = () => {
     }
   }, [id, navigate]);
 
-  const { job, loading, error } = useJob(id);
+  const { job, loading, error } = useJobs(id);
 
   const handleApply = async (applicationData) => {
     try {

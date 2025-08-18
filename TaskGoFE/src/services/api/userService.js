@@ -23,9 +23,13 @@ export const updateUserProfile = async (profileData) => {
 };
 
 // Change password
-export const changePassword = async (passwordData) => {
+export const changePassword = async (currentPassword, newPassword) => {
   try {
-    const response = await axiosInstance.put('/users/change-password', passwordData);
+    const response = await axiosInstance.put('/users/change-password', {
+      currentPassword,
+      newPassword,
+      confirmPassword: newPassword // Backend validation requires this
+    });
     return response.data;
   } catch (error) {
     console.error('Error changing password:', error);

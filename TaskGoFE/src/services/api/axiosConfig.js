@@ -39,7 +39,16 @@ axiosInstance.interceptors.response.use(
           console.error('Bad Request:', error.response.data);
           break;
         case 401:
-          // Attempt refresh once per request
+          // Check if this is a login attempt (no token in request)
+          const hasAuthHeader = error.config.headers.Authorization;
+          if (!hasAuthHeader) {
+            // This is likely a login attempt with wrong credentials
+            // Don't redirect, just let the error propagate to the component
+            console.error('Login failed - invalid credentials');
+            break;
+          }
+          
+          // Attempt refresh once per request for authenticated requests
           if (!error.config.__isRetryRequest) {
             const originalRequest = error.config;
             originalRequest.__isRetryRequest = true;

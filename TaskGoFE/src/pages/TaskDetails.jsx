@@ -1,8 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { useParams, useNavigate } from 'react-router-dom';
-import { FaArrowLeft, FaUsers, FaEye, FaCalendarAlt, FaDollarSign, FaMapMarkerAlt, FaClock, FaUser, FaCheckCircle, FaHourglass, FaTimesCircle, FaComments, FaCamera, FaStar, FaBriefcase, FaAward, FaUserTie, FaCheck, FaCreditCard } from 'react-icons/fa';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { 
+  FaArrowLeft, 
+  FaUser, 
+  FaStar, 
+  FaMapMarkerAlt, 
+  FaDollarSign, 
+  FaClock, 
+  FaCalendarAlt, 
+  FaUsers, 
+  FaCheckCircle, 
+  FaTimes, 
+  FaEdit, 
+  FaTrash, 
+  FaComments, 
+  FaPhone, 
+  FaEnvelope, 
+  FaUserTie, 
+  FaHandshake,
+  FaEye,
+  FaCheck
+} from 'react-icons/fa';
 import { getTask, applyForTask, getTaskApplications, markTaskComplete, cancelScheduledTask, selectTasker } from '../services/api/taskService';
 import { useToast, ToastContainer } from '../components/common/Toast';
 import TaskChatWindow from '../components/task/TaskChatWindow';
@@ -11,6 +31,7 @@ import { getTaskerProfile, getTaskerReviews } from '../services/api/taskerServic
 import Modal from '../components/common/Modal';
 import PaymentModal from '../components/common/PaymentModal';
 import SelectTaskerModal from '../components/task/SelectTaskerModal';
+import TaskerProfilePopup from '../components/task/TaskerProfilePopup';
 
 // Helper function to get current user from token
 import { getToken } from '../utils/auth';
@@ -47,6 +68,9 @@ const TaskDetails = () => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedApplication, setSelectedApplication] = useState(null);
   const [showSelectTaskerModal, setShowSelectTaskerModal] = useState(false);
+  const [showProfilePopup, setShowProfilePopup] = useState(false);
+  const [selectedTaskerId, setSelectedTaskerId] = useState(null);
+  const [selectedTaskerName, setSelectedTaskerName] = useState('');
   const currentUser = getCurrentUser();
 
   // Define computed values before useEffect hooks
@@ -161,6 +185,18 @@ const TaskDetails = () => {
 
   const handleViewAllApplications = () => {
     navigate(`/customer/my-tasks/${id}/applications`);
+  };
+
+  const handleViewTaskerProfile = (taskerId, taskerName) => {
+    setSelectedTaskerId(taskerId);
+    setSelectedTaskerName(taskerName);
+    setShowProfilePopup(true);
+  };
+
+  const closeProfilePopup = () => {
+    setShowProfilePopup(false);
+    setSelectedTaskerId(null);
+    setSelectedTaskerName('');
   };
 
   const handleChatOpen = (application) => {
@@ -302,6 +338,7 @@ const TaskDetails = () => {
   };
 
   const formatTimeAgo = (dateString) => {
+    if (!dateString) return 'Recently';
     const now = new Date();
     const date = new Date(dateString);
     const diffInHours = Math.floor((now - date) / (1000 * 60 * 60));
@@ -316,16 +353,24 @@ const TaskDetails = () => {
     return `${diffInWeeks} weeks ago`;
   };
 
+  // Helper function to construct document URLs
+  const getDocumentUrl = (docPath) => {
+    // Handle both absolute and relative paths
+    return docPath.includes('uploads/') 
+      ? `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/${docPath}`
+      : `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/uploads/tasker-docs/${docPath.split(/[\\\/]/).pop()}`;
+  };
+
   const getStatusIcon = (status) => {
     switch (status) {
       case 'active':
-        return <FaHourglass className="w-4 h-4 text-blue-500" />;
+        return <FaClock className="w-4 h-4 text-blue-500" />;
       case 'scheduled':
         return <FaCalendarAlt className="w-4 h-4 text-yellow-500" />;
       case 'completed':
         return <FaCheckCircle className="w-4 h-4 text-green-500" />;
       case 'cancelled':
-        return <FaTimesCircle className="w-4 h-4 text-red-500" />;
+        return <FaTimes className="w-4 h-4 text-red-500" />;
       default:
         return <FaClock className="w-4 h-4 text-gray-500" />;
     }
@@ -485,7 +530,7 @@ const TaskDetails = () => {
                   {task.status === 'active' && (
                     <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
                       <div className="flex items-center space-x-2 mb-2">
-                        <FaHourglass className="text-yellow-600" />
+                        <FaClock className="text-yellow-600" />
                         <span className="font-medium text-yellow-800">Waiting for Confirmation</span>
                       </div>
                       <p className="text-sm text-yellow-700">
@@ -563,7 +608,7 @@ const TaskDetails = () => {
                           ) : (
                             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                               <div className="flex items-center space-x-2">
-                                <FaHourglass className="text-yellow-600" />
+                                <FaClock className="text-yellow-600" />
                                 <span className="font-medium text-yellow-800">Awaiting Confirmation</span>
                               </div>
                               <p className="text-sm text-yellow-700 mt-1">
@@ -627,8 +672,8 @@ const TaskDetails = () => {
               </div>
             )}
 
-            {/* Applications Section for Regular Tasks Only */}
-            {isTaskOwner && !isTargetedTask && (
+            {/* Applications Section for Regular Tasks Only - Hide when scheduled */}
+            {isTaskOwner && !isTargetedTask && task.status !== 'scheduled' && task.status !== 'completed' &&(
               <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-white/20">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-xl font-bold text-slate-800 flex items-center space-x-2">
@@ -677,8 +722,16 @@ const TaskDetails = () => {
                               </span>
                             )}
                             <button
+                              onClick={() => handleViewTaskerProfile(application.tasker._id, application.tasker.fullName)}
+                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              title="View Profile"
+                            >
+                              <FaEye />
+                            </button>
+                            <button
                               onClick={() => handleChatOpen(application)}
                               className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              title="Chat"
                             >
                               <FaComments />
                             </button>
@@ -735,7 +788,7 @@ const TaskDetails = () => {
                             <span className="text-gray-600">{currentTasker.phone}</span>
                           </div>
                         )}
-                        {currentTasker.rating && (
+                        {currentTasker.rating?.average && (
                           <div className="flex items-center space-x-2">
                             <span className="font-medium text-gray-700">Overall Rating:</span>
                             <div className="flex items-center space-x-1">
@@ -743,11 +796,11 @@ const TaskDetails = () => {
                                 {[...Array(5)].map((_, i) => (
                                   <FaStar
                                     key={i}
-                                    className={`w-4 h-4 ${i < Math.floor(currentTasker.rating) ? 'text-yellow-400' : 'text-gray-300'}`}
+                                    className={`w-4 h-4 ${i < Math.floor(currentTasker.rating.average) ? 'text-yellow-400' : 'text-gray-300'}`}
                                   />
                                 ))}
                               </div>
-                              <span className="text-gray-600">({Number(currentTasker.rating).toFixed(1)})</span>
+                              <span className="text-gray-600">({Number(currentTasker.rating.average).toFixed(1)})</span>
                             </div>
                           </div>
                         )}
@@ -766,7 +819,7 @@ const TaskDetails = () => {
                 {taskerProfile && (
                   <div className="mb-6">
                     <h5 className="text-lg font-semibold text-slate-800 mb-4 flex items-center">
-                      <FaBriefcase className="text-green-600 mr-2" />
+                      <FaHandshake className="text-green-600 mr-2" />
                       Skills & Experience
                     </h5>
                     
@@ -795,28 +848,74 @@ const TaskDetails = () => {
                       </div>
                     )}
 
-                    {taskerProfile.hourlyRate && (
-                      <div className="flex items-center space-x-2 mb-3">
-                        <FaDollarSign className="text-green-600" />
-                        <span className="font-medium text-gray-700">Hourly Rate:</span>
-                        <span className="text-gray-600">LKR {taskerProfile.hourlyRate}</span>
+                    {/* Bio Section */}
+                    {taskerProfile.bio && (
+                      <div className="mb-4">
+                        <p className="font-medium text-gray-700 mb-2">About:</p>
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                          <p className="text-gray-700">{taskerProfile.bio}</p>
+                        </div>
                       </div>
                     )}
 
-                    {taskerProfile.advancePaymentAmount && (
-                      <div className="flex items-center space-x-2">
-                        <FaDollarSign className="text-orange-600" />
-                        <span className="font-medium text-gray-700">Advance Payment:</span>
-                        <span className="text-gray-600">LKR {taskerProfile.advancePaymentAmount.toLocaleString()}</span>
+                    {currentTasker?.taskerProfile?.hourlyRate && (
+                      <div className="flex items-center space-x-2 mb-3">
+                        <FaDollarSign className="text-green-600" />
+                        <span className="font-medium text-gray-700">Hourly Rate:</span>
+                        <span className="text-gray-600">LKR {currentTasker.taskerProfile.hourlyRate}</span>
                       </div>
                     )}
+                  </div>
+                )}
+
+                {/* Tasker Qualification Documents */}
+                {taskerProfile?.taskerProfile?.qualificationDocuments && taskerProfile.taskerProfile.qualificationDocuments.length > 0 && (
+                  <div className="mb-6">
+                    <h5 className="text-lg font-semibold text-slate-800 mb-4 flex items-center">
+                      <FaEye className="text-green-600 mr-2" />
+                      Qualification Documents
+                    </h5>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {taskerProfile.taskerProfile.qualificationDocuments.map((doc, index) => (
+                        <div key={index} className="border border-gray-200 rounded-lg p-4 bg-green-50/30">
+                          <div className="flex items-start space-x-3">
+                            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                              <FaEye className="w-5 h-5 text-green-600" />
+                            </div>
+                            <div className="flex-1">
+                              <h6 className="font-medium text-slate-800">
+                                Qualification Document {index + 1}
+                              </h6>
+                              <p className="text-sm text-slate-600 mt-1">
+                                {doc.split('/').pop()}
+                              </p>
+                              <div className="flex items-center space-x-2 mt-2">
+                                <button 
+                                  onClick={() => {
+                                    const url = doc.includes('uploads/') 
+                                      ? `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/${doc}`
+                                      : `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/uploads/tasker-docs/${doc.split(/[\\\/]/).pop()}`;
+                                    window.open(url, '_blank');
+                                  }}
+                                  className="text-blue-600 hover:text-blue-700 text-xs font-medium flex items-center space-x-1 bg-blue-50 px-2 py-1 rounded hover:bg-blue-100 transition-colors"
+                                >
+                                  <FaEye className="w-3 h-3" />
+                                  <span>View</span>
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
 
                 {/* Recent Reviews & Feedback */}
                 <div className="mb-6">
                   <h5 className="text-lg font-semibold text-slate-800 mb-4 flex items-center">
-                    <FaAward className="text-purple-600 mr-2" />
+                    <FaEye className="text-purple-600 mr-2" />
                     Recent Customer Reviews ({taskerReviews.length})
                   </h5>
                   
@@ -875,47 +974,12 @@ const TaskDetails = () => {
                     </div>
                   ) : (
                     <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-center">
-                      <FaAward className="text-4xl text-gray-400 mx-auto mb-2" />
+                      <FaEye className="text-4xl text-gray-400 mx-auto mb-2" />
                       <p className="text-gray-600">No reviews available yet</p>
                     </div>
                   )}
                 </div>
 
-                {/* Performance Summary */}
-                {taskerProfile && (
-                  <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-xl p-6">
-                    <h5 className="text-lg font-semibold text-slate-800 mb-4 flex items-center">
-                      <FaCheckCircle className="text-blue-600 mr-2" />
-                      Performance Summary
-                    </h5>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                      <div>
-                        <p className="text-2xl font-bold text-blue-600">
-                          {currentTasker.statistics?.tasksCompleted || 0}
-                        </p>
-                        <p className="text-sm text-gray-600">Tasks Completed</p>
-                      </div>
-                      <div>
-                        <p className="text-2xl font-bold text-green-600">
-                          {currentTasker.rating ? Number(currentTasker.rating).toFixed(1) : 'N/A'}
-                        </p>
-                        <p className="text-sm text-gray-600">Average Rating</p>
-                      </div>
-                      <div>
-                        <p className="text-2xl font-bold text-purple-600">
-                          {taskerReviews.length}
-                        </p>
-                        <p className="text-sm text-gray-600">Customer Reviews</p>
-                      </div>
-                      <div>
-                        <p className="text-2xl font-bold text-orange-600">
-                          {taskerProfile.skills?.length || 0}
-                        </p>
-                        <p className="text-sm text-gray-600">Skills Listed</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
             )}
 
@@ -972,7 +1036,7 @@ const TaskDetails = () => {
                     {task.completionPhotos && task.completionPhotos.length > 0 ? (
                       <div className="mb-6">
                         <h5 className="font-semibold text-gray-800 mb-4 flex items-center">
-                          <FaCamera className="text-purple-600 mr-2" />
+                          <FaEye className="text-purple-600 mr-2" />
                           Completion Photos ({task.completionPhotos.length})
                         </h5>
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -1031,7 +1095,7 @@ const TaskDetails = () => {
                 {isTaskOwner && (
                   <div className="mb-8">
                     <h4 className="text-xl font-bold text-slate-800 mb-6 flex items-center">
-                      <FaStar className="text-yellow-500 mr-2" />
+                      <FaEye className="text-yellow-500 mr-2" />
                       Your Feedback
                     </h4>
                     
@@ -1143,7 +1207,7 @@ const TaskDetails = () => {
                 
                 <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
                   <div className="flex items-center space-x-2 mb-2">
-                    <FaCreditCard className="text-orange-600" />
+                    <FaPhone className="text-orange-600" />
                     <span className="font-medium text-orange-800">Advance Payment Pending</span>
                   </div>
                   <p className="text-sm text-orange-700 mb-3">
@@ -1174,16 +1238,30 @@ const TaskDetails = () => {
                     onClick={() => setShowPaymentModal(true)}
                     className="w-full px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors flex items-center justify-center space-x-2"
                   >
-                    <FaCreditCard />
+                    <FaPhone />
                     <span>Complete Payment</span>
                   </button>
                   
                   <button
-                    onClick={() => setShowCancelModal(true)}
-                    className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center space-x-2"
+                    onClick={() => {
+                      if (!task.customerCompletedAt && !task.taskerCompletedAt) {
+                        setShowCancelModal(true);
+                      }
+                    }}
+                    disabled={task.customerCompletedAt || task.taskerCompletedAt}
+                    className={`w-full px-4 py-2 rounded-lg transition-colors flex items-center justify-center space-x-2 ${
+                      (task.customerCompletedAt || task.taskerCompletedAt)
+                        ? 'bg-gray-400 text-white cursor-not-allowed' 
+                        : 'bg-red-600 text-white hover:bg-red-700'
+                    }`}
                   >
-                    <FaTimesCircle />
-                    <span>Cancel Selection</span>
+                    <FaTimes />
+                    <span>
+                      {(task.customerCompletedAt || task.taskerCompletedAt) 
+                        ? 'Cannot Cancel (Task Completed)' 
+                        : 'Cancel Schedule'
+                      }
+                    </span>
                   </button>
                 </div>
               </div>
@@ -1205,21 +1283,21 @@ const TaskDetails = () => {
                     <p className="text-sm text-gray-600">Customer</p>
                   </div>
                 </div>
-                {task.customer.rating && typeof task.customer.rating === 'number' && (
+                {task.customer.rating?.average && (
                   <div className="flex items-center space-x-2 text-sm text-gray-600">
                     <span>Rating:</span>
                     <div className="flex items-center">
                       {[...Array(5)].map((_, i) => (
                         <svg
                           key={i}
-                          className={`w-4 h-4 ${i < Math.floor(task.customer.rating) ? 'text-yellow-400' : 'text-gray-300'}`}
+                          className={`w-4 h-4 ${i < Math.floor(task.customer.rating.average) ? 'text-yellow-400' : 'text-gray-300'}`}
                           fill="currentColor"
                           viewBox="0 0 20 20"
                         >
                           <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                         </svg>
                       ))}
-                      <span className="ml-1">({Number(task.customer.rating).toFixed(1)})</span>
+                      <span className="ml-1">({Number(task.customer.rating.average).toFixed(1)})</span>
                     </div>
                   </div>
                 )}
@@ -1234,8 +1312,8 @@ const TaskDetails = () => {
                   <span className="text-gray-600">Status</span>
                   <span className="font-medium text-gray-800 capitalize">{task.status}</span>
                 </div>
-                {/* Hide application count when task is completed or targeted */}
-                {task.status !== 'completed' && !isTargetedTask && (
+                {/* Hide application count when task is completed, targeted, or scheduled */}
+                {task.status !== 'completed' && task.status !== 'scheduled' && !isTargetedTask && (
                   <div className="flex justify-between">
                     <span className="text-gray-600">Applications</span>
                     <span className="font-medium text-gray-800">{task.applicationCount || 0}</span>
@@ -1313,7 +1391,7 @@ const TaskDetails = () => {
                 </h3>
                 <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4">
                   <div className="flex items-center space-x-2 mb-2">
-                    <FaHourglass className="text-purple-600" />
+                    <FaClock className="text-purple-600" />
                     <span className="font-medium text-purple-800">Waiting for Confirmation</span>
                   </div>
                   <p className="text-sm text-purple-700">
@@ -1416,11 +1494,25 @@ const TaskDetails = () => {
                       </span>
                     </button>
                     <button
-                      onClick={() => setShowCancelModal(true)}
-                      className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center space-x-2"
+                      onClick={() => {
+                        if (!task.customerCompletedAt && !task.taskerCompletedAt) {
+                          setShowCancelModal(true);
+                        }
+                      }}
+                      disabled={task.customerCompletedAt || task.taskerCompletedAt}
+                      className={`w-full px-4 py-2 rounded-lg transition-colors flex items-center justify-center space-x-2 ${
+                        (task.customerCompletedAt || task.taskerCompletedAt)
+                          ? 'bg-gray-400 text-white cursor-not-allowed' 
+                          : 'bg-red-600 text-white hover:bg-red-700'
+                      }`}
                     >
-                      <FaTimesCircle />
-                      <span>Cancel Schedule</span>
+                      <FaTimes />
+                      <span>
+                        {(task.customerCompletedAt || task.taskerCompletedAt) 
+                          ? 'Cannot Cancel (Task Completed)' 
+                          : 'Cancel Schedule'
+                        }
+                      </span>
                     </button>
                   </div>
                 </div>
@@ -1447,6 +1539,7 @@ const TaskDetails = () => {
             isOpen={chatOpen}
             onClose={() => setChatOpen(false)}
             currentUser={currentUser}
+            task={task}
           />
         </>
       )}
@@ -1579,7 +1672,7 @@ const TaskDetails = () => {
         onClose={() => setShowCancelModal(false)}
         title="Cancel Schedule"
         subtitle="Are you sure you want to cancel this scheduled task?"
-        icon={FaTimesCircle}
+        icon={FaTimes}
         iconColor="text-red-600"
         iconBgColor="bg-red-100"
         maxWidth="max-w-md"
@@ -1587,7 +1680,7 @@ const TaskDetails = () => {
         <div className="space-y-6">
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
             <div className="flex items-center space-x-2">
-              <FaTimesCircle className="text-red-600" />
+              <FaTimes className="text-red-600" />
               <span className="font-medium text-red-800">Cancel this scheduled task?</span>
             </div>
             <p className="text-sm text-red-700 mt-1">
@@ -1625,7 +1718,7 @@ const TaskDetails = () => {
                 <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
               ) : (
                 <>
-                  <FaTimesCircle />
+                  <FaTimes />
                   <span>Cancel Schedule</span>
                 </>
               )}
@@ -1652,8 +1745,14 @@ const TaskDetails = () => {
         onSelect={handleSelectTasker}
         isSelecting={actionLoading}
       />
-      
 
+      {/* Tasker Profile Popup */}
+      <TaskerProfilePopup
+        isOpen={showProfilePopup}
+        onClose={closeProfilePopup}
+        taskerId={selectedTaskerId}
+        taskerName={selectedTaskerName}
+      />
 
       <ToastContainer toasts={toasts} removeToast={removeToast} />
     </div>

@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { FaCreditCard, FaLock, FaShieldAlt, FaTimes, FaSpinner } from 'react-icons/fa';
 import { initiateAdvancePayment, redirectToPayHere } from '../../services/api/paymentService';
+import { useNavigate } from 'react-router-dom';
+import socketService from '../../services/api/socketService';
 
 const PaymentModal = ({ 
   isOpen, 
@@ -10,6 +12,7 @@ const PaymentModal = ({
   onPaymentSuccess,
   onPaymentError 
 }) => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [paymentStatus, setPaymentStatus] = useState('pending');
@@ -22,6 +25,38 @@ const PaymentModal = ({
     script.async = true;
     document.head.appendChild(script);
 
+    // Setup Socket.IO payment success listener
+    const handlePaymentSuccess = (data) => {
+      console.log('Payment success received via WebSocket:', data);
+      
+      // Check if this is for the current task
+      if (data.taskId === task?._id) {
+        setPaymentStatus('success');
+        setLoading(false);
+        
+        // Close modal after a short delay
+        setTimeout(() => {
+          onClose();
+          
+          // Navigate to task details page
+          navigate(`/tasks/${data.taskId}`);
+          
+          // Call success callback if provided
+          if (onPaymentSuccess) {
+            onPaymentSuccess(data);
+          }
+        }, 2000);
+      }
+    };
+
+    // Listen for payment success events
+    socketService.onPaymentSuccess(handlePaymentSuccess);
+
+    // Cleanup socket listener
+    return () => {
+      socketService.off('payment-success', handlePaymentSuccess);
+    };
+
     const attachHandlers = () => {
       if (!window.payhere) return;
       // Set up PayHere event handlers
@@ -31,6 +66,11 @@ const PaymentModal = ({
         console.log("Payment completed. OrderID:" + orderId);
         // Payment completed - start checking payment status
         setPaymentStatus('checking');
+        
+        // Store order ID for WebSocket event matching
+        setOrderId(orderId);
+        
+        // Start checking payment status as fallback
         checkPaymentStatus(orderId);
       };
 
@@ -150,7 +190,7 @@ const PaymentModal = ({
           "merchant_id": "1231112", // TODO: Replace with your actual PayHere Merchant ID
           "return_url": undefined, // Important - set to undefined for popup
           "cancel_url": undefined, // Important - set to undefined for popup
-          "notify_url": "https://916dbf2a3718.ngrok-free.app/api/payments/notify", // ngrok URL for local development
+          "notify_url": "https://564c5de1861b.ngrok-free.app/api/payments/notify", // ngrok URL for local development
           "order_id": response.data.orderId, // Use the orderId from backend (IMPORTANT!)
           "items": `Advance Payment - ${task.title}`,
           "amount": advanceAmount.toFixed(2),
@@ -349,6 +389,9 @@ const PaymentModal = ({
                     <span className="text-green-700 text-sm">
                       Payment successful! Your task has been scheduled.
                     </span>
+                  </div>
+                  <div className="mt-2 text-xs text-green-600">
+                    Redirecting to task details page...
                   </div>
                 </div>
               )}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import TaskerCard from './TaskerCard';
+import TaskerCard from '../common/TaskerCard';
 import { getTopRatedTaskers } from '../../services/api/taskerService';
 
 const FeaturedTaskers = ({ 
@@ -33,7 +33,6 @@ const FeaturedTaskers = ({
   }, [limit]);
 
   const handleTaskerClick = (tasker) => {
-    console.log('Tasker clicked:', tasker);
     // Navigate to tasker profile or open modal
   };
 

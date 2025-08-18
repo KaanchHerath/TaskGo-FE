@@ -16,6 +16,7 @@ import HeroSection from '../../components/common/HeroSection';
 import StatsSection from '../../components/common/StatsSection';
 import CategoriesGrid from '../../components/common/CategoriesGrid';
 import RecentReviews from '../../components/common/RecentReviews';
+import ProfileCompletionPrompt from '../../components/common/ProfileCompletionPrompt';
 
 
  
@@ -358,6 +359,7 @@ const TaskerDashboard = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentUserId, setCurrentUserId] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -369,12 +371,14 @@ const TaskerDashboard = () => {
             setCurrentUserId(payload.userId || payload.id || payload._id || payload.sub);
             setIsLoggedIn(true);
             
-            // Use cached name if available; otherwise fetch and cache
+            // Always fetch user profile for ProfileCompletionPrompt, but use cached name if available
+            const userProfile = await getUserProfile();
+            setUser(userProfile); // Store the full user profile
+            
             const cached = getCachedUserName();
             if (cached) {
               setUserName(cached);
             } else {
-              const userProfile = await getUserProfile();
               const fullName = userProfile.fullName || userProfile.name || 'Tasker';
               const displayName = fullName.split(' ')[0];
               setUserName(displayName);
@@ -489,6 +493,14 @@ const TaskerDashboard = () => {
     <div className="min-h-screen bg-white">
       <main>
         <HeroSection {...heroConfig} />
+        
+                {/* Profile Completion Prompt */}
+        {isLoggedIn && user && !loading && user.taskerProfile && typeof user.taskerProfile === 'object' && (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <ProfileCompletionPrompt userProfile={user} />
+          </div>
+        )}
+        
         {isLoggedIn && <StatsSection {...statsConfig} />}
 
         {isLoggedIn && <RecentActivity />}
