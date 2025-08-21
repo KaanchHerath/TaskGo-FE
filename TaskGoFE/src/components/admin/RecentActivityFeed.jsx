@@ -84,15 +84,15 @@ const ActivityItem = ({ activity }) => {
   const iconColor = getActivityColor(activity.type);
 
   return (
-    <div className="flex items-start space-x-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
-      <div className={`p-2 rounded-full ${iconColor}`}>
-        <Icon className="w-4 h-4" />
+    <div className="flex items-start space-x-4 p-4 hover:bg-slate-50 rounded-2xl transition-all duration-300 group">
+      <div className={`p-3 rounded-2xl ${iconColor} group-hover:scale-110 transition-transform duration-300`}>
+        <Icon className="w-5 h-5" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm text-gray-900 font-medium">
+        <p className="text-base text-slate-900 font-semibold leading-relaxed">
           {getActivityMessage(activity)}
         </p>
-        <p className="text-xs text-gray-500 mt-1">
+        <p className="text-sm text-slate-500 mt-2 font-medium">
           {formatDistanceToNow(new Date(activity.timestamp), { addSuffix: true })}
         </p>
       </div>
@@ -121,13 +121,13 @@ export const RecentActivityFeed = ({ activities = [], loading = false, onRefresh
   };
 
   const LoadingSkeleton = () => (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {[...Array(5)].map((_, index) => (
-        <div key={index} className="flex items-start space-x-3 p-3">
-          <div className="animate-pulse bg-gray-300 w-8 h-8 rounded-full"></div>
+        <div key={index} className="flex items-start space-x-4 p-4">
+          <div className="animate-pulse bg-slate-200 w-10 h-10 rounded-2xl"></div>
           <div className="flex-1">
-            <div className="animate-pulse bg-gray-300 h-4 w-3/4 rounded mb-2"></div>
-            <div className="animate-pulse bg-gray-300 h-3 w-1/2 rounded"></div>
+            <div className="animate-pulse bg-slate-200 h-5 w-3/4 rounded-lg mb-3"></div>
+            <div className="animate-pulse bg-slate-200 h-4 w-1/2 rounded-lg"></div>
           </div>
         </div>
       ))}
@@ -135,34 +135,34 @@ export const RecentActivityFeed = ({ activities = [], loading = false, onRefresh
   );
 
   return (
-    <div className="bg-white rounded-lg shadow-md">
-      <div className="p-6 border-b border-gray-200">
+    <div className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-slate-100">
+      <div className="p-8 border-b border-slate-200">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-900">Recent Activity</h3>
+          <h3 className="text-2xl font-bold text-slate-800">Recent Activity</h3>
           <button
             onClick={handleRefresh}
             disabled={isRefreshing}
-            className="flex items-center space-x-2 text-sm text-blue-600 hover:text-blue-800 disabled:opacity-50"
+            className="flex items-center space-x-3 text-base font-medium text-blue-600 hover:text-blue-800 disabled:opacity-50 transition-colors duration-300"
           >
-            <FaSync className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <FaSync className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`} />
             <span>{isRefreshing ? 'Refreshing...' : 'Refresh'}</span>
           </button>
         </div>
       </div>
       
-      <div className="p-4">
+      <div className="p-6">
         {loading ? (
           <LoadingSkeleton />
         ) : localActivities.length > 0 ? (
-          <div className="space-y-2 max-h-96 overflow-y-auto">
+          <div className="space-y-3 max-h-96 overflow-y-auto">
             {localActivities.map((activity, index) => (
               <ActivityItem key={activity.id || index} activity={activity} />
             ))}
           </div>
         ) : (
-          <div className="text-center py-8">
-            <FaClock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500">No recent activity</p>
+          <div className="text-center py-12">
+            <FaClock className="w-16 h-16 text-slate-400 mx-auto mb-6" />
+            <p className="text-slate-500 text-lg font-medium">No recent activity</p>
           </div>
         )}
       </div>
@@ -180,23 +180,23 @@ export const ActivitySummary = ({ activities = [] }) => {
   const summaryItems = [
     { type: 'user_registered', label: 'New Users', icon: FaUserPlus, color: 'text-blue-600' },
     { type: 'task_created', label: 'New Tasks', icon: FaCheckCircle, color: 'text-purple-600' },
-    { type: 'task_completed', label: 'Completed', icon: FaCheckCircle, color: 'text-green-600' },
+    { type: 'task_completed', label: 'Completed', icon: FaCheckCircle, color: 'text-emerald-600' },
     { type: 'payment_received', label: 'Payments', icon: FaDollarSign, color: 'text-emerald-600' }
   ];
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <h3 className="text-lg font-semibold mb-4">Activity Summary (Last 24h)</h3>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 p-8 border border-slate-100">
+      <h3 className="text-2xl font-bold text-slate-800 mb-6">Activity Summary (Last 24h)</h3>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
         {summaryItems.map((item, index) => {
           const Icon = item.icon;
           const count = getActivityCount(item.type);
           
           return (
-            <div key={index} className="text-center">
-              <Icon className={`w-6 h-6 mx-auto mb-2 ${item.color}`} />
-              <p className="text-gray-600 text-sm">{item.label}</p>
-              <p className={`text-xl font-bold ${item.color}`}>{count}</p>
+            <div key={index} className="text-center p-4 bg-slate-50 rounded-2xl border border-slate-200 hover:border-slate-300 transition-colors duration-300">
+              <Icon className={`w-8 h-8 mx-auto mb-3 ${item.color}`} />
+              <p className="text-slate-600 text-base font-medium mb-2">{item.label}</p>
+              <p className={`text-2xl font-bold ${item.color}`}>{count}</p>
             </div>
           );
         })}
@@ -208,8 +208,8 @@ export const ActivitySummary = ({ activities = [] }) => {
 // Real-time Activity Indicator
 export const RealTimeIndicator = ({ isConnected = true, lastUpdate }) => {
   return (
-    <div className="flex items-center space-x-2 text-sm text-gray-500">
-      <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+    <div className="flex items-center space-x-3 text-base font-medium text-slate-600">
+      <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`}></div>
       <span>{isConnected ? 'Live' : 'Disconnected'}</span>
       {lastUpdate && (
         <span>• Last update: {formatDistanceToNow(new Date(lastUpdate), { addSuffix: true })}</span>

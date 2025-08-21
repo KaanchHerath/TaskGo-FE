@@ -100,35 +100,39 @@ export const getApprovalStatsAdmin = async () => {
 export const getUsers = async (filters = {}) => {
   const params = new URLSearchParams(filters);
   const response = await axiosInstance.get(`/admin/users?${params}`);
-  return response.data;
+  const body = response.data || {};
+  return {
+    users: body.data || [],
+    pagination: body.pagination || { page: 1, limit: 0, total: 0, totalPages: 0 },
+    total: (body.pagination && body.pagination.total) || 0
+  };
 };
 
 /**
  * Get user details by ID
- * @param {string} userId - User ID
- * @returns {Promise<Object>} User details
+ * @param {string} userId 
+ * @returns {Promise<Object>}
  */
 export const getUserDetails = async (userId) => {
   const response = await axiosInstance.get(`/admin/users/${userId}`);
-  return response.data;
+  return response.data?.data?.user;
 };
 
 /**
  * Suspend or unsuspend a user
- * @param {string} userId - User ID
- * @param {Object} suspensionData - Suspension data
- * @returns {Promise<Object>} Suspension result
+ * @param {string} userId 
+ * @param {Object} suspensionData 
+ * @returns {Promise<Object>} 
  */
 export const suspendUser = async (userId, suspensionData = {}) => {
-  // Backend expects PUT on /api/admin/users/:userId/suspend
   const response = await axiosInstance.put(`/admin/users/${userId}/suspend`, suspensionData);
   return response.data;
 };
 
 /**
  * Delete a user
- * @param {string} userId - User ID
- * @returns {Promise<Object>} Deletion result
+ * @param {string} userId 
+ * @returns {Promise<Object>} 
  */
 export const deleteUser = async (userId) => {
   const response = await axiosInstance.delete(`/admin/users/${userId}`);
@@ -137,8 +141,8 @@ export const deleteUser = async (userId) => {
 
 /**
  * Fetch tasks with filters and pagination
- * @param {Object} filters - Filter options
- * @returns {Promise<Object>} Tasks with pagination
+ * @param {Object} filters
+ * @returns {Promise<Object>} 
  */
 export const getTasks = async (filters = {}) => {
   const params = new URLSearchParams(filters);
@@ -148,8 +152,8 @@ export const getTasks = async (filters = {}) => {
 
 /**
  * Get task details by ID
- * @param {string} taskId - Task ID
- * @returns {Promise<Object>} Task details
+ * @param {string} taskId 
+ * @returns {Promise<Object>} 
  */
 export const getTaskDetails = async (taskId) => {
   const response = await axiosInstance.get(`/admin/tasks/${taskId}`);

@@ -52,44 +52,47 @@ const StatCard = ({
   subtitle
 }) => {
   const getTrendColor = (trend) => {
-    if (trend === 'up') return 'text-green-600';
+    if (trend === 'up') return 'text-emerald-600';
     if (trend === 'down') return 'text-red-600';
-    return 'text-gray-600';
+    return 'text-slate-600';
   };
 
   const getTrendIcon = (trend) => {
-    if (trend === 'up') return <FaArrowUp className="w-3 h-3" />;
-    if (trend === 'down') return <FaArrowDown className="w-3 h-3" />;
+    if (trend === 'up') return <FaArrowUp className="w-4 h-4" />;
+    if (trend === 'down') return <FaArrowDown className="w-4 h-4" />;
     return null;
   };
 
   return (
-    <div className={`bg-white rounded-lg shadow-md p-6 border-l-4 ${color.border}`}>
-      <div className="flex items-center justify-between">
-        <div className="flex-1">
-          <p className="text-gray-600 text-sm font-medium">{title}</p>
-          {/* Replace <p> with <div> to avoid invalid nesting */}
-          <div className={`text-3xl font-bold ${color.text} mt-2`}>
+    <div className="group bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 p-8 border border-slate-100 hover:border-slate-200">
+      <div className="flex items-start justify-between">
+        <div className="flex-1 space-y-4">
+          <p className="text-slate-600 text-base font-medium leading-relaxed">{title}</p>
+          
+          <div className={`text-4xl font-bold ${color.text} leading-tight`}>
             {loading ? (
-              <div className="animate-pulse bg-gray-300 h-8 w-20 rounded"></div>
+              <div className="animate-pulse bg-slate-200 h-12 w-24 rounded-lg"></div>
             ) : (
               formatValue(value)
             )}
           </div>
-          {trend && (
-            <div className={`flex items-center mt-2 text-sm ${getTrendColor(trend)}`}>
+          
+          {trend && trendValue && (
+            <div className={`flex items-center text-base font-medium ${getTrendColor(trend)}`}>
               {getTrendIcon(trend)}
-              <span className="ml-1">
-                {trendValue}% from last month
+              <span className="ml-2">
+                {trendValue > 0 ? '+' : ''}{trendValue}% from last month
               </span>
             </div>
           )}
+          
           {subtitle && (
-            <p className="text-xs text-gray-500 mt-2">{subtitle}</p>
+            <p className="text-sm text-slate-500 leading-relaxed">{subtitle}</p>
           )}
         </div>
-        <div className={`p-3 rounded-full ${color.bg}`}>
-          <Icon className={`text-2xl ${color.icon}`} />
+        
+        <div className={`p-4 rounded-2xl ${color.bg} group-hover:scale-110 transition-transform duration-300`}>
+          <Icon className={`text-3xl ${color.icon}`} />
         </div>
       </div>
     </div>
@@ -106,6 +109,13 @@ export const StatisticsCards = ({ stats, loading = false }) => {
     applications: { total: 0, pending: 0, approved: 0, rejected: 0, ...stats?.applications }
   };
 
+  // Calculate actual trends from data instead of hardcoding
+  const calculateTrend = (current, previous) => {
+    if (!previous || previous === 0) return null;
+    const change = ((current - previous) / previous) * 100;
+    return Math.round(change);
+  };
+
   const cardConfigs = [
     {
       title: 'Total Users',
@@ -113,12 +123,12 @@ export const StatisticsCards = ({ stats, loading = false }) => {
       icon: FaUsers,
       color: {
         text: 'text-blue-600',
-        bg: 'bg-blue-100',
+        bg: 'bg-gradient-to-br from-blue-50 to-blue-100',
         icon: 'text-blue-600',
         border: 'border-blue-500'
       },
-      trend: 'up',
-      trendValue: 12,
+      trend: safeStats.users.previousTotal ? (safeStats.users.total > safeStats.users.previousTotal ? 'up' : 'down') : null,
+      trendValue: safeStats.users.previousTotal ? calculateTrend(safeStats.users.total, safeStats.users.previousTotal) : null,
       formatValue: (val) => val.toLocaleString(),
       subtitle: `${safeStats.users.customers || 0} customers, ${safeStats.users.taskers || 0} taskers`
     },
@@ -127,13 +137,13 @@ export const StatisticsCards = ({ stats, loading = false }) => {
       value: safeStats.tasks.active || 0,
       icon: FaTasks,
       color: {
-        text: 'text-green-600',
-        bg: 'bg-green-100',
-        icon: 'text-green-600',
-        border: 'border-green-500'
+        text: 'text-emerald-600',
+        bg: 'bg-gradient-to-br from-emerald-50 to-emerald-100',
+        icon: 'text-emerald-600',
+        border: 'border-emerald-500'
       },
-      trend: 'up',
-      trendValue: 8,
+      trend: safeStats.tasks.previousActive ? (safeStats.tasks.active > safeStats.tasks.previousActive ? 'up' : 'down') : null,
+      trendValue: safeStats.tasks.previousActive ? calculateTrend(safeStats.tasks.active, safeStats.tasks.previousActive) : null,
       formatValue: (val) => val.toLocaleString(),
       subtitle: `${safeStats.tasks.inProgress || 0} in progress, ${safeStats.tasks.scheduled || 0} scheduled`
     },
@@ -143,12 +153,12 @@ export const StatisticsCards = ({ stats, loading = false }) => {
       icon: FaDollarSign,
       color: {
         text: 'text-purple-600',
-        bg: 'bg-purple-100',
+        bg: 'bg-gradient-to-br from-purple-50 to-purple-100',
         icon: 'text-purple-600',
         border: 'border-purple-500'
       },
-      trend: 'up',
-      trendValue: 15,
+      trend: safeStats.revenue.platformRevenue?.previousTotal ? (safeStats.revenue.platformRevenue.total > safeStats.revenue.platformRevenue.previousTotal ? 'up' : 'down') : null,
+      trendValue: safeStats.revenue.platformRevenue?.previousTotal ? calculateTrend(safeStats.revenue.platformRevenue.total, safeStats.revenue.platformRevenue.previousTotal) : null,
       formatValue: (val) => `LKR ${val.toLocaleString()}`,
       subtitle: `Monthly: LKR ${(safeStats.revenue.platformRevenue?.thisMonth || 0).toLocaleString()}`
     },
@@ -158,12 +168,12 @@ export const StatisticsCards = ({ stats, loading = false }) => {
       icon: FaUserCheck,
       color: {
         text: 'text-emerald-600',
-        bg: 'bg-emerald-100',
+        bg: 'bg-gradient-to-br from-emerald-50 to-emerald-100',
         icon: 'text-emerald-600',
         border: 'border-emerald-500'
       },
-      trend: 'up',
-      trendValue: 20,
+      trend: safeStats.users.previousApproved ? (safeStats.users.approved > safeStats.users.previousApproved ? 'up' : 'down') : null,
+      trendValue: safeStats.users.previousApproved ? calculateTrend(safeStats.users.approved, safeStats.users.previousApproved) : null,
       formatValue: (val) => val.toLocaleString(),
       subtitle: `${safeStats.users.pendingApproval || 0} pending approval`
     },
@@ -173,12 +183,12 @@ export const StatisticsCards = ({ stats, loading = false }) => {
       icon: FaChartLine,
       color: {
         text: 'text-indigo-600',
-        bg: 'bg-indigo-100',
+        bg: 'bg-gradient-to-br from-indigo-50 to-indigo-100',
         icon: 'text-indigo-600',
         border: 'border-indigo-500'
       },
-      trend: 'up',
-      trendValue: 5,
+      trend: safeStats.tasks.previousCompletionRate ? (safeStats.tasks.total > 0 ? Math.round((safeStats.tasks.completed / safeStats.tasks.total) * 100) : 0) > safeStats.tasks.previousCompletionRate ? 'up' : 'down' : null,
+      trendValue: safeStats.tasks.previousCompletionRate ? calculateTrend(safeStats.tasks.total > 0 ? Math.round((safeStats.tasks.completed / safeStats.tasks.total) * 100) : 0, safeStats.tasks.previousCompletionRate) : null,
       formatValue: (val) => `${val}%`,
       subtitle: `${safeStats.tasks.completed || 0} of ${safeStats.tasks.total || 0} completed`
     },
@@ -188,19 +198,19 @@ export const StatisticsCards = ({ stats, loading = false }) => {
       icon: FaUserClock,
       color: {
         text: 'text-orange-600',
-        bg: 'bg-orange-100',
+        bg: 'bg-gradient-to-br from-orange-50 to-orange-100',
         icon: 'text-orange-600',
         border: 'border-orange-500'
       },
-      trend: 'up',
-      trendValue: 18,
+      trend: safeStats.applications.previousTotal ? (safeStats.applications.total > safeStats.applications.previousTotal ? 'up' : 'down') : null,
+      trendValue: safeStats.applications.previousTotal ? calculateTrend(safeStats.applications.total, safeStats.applications.previousTotal) : null,
       formatValue: (val) => val.toLocaleString(),
       subtitle: `${safeStats.applications.pending || 0} pending, ${safeStats.applications.approved || 0} approved`
     }
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-10">
       {cardConfigs.map((config, index) => (
         <StatCard
           key={index}

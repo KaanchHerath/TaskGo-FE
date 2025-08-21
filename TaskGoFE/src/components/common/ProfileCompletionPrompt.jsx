@@ -89,7 +89,7 @@ const ProfileCompletionPrompt = ({ userProfile, className = "" }) => {
   const missingFields = getMissingFields();
 
   return (
-    <div className={`bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-6 shadow-lg ${className}`}>
+    <div className={`bg-gradient-to-r from-amber-50/60 to-orange-50/50 backdrop-blur-sm border border-amber-200/60 rounded-2xl p-6 shadow-lg ${className}`}>
       <div className="flex items-start space-x-4">
         <div className="flex-shrink-0">
           <div className="w-12 h-12 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full flex items-center justify-center">

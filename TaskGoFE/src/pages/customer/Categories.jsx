@@ -86,7 +86,7 @@ const CustomerCategories = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20 relative">
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-sky-100 via-blue-200 to-indigo-200">
       {/* Background decorations */}
       <div className="absolute top-0 left-0 w-full h-full opacity-10">
         <div className="absolute top-5 left-5 w-16 h-16 bg-blue-300 rounded-full blur-xl"></div>

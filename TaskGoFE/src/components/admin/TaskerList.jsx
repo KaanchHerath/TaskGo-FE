@@ -19,10 +19,13 @@ const TaskerList = ({ status = 'approved' }) => {
         ...(search ? { search } : {}),
       };
       const resp = await getUsers(params);
-      // getUsers returns backend body; our service unwraps response.data to body
-      // which contains { data: users, pagination }
-      setTaskers(resp.data || []);
-      setPagination(prev => ({ ...prev, ...(resp.pagination || {}), total: resp.pagination?.total || 0 }));
+      // Our service returns { users, pagination, total }
+      // Backward compatibility: if "data" exists, prefer it
+      const users = resp.users || resp.data || [];
+      const paginationInfo = resp.pagination || {};
+      const total = resp.total ?? paginationInfo.total ?? 0;
+      setTaskers(users);
+      setPagination(prev => ({ ...prev, ...paginationInfo, total }));
     } catch (e) {
       console.error('Error loading taskers:', e);
     } finally {
@@ -100,7 +103,7 @@ const TaskerList = ({ status = 'approved' }) => {
                         t.taskerProfile?.approvalStatus === 'approved' ? 'bg-green-100 text-green-800' :
                         t.taskerProfile?.approvalStatus === 'rejected' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'
                       }`}>
-                        {t.taskerProfile?.approvalStatus || 'pending'}
+                        {(t.taskerProfile?.approvalStatus || 'pending').replace(/\b\w/g, c => c.toUpperCase())}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">

@@ -20,41 +20,73 @@ import {
   FaHourglass,
   FaTimesCircle,
   FaPause,
-  FaPlay
+  FaPlay,
+  FaTruck,
+  FaWrench,
+  FaCog,
+  FaLeaf,
+  FaPaintBrush,
+  FaPlug,
+  FaHammer
 } from 'react-icons/fa';
-import { getTasks, updateTaskStatus } from '../../services/api/adminService';
-import TaskDetails from './TaskDetails';
+import { getTasks, updateTaskStatus, getUserDetails } from '../../services/api/adminService';
 import TaskStatusModal from './TaskStatusModal';
+import TaskDetails from './TaskDetails';
 
+/**
+ * TaskManagement Component
+ * 
+ * Expected task data structure from adminService.getTasks():
+ * {
+ *   _id: string,
+ *   title: string,
+ *   status: string,
+ *   category: string,
+ *   area: string,
+ *   minPayment: number,
+ *   maxPayment: number,
+ *   agreedPayment?: number,
+ *   createdAt: string,
+ *   customer: {
+ *     _id: string,
+ *     fullName: string,
+ *     phone: string
+ *   },
+ *   selectedTasker?: {
+ *     _id: string,
+ *     fullName: string,
+ *     phone: string
+ *   },
+ *   targetedTasker?: {
+ *     _id: string,
+ *     fullName: string,
+ *     phone: string
+ *   }
+ * }
+ */
 const TaskManagement = () => {
   const [tasks, setTasks] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
-  const [showDetails, setShowDetails] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(false);
-  const [statusAction, setStatusAction] = useState(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [userDetails, setUserDetails] = useState({});
   const [filters, setFilters] = useState({
-    search: '',
     status: '',
     category: '',
-    customerId: '',
-    taskerId: '',
+    search: '',
     dateFrom: '',
     dateTo: '',
     minPayment: '',
     maxPayment: ''
   });
-  const [sortConfig, setSortConfig] = useState({
-    key: 'createdAt',
-    direction: 'desc'
-  });
+  const [sortConfig, setSortConfig] = useState({ key: 'createdAt', direction: 'desc' });
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 15,
+    limit: 10,
     total: 0
   });
 
-  // Fetch tasks
   const fetchTasks = async () => {
     try {
       setLoading(true);
@@ -67,7 +99,9 @@ const TaskManagement = () => {
       };
       
       const response = await getTasks(params);
-      setTasks(response.data || []);
+      const taskList = response.data || [];
+      
+      setTasks(taskList);
       setPagination(prev => ({
         ...prev,
         total: response.pagination?.total || 0
@@ -79,9 +113,42 @@ const TaskManagement = () => {
     }
   };
 
+  // Fallback: fetch user details for any tasks where customer/tasker are still IDs
+  useEffect(() => {
+    const idsToFetch = new Set();
+    tasks.forEach(task => {
+      if (task?.customer && typeof task.customer !== 'object' && !userDetails[task.customer]) {
+        idsToFetch.add(task.customer);
+      }
+      const taskerId = (task?.selectedTasker && typeof task.selectedTasker !== 'object')
+        ? task.selectedTasker
+        : (task?.targetedTasker && typeof task.targetedTasker !== 'object' ? task.targetedTasker : null);
+      if (taskerId && !userDetails[taskerId]) {
+        idsToFetch.add(taskerId);
+      }
+    });
+
+    if (idsToFetch.size === 0) return;
+
+    (async () => {
+      await Promise.all(Array.from(idsToFetch).map(async (id) => {
+        try {
+          const res = await getUserDetails(id);
+          const userData = res?.data?.user || res?.user || res;
+          if (userData) {
+            setUserDetails(prev => ({ ...prev, [id]: userData }));
+          }
+        } catch (e) {
+          // Silently ignore; UI will keep showing Loading/N/A
+        }
+      }));
+    })();
+  }, [tasks]);
+
+  // Fetch tasks when component mounts or dependencies change
   useEffect(() => {
     fetchTasks();
-  }, [pagination.page, filters, sortConfig]);
+  }, [pagination.page, pagination.limit, filters, sortConfig]);
 
   // Handle filter changes
   const handleFilterChange = (key, value) => {
@@ -105,12 +172,11 @@ const TaskManagement = () => {
   // Handle task actions
   const handleViewDetails = (task) => {
     setSelectedTask(task);
-    setShowDetails(true);
+    setShowDetailsModal(true);
   };
 
   const handleStatusUpdate = (task, action) => {
-    setSelectedTask(task);
-    setStatusAction(action);
+    setSelectedTask({ ...task, statusAction: action });
     setShowStatusModal(true);
   };
 
@@ -132,6 +198,60 @@ const TaskManagement = () => {
       default:
         return { icon: FaClock, color: 'text-gray-600', bgColor: 'bg-gray-100' };
     }
+  };
+
+  // Format status text with proper capitalization
+  const formatStatus = (status) => {
+    if (!status) return 'Unknown';
+    return status
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  };
+
+  // Get customer display info
+  const getCustomerInfo = (task) => {
+    if (!task.customer) return { name: 'N/A', phone: 'N/A' };
+    
+    // If populated object
+    if (typeof task.customer === 'object' && task.customer !== null) {
+      const name = task.customer.fullName || task.customer.name || task.customer.firstName || 'N/A';
+      const phone = task.customer.phone || task.customer.phoneNumber || 'N/A';
+      return { name, phone };
+    }
+    // If it's an ID, try to read from userDetails
+    const id = task.customer;
+    const customerObj = userDetails[id];
+    if (customerObj) {
+      const name = customerObj.fullName || customerObj.name || customerObj.firstName || 'N/A';
+      const phone = customerObj.phone || customerObj.phoneNumber || 'N/A';
+      return { name, phone };
+    }
+    // Still loading
+    return { name: 'Loading...', phone: 'Loading...' };
+  };
+
+  // Get tasker display info
+  const getTaskerInfo = (task) => {
+    const taskerData = task.selectedTasker || task.targetedTasker;
+    if (!taskerData) return { name: 'N/A', phone: 'N/A' };
+    
+    // If populated object
+    if (typeof taskerData === 'object' && taskerData !== null) {
+      const name = taskerData.fullName || taskerData.name || taskerData.firstName || 'N/A';
+      const phone = taskerData.phone || taskerData.phoneNumber || 'N/A';
+      return { name, phone };
+    }
+    // If it's an ID, try to read from userDetails
+    const id = taskerData;
+    const taskerObj = userDetails[id];
+    if (taskerObj) {
+      const name = taskerObj.fullName || taskerObj.name || taskerObj.firstName || 'N/A';
+      const phone = taskerObj.phone || taskerObj.phoneNumber || 'N/A';
+      return { name, phone };
+    }
+    // Still loading
+    return { name: 'Loading...', phone: 'Loading...' };
   };
 
   // Get category icon
@@ -180,8 +300,7 @@ const TaskManagement = () => {
           <h3 className="text-lg font-semibold text-gray-900">Task Filters</h3>
           <button
             onClick={() => setFilters({
-              search: '', status: '', category: '', customerId: '', taskerId: '',
-              dateFrom: '', dateTo: '', minPayment: '', maxPayment: ''
+              search: '', status: '', category: '', dateFrom: '', dateTo: '', minPayment: '', maxPayment: ''
             })}
             className="text-sm text-gray-500 hover:text-gray-700"
           >
@@ -333,20 +452,14 @@ const TaskManagement = () => {
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onClick={() => handleSort('customer')}>
                     <div className="flex items-center space-x-1">
-                      <span>Customer</span>
+                      <span>Customer Details</span>
                       {getSortIcon('customer')}
                     </div>
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onClick={() => handleSort('selectedTasker')}>
                     <div className="flex items-center space-x-1">
-                      <span>Tasker</span>
+                      <span>Tasker Details</span>
                       {getSortIcon('selectedTasker')}
-                    </div>
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onClick={() => handleSort('maxPayment')}>
-                    <div className="flex items-center space-x-1">
-                      <span>Payment</span>
-                      {getSortIcon('maxPayment')}
                     </div>
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onClick={() => handleSort('createdAt')}>
@@ -392,34 +505,24 @@ const TaskManagement = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusInfo.bgColor} ${statusInfo.color}`}>
                           <StatusIcon className="mr-1 h-3 w-3" />
-                          {task.status.replace('_', ' ')}
+                          {formatStatus(task.status)}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
-                          {task.customer?.fullName || 'N/A'}
+                          {getCustomerInfo(task).name}
                         </div>
                         <div className="text-sm text-gray-500">
-                          {task.customer?.email || 'N/A'}
+                          {getCustomerInfo(task).phone}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
-                          {task.selectedTasker?.fullName || task.targetedTasker?.fullName || 'Unassigned'}
+                          {getTaskerInfo(task).name}
                         </div>
                         <div className="text-sm text-gray-500">
-                          {task.applicationCount || 0} applications
+                          {getTaskerInfo(task).phone}
                         </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
-                          {formatCurrency(task.minPayment)} - {formatCurrency(task.maxPayment)}
-                        </div>
-                        {task.agreedPayment && (
-                          <div className="text-xs text-green-600">
-                            Agreed: {formatCurrency(task.agreedPayment)}
-                          </div>
-                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {formatDate(task.createdAt)}
@@ -517,16 +620,16 @@ const TaskManagement = () => {
       </div>
 
       {/* Task Details Modal */}
-      {showDetails && selectedTask && (
+      {showDetailsModal && selectedTask && (
         <TaskDetails
           task={selectedTask}
           onClose={() => {
-            setShowDetails(false);
+            setShowDetailsModal(false);
             setSelectedTask(null);
           }}
           onStatusUpdate={(newStatus) => {
             fetchTasks();
-            setShowDetails(false);
+            setShowDetailsModal(false);
             setSelectedTask(null);
           }}
         />
@@ -536,17 +639,15 @@ const TaskManagement = () => {
       {showStatusModal && selectedTask && (
         <TaskStatusModal
           task={selectedTask}
-          action={statusAction}
+          action={selectedTask.statusAction}
           onClose={() => {
             setShowStatusModal(false);
             setSelectedTask(null);
-            setStatusAction(null);
           }}
           onSuccess={() => {
             fetchTasks();
             setShowStatusModal(false);
             setSelectedTask(null);
-            setStatusAction(null);
           }}
         />
       )}

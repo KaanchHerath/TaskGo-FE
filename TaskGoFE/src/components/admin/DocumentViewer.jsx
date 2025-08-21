@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { APP_CONFIG } from '../../config/appConfig';
 import { 
   FaTimes, 
   FaDownload, 
@@ -16,10 +17,18 @@ const DocumentViewer = ({ document, onClose }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [scale, setScale] = useState(1);
+  const [imageError, setImageError] = useState(false);
 
-  const isPDF = document.url.toLowerCase().endsWith('.pdf');
-  const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(document.url);
-  const fileName = document.url.split('/').pop();
+  const fileName = (document?.url || '').split('/').pop() || '';
+  const lowerName = fileName.toLowerCase();
+  const isPDF = lowerName.endsWith('.pdf');
+  const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(lowerName);
+  const rawUrl = document?.url || '';
+  const backendBase = APP_CONFIG?.API?.BASE_URL?.replace(/\/$/, '') || '';
+  const absoluteUrl = /^https?:\/\//i.test(rawUrl)
+    ? rawUrl
+    : `${backendBase}${rawUrl.startsWith('/') ? '' : '/'}${rawUrl}`;
+  const safeUrl = encodeURI(absoluteUrl);
 
   const getFileIcon = () => {
     if (isPDF) return <FaFilePdf className="w-8 h-8 text-red-500" />;
@@ -29,7 +38,7 @@ const DocumentViewer = ({ document, onClose }) => {
 
   const handleDownload = () => {
     const anchor = window.document.createElement('a');
-    anchor.href = document.url;
+    anchor.href = safeUrl;
     anchor.download = fileName;
     window.document.body.appendChild(anchor);
     anchor.click();
@@ -57,23 +66,23 @@ const DocumentViewer = ({ document, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className={`bg-white rounded-lg shadow-xl ${isFullscreen ? 'w-full h-full' : 'max-w-4xl w-full max-h-[90vh]'}`}>
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-[60] p-4">
+      <div className={`bg-white rounded-2xl shadow-2xl border border-slate-100 ${isFullscreen ? 'w-full h-full' : 'max-w-5xl w-full max-h-[90vh]'} flex flex-col`}>
         {/* Header */}
-        <div className="flex justify-between items-center p-4 border-b border-gray-200">
+        <div className="flex justify-between items-center p-6 border-b border-slate-200">
           <div className="flex items-center space-x-3">
             {getFileIcon()}
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">{document.type}</h3>
-              <p className="text-sm text-gray-600">{fileName}</p>
+              <h3 className="text-lg font-semibold text-slate-900">{document.type}</h3>
+              <p className="text-sm text-slate-600">{fileName}</p>
             </div>
           </div>
           <div className="flex items-center space-x-2">
             {/* Zoom Controls */}
-            <div className="flex items-center space-x-1 bg-gray-100 rounded-lg p-1">
+            <div className="flex items-center space-x-1 bg-slate-100 rounded-lg p-1">
               <button
                 onClick={handleZoomOut}
-                className="p-1 hover:bg-gray-200 rounded transition-colors"
+                className="p-1 hover:bg-slate-200 rounded transition-colors"
                 title="Zoom Out"
               >
                 <FaCompress className="w-4 h-4" />
@@ -81,7 +90,7 @@ const DocumentViewer = ({ document, onClose }) => {
               <span className="text-sm font-medium px-2">{Math.round(scale * 100)}%</span>
               <button
                 onClick={handleZoomIn}
-                className="p-1 hover:bg-gray-200 rounded transition-colors"
+                className="p-1 hover:bg-slate-200 rounded transition-colors"
                 title="Zoom In"
               >
                 <FaExpand className="w-4 h-4" />
@@ -90,11 +99,11 @@ const DocumentViewer = ({ document, onClose }) => {
             
             {/* Page Navigation (for PDFs) */}
             {isPDF && totalPages > 1 && (
-              <div className="flex items-center space-x-1 bg-gray-100 rounded-lg p-1">
+              <div className="flex items-center space-x-1 bg-slate-100 rounded-lg p-1">
                 <button
                   onClick={handlePreviousPage}
                   disabled={currentPage === 1}
-                  className="p-1 hover:bg-gray-200 rounded transition-colors disabled:opacity-50"
+                  className="p-1 hover:bg-slate-200 rounded transition-colors disabled:opacity-50"
                   title="Previous Page"
                 >
                   <FaChevronLeft className="w-4 h-4" />
@@ -105,7 +114,7 @@ const DocumentViewer = ({ document, onClose }) => {
                 <button
                   onClick={handleNextPage}
                   disabled={currentPage === totalPages}
-                  className="p-1 hover:bg-gray-200 rounded transition-colors disabled:opacity-50"
+                  className="p-1 hover:bg-slate-200 rounded transition-colors disabled:opacity-50"
                   title="Next Page"
                 >
                   <FaChevronRight className="w-4 h-4" />
@@ -116,21 +125,30 @@ const DocumentViewer = ({ document, onClose }) => {
             {/* Action Buttons */}
             <button
               onClick={handleDownload}
-              className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
               title="Download"
             >
               <FaDownload className="w-5 h-5" />
             </button>
+            <a
+              href={safeUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-2 text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
+              title="Open in New Tab"
+            >
+              <FaExpand className="w-5 h-5" />
+            </a>
             <button
               onClick={() => setIsFullscreen(!isFullscreen)}
-              className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
               title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
             >
               {isFullscreen ? <FaCompress className="w-5 h-5" /> : <FaExpand className="w-5 h-5" />}
             </button>
             <button
               onClick={onClose}
-              className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
               title="Close"
             >
               <FaTimes className="w-5 h-5" />
@@ -139,34 +157,37 @@ const DocumentViewer = ({ document, onClose }) => {
         </div>
 
         {/* Document Content */}
-        <div className="flex-1 overflow-auto p-4">
+        <div className="flex-1 overflow-auto p-6">
           <div className="flex justify-center">
             <div 
-              className="border border-gray-200 rounded-lg overflow-hidden shadow-lg"
+              className="border border-slate-200 rounded-xl overflow-hidden shadow-lg bg-white"
               style={{ transform: `scale(${scale})`, transformOrigin: 'top center' }}
             >
               {isPDF ? (
-                <iframe
-                  src={`${document.url}#page=${currentPage}`}
-                  className="w-full"
-                  style={{ 
-                    height: isFullscreen ? 'calc(100vh - 120px)' : '600px',
-                    minWidth: '800px'
-                  }}
-                  onLoad={(e) => {
-                    // Try to get total pages from PDF (this is a simplified approach)
-                    // In a real implementation, you might use a PDF library
-                    setTotalPages(1); // Default to 1, could be enhanced with PDF.js
-                  }}
-                />
+                <>
+                  <object
+                    data={safeUrl}
+                    type="application/pdf"
+                    className="w-full"
+                    style={{ height: isFullscreen ? 'calc(100vh - 140px)' : '600px' }}
+                  >
+                    <iframe
+                      src={`${safeUrl}#page=${currentPage}`}
+                      className="w-full"
+                      style={{ height: isFullscreen ? 'calc(100vh - 140px)' : '600px' }}
+                      title="PDF Preview"
+                    />
+                  </object>
+                </>
               ) : isImage ? (
                 <img
-                  src={document.url}
+                  src={safeUrl}
                   alt={document.type}
                   className="max-w-full h-auto"
                   style={{ 
-                    maxHeight: isFullscreen ? 'calc(100vh - 120px)' : '600px'
+                    maxHeight: isFullscreen ? 'calc(100vh - 140px)' : '600px'
                   }}
+                  onError={() => setImageError(true)}
                 />
               ) : (
                 <div className="flex items-center justify-center p-8 text-gray-500">
@@ -183,14 +204,27 @@ const DocumentViewer = ({ document, onClose }) => {
                   </div>
                 </div>
               )}
+              {isImage && imageError && (
+                <div className="flex items-center justify-center p-8 text-gray-500">
+                  <div className="text-center">
+                    <FaFileAlt className="w-16 h-16 mx-auto mb-4" />
+                    <p className="text-lg font-medium">Image Preview Failed</p>
+                    <p className="text-sm">The image could not be loaded. Try opening it in a new tab or download it.</p>
+                    <div className="mt-4 flex items-center justify-center gap-2">
+                      <a href={safeUrl} target="_blank" rel="noopener noreferrer" className="px-4 py-2 bg-slate-600 text-white rounded hover:bg-slate-700 transition-colors">Open</a>
+                      <button onClick={handleDownload} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">Download</button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-gray-200 bg-gray-50">
+        <div className="p-6 border-t border-slate-200 bg-gray-50 rounded-b-2xl">
           <div className="flex justify-between items-center">
-            <div className="text-sm text-gray-600">
+            <div className="text-sm text-slate-600">
               <span className="font-medium">File:</span> {fileName}
               {isPDF && totalPages > 1 && (
                 <span className="ml-4">
@@ -201,7 +235,7 @@ const DocumentViewer = ({ document, onClose }) => {
             <div className="flex items-center space-x-2">
               <button
                 onClick={handleResetZoom}
-                className="px-3 py-1 text-sm bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
+                className="px-3 py-1 text-sm bg-slate-600 text-white rounded hover:bg-slate-700 transition-colors"
               >
                 Reset Zoom
               </button>

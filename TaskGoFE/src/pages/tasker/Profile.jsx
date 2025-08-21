@@ -11,6 +11,7 @@ import { updateTaskerAvailability, uploadQualificationDocuments, removeQualifica
 import { useToast, ToastContainer } from '../../components/common/Toast';
 import Modal from '../../components/common/Modal';
 import { getMyTasks, getMyRecentTasks, getAvailableTasks } from '../../services/api/taskService';
+import { getMyPayments } from '../../services/api/paymentService';
 import { PROVINCES, getDistrictsForProvince, formatLocation } from '../../config/locations';
 import { getTaskerReviews } from '../../services/api/taskerService';
 import { APP_CONFIG, formatCurrency, formatTimeAgo } from '../../config/appConfig';
@@ -28,6 +29,15 @@ const TaskerProfile = () => {
   const [recentTasks, setRecentTasks] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [jobAlerts, setJobAlerts] = useState([]);
+  const [payments, setPayments] = useState([]);
+  const [showClaimModal, setShowClaimModal] = useState(false);
+  const [bankDetails, setBankDetails] = useState({
+    accountHolderName: '',
+    bankName: '',
+    branch: '',
+    accountNumber: '',
+    swiftOrIfsc: ''
+  });
   const { toasts, removeToast, showSuccess, showError } = useToast();
 
   // Form state for editing
@@ -67,12 +77,18 @@ const TaskerProfile = () => {
     fetchProfile();
     fetchStatistics();
     fetchRecentTasks();
-    fetchReviews();
   }, []);
 
   useEffect(() => {
     if (user) {
       fetchJobAlerts();
+    }
+  }, [user]);
+
+  // Fetch reviews after user is loaded to ensure we have the tasker ID
+  useEffect(() => {
+    if (user?._id) {
+      fetchReviews();
     }
   }, [user]);
 
@@ -94,6 +110,12 @@ const TaskerProfile = () => {
         advancePaymentAmount: data.taskerProfile?.advancePaymentAmount || '',
         isAvailable: data.taskerProfile?.isAvailable || true
       });
+
+      // Load saved bank details (if any)
+      try {
+        const saved = JSON.parse(localStorage.getItem('taskerBankDetails') || 'null');
+        if (saved) setBankDetails(saved);
+      } catch (_) {}
     } catch (err) {
       setError('Failed to load profile');
       showError('Failed to load profile');
@@ -104,22 +126,29 @@ const TaskerProfile = () => {
 
   const fetchStatistics = async () => {
     try {
-      const data = await getMyTasks();
-      const tasks = data.data || [];
+      const [tasksResponse, paymentsResponse] = await Promise.all([
+        getMyTasks(),
+        getMyPayments()
+      ]);
+
+      const tasks = tasksResponse.data || [];
       const completedTasks = tasks.filter(t => t.status === 'completed').length;
       const activeTasks = tasks.filter(t => t.status === 'active' || t.status === 'scheduled').length;
       const totalTasks = tasks.length;
-      
-      // Calculate total earnings as sum of advance payments (20% of agreed payment)
-      // Only count tasks that are completed and have advance payment released
-      const totalEarnings = tasks
-        .filter(t => t.status === 'completed' && t.advancePaymentStatus === 'released' && t.agreedPayment)
-        .reduce((sum, t) => {
-          // Calculate advance payment (20% of agreed payment)
-          const advanceAmount = Math.round(t.agreedPayment * 0.2);
-          return sum + advanceAmount;
-        }, 0);
-      
+
+      const paymentsData = paymentsResponse.data || [];
+      setPayments(paymentsData);
+
+      // Sum actual tasker earnings from completed payments
+      const totalEarnings = paymentsData
+        .filter(p => p.status === 'completed')
+        .reduce((sum, p) => sum + (Number(p.taskerEarnings) || 0), 0);
+
+      // Sum scheduled tasks money (in-progress) from tasks
+      const scheduledAmount = tasks
+        .filter(t => t.status === 'scheduled')
+        .reduce((sum, t) => sum + (Number(t.agreedPayment) || Number(t.confirmedPayment) || 0), 0);
+
       let responseRate = 0;
       if (totalTasks > 0) {
         const completionRate = (completedTasks / totalTasks) * 100;
@@ -130,6 +159,7 @@ const TaskerProfile = () => {
         activeTasks,
         totalEarnings,
         responseRate: Math.round(responseRate),
+        inProgressAmount: scheduledAmount,
         avgRating: user?.rating?.average || 0,
         totalReviews: user?.rating?.count || 0
       });
@@ -152,7 +182,9 @@ const TaskerProfile = () => {
       const userId = user?._id;
       if (!userId) return;
       const data = await getTaskerReviews(userId);
-      setReviews(data.data || []);
+      const list = Array.isArray(data) ? data : (data.data || []);
+      const sorted = [...list].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      setReviews(sorted);
     } catch (err) {
       console.error('Error fetching reviews:', err);
     }
@@ -438,12 +470,13 @@ const TaskerProfile = () => {
     { id: 'personal', label: 'Personal', icon: FaUser },
     { id: 'profile', label: 'Profile', icon: FaTools },
     { id: 'documents', label: 'Documents', icon: FaFileAlt },
+    { id: 'earnings', label: 'Earnings', icon: FaDollarSign },
     { id: 'account', label: 'Account Settings', icon: FaCog }
   ];
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50/40 to-teal-50/30 flex items-center justify-center">
         <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-white/20">
           <div className="flex items-center space-x-4">
             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600"></div>
@@ -456,7 +489,7 @@ const TaskerProfile = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50/40 to-teal-50/30 flex items-center justify-center">
         <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-white/20 text-center max-w-md">
           <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-2xl flex items-center justify-center">
             <span className="text-2xl">⚠️</span>
@@ -477,9 +510,20 @@ const TaskerProfile = () => {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20">
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-[#48d669af] via-[#d8dad898] to-[#498f649f]">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -top-24 -left-24 w-96 h-96 bg-gradient-to-tr from-[#4a7c59]/30 via-[#8b9f47]/25 to-[#e8f5df]/20 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/3 -right-24 w-[32rem] h-[32rem] bg-gradient-to-tr from-[#8b9f47]/20 via-[#e8f5df]/25 to-[#4a7c59]/15 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-[-6rem] left-1/3 w-[28rem] h-[28rem] bg-gradient-to-tr from-[#e8f5df]/25 to-[#8b9f47]/30 rounded-full blur-3xl"></div></div>
+      <div 
+        className="absolute inset-0 opacity-10" 
+        style={{ 
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")` 
+        }}
+        ></div>
+        
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-50/20 to-indigo-50/20 border-b border-white/20">
+      <div className="bg-gradient-to-r from-emerald-50/50 to-green-50/40 border-b border-white/20">
         <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="flex items-center justify-between">
             <div>
@@ -707,6 +751,42 @@ const TaskerProfile = () => {
                       <p className="text-xs text-slate-600">Start applying to tasks to see them here</p>
                     </div>
                   )}
+                </div>
+
+                {/* Earnings snapshot */}
+                <div className="bg-white/70 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-lg font-bold text-slate-800">Earnings</h3>
+                    <button onClick={() => setActiveTab('earnings')} className="text-blue-600 hover:text-blue-700 text-xs font-medium flex items-center space-x-1">
+                      <span>View details</span>
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div className="text-center">
+                      <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+                        <FaDollarSign className="w-5 h-5 text-green-600" />
+                      </div>
+                      <div className="text-lg font-bold text-slate-800">{formatCurrency(statistics?.totalEarnings || 0)}</div>
+                      <div className="text-xs text-slate-600">Total Earned</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+                        <FaTasks className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <div className="text-lg font-bold text-slate-800">{formatCurrency(statistics?.inProgressAmount || 0)}</div>
+                      <div className="text-xs text-slate-600">In Progress (Scheduled)</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+                        <FaChartLine className="w-5 h-5 text-yellow-600" />
+                      </div>
+                      <div className="text-lg font-bold text-slate-800">{payments.filter(p => p.status === 'completed').length}</div>
+                      <div className="text-xs text-slate-600">Paid Orders</div>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Recent Reviews */}
@@ -1422,6 +1502,79 @@ const TaskerProfile = () => {
                 </div>
               </div>
             )}
+            {activeTab === 'earnings' && (
+              <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-8">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-bold text-slate-800">Earnings Overview</h3>
+                  <button
+                    onClick={() => setShowClaimModal(true)}
+                    className="bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-2 rounded-xl hover:from-green-600 hover:to-green-700 transition-all duration-200 font-medium shadow-lg"
+                  >
+                    Claim Now
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                  <div className="text-center">
+                    <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mx-auto mb-2">
+                      <FaDollarSign className="w-6 h-6 text-green-600" />
+                    </div>
+                    <div className="text-2xl font-bold text-slate-800">{formatCurrency(statistics?.totalEarnings || 0)}</div>
+                    <div className="text-xs text-slate-600">Total Earned</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-2">
+                      <FaTasks className="w-6 h-6 text-blue-600" />
+                    </div>
+                    <div className="text-2xl font-bold text-slate-800">{payments.filter(p => p.status === 'completed').length}</div>
+                    <div className="text-xs text-slate-600">Paid Orders</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center mx-auto mb-2">
+                      <FaChartLine className="w-6 h-6 text-yellow-600" />
+                    </div>
+                    <div className="text-2xl font-bold text-slate-800">{formatCurrency(payments.filter(p => p.status !== 'completed').reduce((s,p)=> s + (Number(p.taskerEarnings)||0), 0))}</div>
+                    <div className="text-xs text-slate-600">In Progress</div>
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Task</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Your Earnings</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {payments.map((p, idx) => (
+                        <tr key={idx}>
+                          <td className="px-4 py-2 whitespace-nowrap text-sm text-slate-700">{formatDate(p.createdAt)}</td>
+                          <td className="px-4 py-2 whitespace-nowrap text-sm text-slate-700">{p.task?.title || 'Task'}</td>
+                          <td className="px-4 py-2 whitespace-nowrap text-sm text-slate-700 capitalize">{p.paymentType}</td>
+                          <td className="px-4 py-2 whitespace-nowrap text-sm text-right font-medium">{formatCurrency(p.amount)}</td>
+                          <td className="px-4 py-2 whitespace-nowrap text-sm text-right font-semibold text-slate-800">{formatCurrency(p.taskerEarnings)}</td>
+                          <td className="px-4 py-2 whitespace-nowrap text-sm">
+                            <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${p.status === 'completed' ? 'bg-green-100 text-green-800' : p.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'}`}>
+                              {p.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                      {payments.length === 0 && (
+                        <tr>
+                          <td colSpan={6} className="px-4 py-6 text-center text-sm text-slate-500">No payments yet</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -1470,6 +1623,82 @@ const TaskerProfile = () => {
               </>
             )}
           </button>
+        </div>
+      </Modal>
+
+      {/* Claim Earnings - Bank Details Modal */}
+      <Modal
+        isOpen={showClaimModal}
+        onClose={() => setShowClaimModal(false)}
+        title="Claim Earnings"
+        icon={FaDollarSign}
+        iconColor="text-green-600"
+        iconBgColor="bg-green-100"
+        maxWidth="max-w-xl"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-slate-600">Enter your bank account details to receive payouts. We will store these securely.</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Account Holder Name</label>
+              <input
+                type="text"
+                value={bankDetails.accountHolderName}
+                onChange={(e) => setBankDetails({ ...bankDetails, accountHolderName: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                placeholder="Name as per bank"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Bank Name</label>
+              <input
+                type="text"
+                value={bankDetails.bankName}
+                onChange={(e) => setBankDetails({ ...bankDetails, bankName: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                placeholder="e.g., HNB, Commercial Bank"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Branch</label>
+              <input
+                type="text"
+                value={bankDetails.branch}
+                onChange={(e) => setBankDetails({ ...bankDetails, branch: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                placeholder="Branch name"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Account Number</label>
+              <input
+                type="text"
+                value={bankDetails.accountNumber}
+                onChange={(e) => setBankDetails({ ...bankDetails, accountNumber: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                placeholder="XXXXXXXXXXXX"
+              />
+            </div>
+            
+          </div>
+          <div className="flex justify-end gap-3 pt-2">
+            <button
+              onClick={() => setShowClaimModal(false)}
+              className="px-5 py-2 rounded-xl border border-gray-300 text-slate-700 hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => {
+                try { localStorage.setItem('taskerBankDetails', JSON.stringify(bankDetails)); } catch (_) {}
+                showSuccess('Bank details saved');
+                setShowClaimModal(false);
+              }}
+              className="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-2.5 rounded-xl hover:from-green-600 hover:to-green-700 transition-all duration-200 font-medium shadow-lg"
+            >
+              Save & Request Payout
+            </button>
+          </div>
         </div>
       </Modal>
 

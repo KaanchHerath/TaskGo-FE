@@ -75,15 +75,21 @@ const TaskerCategories = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20 relative">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50/40 to-teal-50/30 relative">
       {/* Background decorations */}
-      <div className="absolute top-0 left-0 w-full h-full opacity-10">
-        <div className="absolute top-5 left-5 w-16 h-16 bg-blue-300 rounded-full blur-xl"></div>
-        <div className="absolute bottom-5 right-5 w-20 h-20 bg-indigo-300 rounded-full blur-2xl"></div>
-        <div className="absolute top-1/2 left-1/3 w-12 h-12 bg-purple-300 rounded-full blur-lg"></div>
-        <div className="absolute top-1/4 right-1/4 w-14 h-14 bg-emerald-300 rounded-full blur-xl"></div>
-        <div className="absolute bottom-1/3 left-1/4 w-18 h-18 bg-pink-300 rounded-full blur-2xl"></div>
-      </div>
+      <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-[#48d669af] via-[#d8dad898] to-[#498f649f]">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -top-24 -left-24 w-96 h-96 bg-gradient-to-tr from-[#4a7c59]/30 via-[#8b9f47]/25 to-[#e8f5df]/20 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/3 -right-24 w-[32rem] h-[32rem] bg-gradient-to-tr from-[#8b9f47]/20 via-[#e8f5df]/25 to-[#4a7c59]/15 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-[-6rem] left-1/3 w-[28rem] h-[28rem] bg-gradient-to-tr from-[#e8f5df]/25 to-[#8b9f47]/30 rounded-full blur-3xl"></div></div>
+      <div 
+        className="absolute inset-0 opacity-10" 
+        style={{ 
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")` 
+        }}
+        ></div>
+      
+    
       
       {/* Header Section */}
       <div className="relative z-10 pt-8 pb-4">
@@ -198,6 +204,7 @@ const TaskerCategories = () => {
           </div>
         </div>
       </div>
+    </div>
     </div>
   );
 };

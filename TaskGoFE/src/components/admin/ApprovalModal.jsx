@@ -70,16 +70,16 @@ const ApprovalModal = ({ tasker, action, onConfirm, onCancel }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full sm:max-w-lg md:max-w-2xl lg:max-w-3xl max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/30 backdrop-blur-md flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full sm:max-w-lg md:max-w-2xl lg:max-w-3xl max-h-[90vh] overflow-y-auto border border-slate-100">
         {/* Header */}
-        <div className={`flex items-center justify-between p-4 ${getActionBgColor()} rounded-t-lg`}>
+        <div className={`flex items-center justify-between p-6 ${getActionBgColor()} rounded-t-2xl border-b border-slate-200`}>
           <div className="flex items-center space-x-3">
-            <div className={`p-2 rounded-full ${getActionBgColor()}`}>
+            <div className={`p-3 rounded-full ${getActionBgColor()} shadow-sm`}>
               {getActionIcon()}
             </div>
             <div>
-              <h2 className={`text-xl font-bold ${getActionColor()}`}>
+              <h2 className={`text-2xl font-bold ${getActionColor()}`}>
                 {getActionTitle()}
               </h2>
               <p className="text-gray-600 text-sm">
@@ -96,9 +96,9 @@ const ApprovalModal = ({ tasker, action, onConfirm, onCancel }) => {
         </div>
 
         {/* Content */}
-        <div className="p-4">
+        <div className="p-6">
           {/* Tasker Info */}
-          <div className="bg-gray-50 rounded-lg p-3 mb-4">
+          <div className="bg-gray-50 rounded-xl p-4 mb-6 border border-slate-100">
             <div className="flex items-start space-x-3">
               <div className="w-9 h-9 bg-blue-100 rounded-full flex items-center justify-center mt-0.5">
                 <FaUser className="w-5 h-5 text-blue-600" />
@@ -112,7 +112,7 @@ const ApprovalModal = ({ tasker, action, onConfirm, onCancel }) => {
                 </div>
               </div>
             </div>
-            <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+            <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
               <div>
                 <span className="text-gray-500">Location:</span>
                 <p className="font-medium">{tasker.taskerProfile?.province}, {tasker.taskerProfile?.district}</p>
@@ -133,7 +133,7 @@ const ApprovalModal = ({ tasker, action, onConfirm, onCancel }) => {
           </div>
 
           {/* Action Description */}
-          <div className="mb-4">
+          <div className="mb-6">
             <div className="flex items-start space-x-2 text-sm">
               <FaInfoCircle className="w-5 h-5 text-blue-500 mt-0.5" />
               <p className="text-gray-700">{getActionDescription()}</p>
@@ -142,7 +142,7 @@ const ApprovalModal = ({ tasker, action, onConfirm, onCancel }) => {
 
           {/* Reason Input (Required for rejection) */}
           {isRejection && (
-            <div className="mb-4">
+            <div className="mb-6">
               <label htmlFor="reason" className="block text-sm font-medium text-gray-700 mb-2">
                 Rejection Reason <span className="text-red-500">*</span>
               </label>
@@ -163,7 +163,7 @@ const ApprovalModal = ({ tasker, action, onConfirm, onCancel }) => {
 
           {/* Optional Reason for Approval */}
           {isApproval && (
-            <div className="mb-4">
+            <div className="mb-6">
               <label htmlFor="approvalReason" className="block text-sm font-medium text-gray-700 mb-2">
                 Approval Note (Optional)
               </label>
@@ -209,7 +209,7 @@ const ApprovalModal = ({ tasker, action, onConfirm, onCancel }) => {
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end space-x-3 p-4 border-t border-gray-200 bg-gray-50 rounded-b-lg">
+        <div className="flex justify-end space-x-4 p-6 border-t border-gray-200 bg-gray-50 rounded-b-2xl">
           <button
             onClick={onCancel}
             disabled={loading}

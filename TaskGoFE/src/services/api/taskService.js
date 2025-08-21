@@ -355,10 +355,11 @@ export const uploadTaskPhotos = async (files) => {
  * @param {File} file - Photo file
  * @returns {Promise<Object>} Upload response with photo URL
  */
-export const uploadCompletionPhoto = async (file) => {
+export const uploadCompletionPhoto = async (file, taskId) => {
   try {
     const formData = new FormData();
     formData.append('photo', file);
+    formData.append('taskId', taskId);
     
     const response = await axiosInstance.post('/tasks/upload-completion-photo', formData, {
       headers: {

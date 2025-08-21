@@ -40,6 +40,15 @@ const CustomerProfile = () => {
   });
   const [changingPassword, setChangingPassword] = useState(false);
 
+  // Bank details state (temporary local persistence until backend supports it)
+  const [bankDetails, setBankDetails] = useState({
+    accountHolderName: '',
+    bankName: '',
+    branch: '',
+    accountNumber: '',
+    swiftOrIfsc: ''
+  });
+
   useEffect(() => {
     fetchProfile();
     fetchStatistics();
@@ -58,6 +67,14 @@ const CustomerProfile = () => {
         province: data.customerProfile?.province || '',
         district: data.customerProfile?.district || ''
       });
+
+      // Load bank details (from backend if available, else from localStorage)
+      try {
+        const backendBank = data.customerProfile?.bankDetails || null;
+        const localBank = JSON.parse(localStorage.getItem('customerBankDetails') || 'null');
+        const effective = backendBank || localBank;
+        if (effective) setBankDetails(effective);
+      } catch (_) {}
     } catch (err) {
       setError('Failed to load profile');
       showError('Failed to load profile');
@@ -178,6 +195,33 @@ const CustomerProfile = () => {
     }
   };
 
+  const handleSaveBankDetails = async () => {
+    try {
+      // Try to persist to backend if supported
+      const updateData = {
+        customerProfile: {
+          bankDetails
+        }
+      };
+      try {
+        await updateUserProfile(updateData);
+        showSuccess('Bank details saved');
+      } catch (apiErr) {
+        // Backend may not support bankDetails yet; fall back to local storage only
+        console.warn('Bank details API not available, storing locally instead', apiErr);
+        showSuccess('Bank details saved locally');
+      }
+    } catch (err) {
+      showError('Failed to save bank details');
+      return;
+    }
+
+    // Always persist locally so user does not lose data
+    try {
+      localStorage.setItem('customerBankDetails', JSON.stringify(bankDetails));
+    } catch (_) {}
+  };
+
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -209,7 +253,7 @@ const CustomerProfile = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-sky-100 via-blue-200 to-indigo-200 flex items-center justify-center">
         <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-white/20">
           <div className="flex items-center space-x-4">
             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600"></div>
@@ -222,7 +266,7 @@ const CustomerProfile = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-sky-100 via-blue-200 to-indigo-200 flex items-center justify-center">
         <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-white/20 text-center max-w-md">
           <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-2xl flex items-center justify-center">
             <span className="text-2xl">⚠️</span>
@@ -243,7 +287,7 @@ const CustomerProfile = () => {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20">
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-sky-100 via-blue-200 to-indigo-200">
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-50/20 to-indigo-50/20 border-b border-white/20">
         <div className="max-w-7xl mx-auto px-4 py-8">
@@ -357,54 +401,7 @@ const CustomerProfile = () => {
                   )}
                 </div>
 
-                {/* Performance Statistics */}
-                {statistics && (
-                  <div className="bg-white/70 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-lg font-bold text-slate-800">Task Overview</h3>
-                      <button className="text-blue-600 hover:text-blue-700 text-xs font-medium flex items-center space-x-1">
-                        <span>View all</span>
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </button>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      <div className="text-center">
-                        <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-2">
-                          <FaTasks className="w-5 h-5 text-blue-600" />
-                        </div>
-                        <div className="text-lg font-bold text-slate-800">{statistics.totalTasks}</div>
-                        <div className="text-xs text-slate-600">Total Tasks</div>
-                      </div>
-                      
-                      <div className="text-center">
-                        <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-2">
-                          <FaCheckCircle className="w-5 h-5 text-green-600" />
-                        </div>
-                        <div className="text-lg font-bold text-slate-800">{statistics.completedTasks}</div>
-                        <div className="text-xs text-slate-600">Completed</div>
-                      </div>
-                      
-                      <div className="text-center">
-                        <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-2">
-                          <FaClock className="w-5 h-5 text-purple-600" />
-                        </div>
-                        <div className="text-lg font-bold text-slate-800">{statistics.activeTasks}</div>
-                        <div className="text-xs text-slate-600">Active</div>
-                      </div>
-                      
-                      <div className="text-center">
-                        <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center mx-auto mb-2">
-                          <FaDollarSign className="w-5 h-5 text-yellow-600" />
-                        </div>
-                        <div className="text-lg font-bold text-slate-800">{formatCurrency(statistics.totalSpent)}</div>
-                        <div className="text-xs text-slate-600">Total Spent</div>
-                      </div>
-                    </div>
-                  </div>
-                )}
+               
 
                 {/* Recent Tasks */}
                 <div className="bg-white/70 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 p-4">
@@ -621,25 +618,8 @@ const CustomerProfile = () => {
                 <h2 className="text-2xl font-bold text-slate-800 mb-8">Account Settings</h2>
                 
                 <div className="space-y-8">
-                  {/* Account Information */}
-                  <div>
-                    <h3 className="text-lg font-semibold text-slate-800 mb-4">Account Information</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">Account ID</label>
-                        <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-slate-700 font-mono text-sm">
-                          {user._id}
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">Account Type</label>
-                        <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-slate-700">
-                          Customer Account
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                 
+                 
 
                   {/* Security Settings */}
                   <div>

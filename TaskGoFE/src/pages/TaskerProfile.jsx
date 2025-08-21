@@ -117,7 +117,7 @@ const TaskerProfile = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20 flex items-center justify-center">
+      <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-sky-100 via-blue-200 to-indigo-200 flex items-center justify-center">
         <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-white/20">
           <div className="flex items-center space-x-4">
             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600"></div>
@@ -130,7 +130,7 @@ const TaskerProfile = () => {
 
   if (error || !tasker) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20 flex items-center justify-center">
+      <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-sky-100 via-blue-200 to-indigo-200 flex items-center justify-center">
         <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-white/20 text-center max-w-md">
           <h2 className="text-2xl font-bold text-slate-800 mb-4">Tasker Not Found</h2>
           <p className="text-slate-600 mb-6">{error || 'The tasker you are looking for does not exist.'}</p>
@@ -147,8 +147,15 @@ const TaskerProfile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20 py-8">
-      <div className="max-w-7xl mx-auto px-4">
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-sky-100 via-blue-200 to-indigo-200 py-8">
+      <div className="absolute top-0 left-0 w-full h-full opacity-10">
+        <div className="absolute top-5 left-5 w-16 h-16 bg-blue-300 rounded-full blur-xl"></div>
+        <div className="absolute bottom-5 right-5 w-20 h-20 bg-indigo-300 rounded-full blur-2xl"></div>
+        <div className="absolute top-1/2 left-1/3 w-12 h-12 bg-purple-300 rounded-full blur-lg"></div>
+        <div className="absolute top-1/4 right-1/4 w-14 h-14 bg-emerald-300 rounded-full blur-xl"></div>
+        <div className="absolute bottom-1/3 left-1/4 w-18 h-18 bg-pink-300 rounded-full blur-2xl"></div>
+      </div>
+      <div className="relative z-10 max-w-7xl mx-auto px-4">
         {/* Back Button */}
         <div className="mb-6">
           <button 

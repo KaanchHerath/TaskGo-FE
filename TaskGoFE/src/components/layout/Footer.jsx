@@ -52,7 +52,7 @@ const Footer = () => {
         {/* Bottom Section */}
         <div className="mt-16 pt-8 border-t border-gray-800 flex justify-between items-center">
           <p className="text-gray-400">
-            © 2023 TaskGo - Gig Route. All Rights Reserved
+            © 2025 TaskGo - Gig Route. All Rights Reserved
           </p>
           <div className="flex space-x-6">
             <a href="#" className="text-gray-400 hover:text-white">

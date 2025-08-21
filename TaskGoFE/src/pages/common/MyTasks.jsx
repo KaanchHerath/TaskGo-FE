@@ -161,10 +161,10 @@ const MyTasks = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20 flex items-center justify-center">
+      <div className={(userRole === 'tasker' ? "min-h-screen bg-gradient-to-br from-[#48d669af] via-[#d8dad898] to-[#498f649f]" : "min-h-screen bg-gradient-to-br from-sky-100 via-blue-200 to-indigo-200") + " flex items-center justify-center"}>
         <div className="relative">
           <div className="animate-spin rounded-full h-12 w-12 border-4 border-white/30"></div>
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500/80 border-t-transparent absolute top-0"></div>
+          <div className={`animate-spin rounded-full h-12 w-12 border-4 ${userRole === 'tasker' ? 'border-green-500/80' : 'border-blue-500/80'} border-t-transparent absolute top-0`}></div>
         </div>
       </div>
     );
@@ -172,7 +172,7 @@ const MyTasks = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-sky-100 via-blue-200 to-indigo-200 flex items-center justify-center">
         <div className="text-center bg-gradient-to-r from-white/60 to-white/40 backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-white/30">
           <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-red-100/60 to-red-200/60 backdrop-blur-sm rounded-2xl flex items-center justify-center">
             <span className="text-2xl">⚠️</span>
@@ -259,7 +259,26 @@ const MyTasks = () => {
   const filteredData = getFilteredData();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20">
+    <div className={userRole === 'tasker' ? "min-h-screen relative overflow-hidden bg-gradient-to-br from-[#48d669af] via-[#d8dad898] to-[#498f649f]" : "min-h-screen relative overflow-hidden bg-gradient-to-br from-sky-100 via-blue-200 to-indigo-200"}>
+      <div className="pointer-events-none absolute inset-0">
+        {userRole === 'tasker' ? (
+          <>
+            <div className="absolute -top-24 -left-24 w-96 h-96 bg-gradient-to-tr from-[#4a7c59]/30 via-[#8b9f47]/25 to-[#e8f5df]/20 rounded-full blur-3xl"></div>
+            <div className="absolute top-1/3 -right-24 w-[32rem] h-[32rem] bg-gradient-to-tr from-[#8b9f47]/20 via-[#e8f5df]/25 to-[#4a7c59]/15 rounded-full blur-3xl"></div>
+            <div className="absolute bottom-[-6rem] left-1/3 w-[28rem] h-[28rem] bg-gradient-to-tr from-[#e8f5df]/25 to-[#8b9f47]/30 rounded-full blur-3xl"></div>
+          </>
+        ) : (
+          <>
+            <div className="absolute -top-24 -left-24 w-96 h-96 bg-gradient-to-tr from-sky-400/40 via-blue-500/30 to-indigo-500/30 rounded-full blur-3xl"></div>
+            <div className="absolute top-1/3 -right-24 w-[32rem] h-[32rem] bg-gradient-to-tr from-indigo-400/30 via-blue-400/30 to-sky-300/30 rounded-full blur-3xl"></div>
+            <div className="absolute bottom-[-6rem] left-1/3 w-[28rem] h-[28rem] bg-gradient-to-tr from-sky-300/40 to-blue-400/30 rounded-full blur-3xl"></div>
+          </>
+        )}
+        <div className="absolute inset-0 opacity-10" style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
+        }}></div>
+      </div>
+      <div className="relative z-10">
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-50/20 to-indigo-50/20">
         <div className="max-w-7xl mx-auto px-4 py-8">
@@ -620,6 +639,7 @@ const MyTasks = () => {
         )}
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

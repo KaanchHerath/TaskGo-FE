@@ -23,6 +23,7 @@ import {
   FaEye,
   FaCheck
 } from 'react-icons/fa';
+import BackToTasksButton from '../components/common/BackToTasksButton';
 import { getTask, applyForTask, getTaskApplications, markTaskComplete, cancelScheduledTask, selectTasker } from '../services/api/taskService';
 import { useToast, ToastContainer } from '../components/common/Toast';
 import TaskChatWindow from '../components/task/TaskChatWindow';
@@ -72,6 +73,23 @@ const TaskDetails = () => {
   const [selectedTaskerId, setSelectedTaskerId] = useState(null);
   const [selectedTaskerName, setSelectedTaskerName] = useState('');
   const currentUser = getCurrentUser();
+  const isTasker = currentUser?.role === 'tasker';
+  const backgroundGradient = isTasker
+    ? 'bg-gradient-to-br from-[#48d669af] via-[#d8dad898] to-[#498f649f]'
+    : 'bg-gradient-to-br from-sky-100 via-blue-200 to-indigo-200';
+  const getApiBaseUrl = () => {
+    let base = 'http://localhost:5000';
+    try {
+      if (typeof import.meta !== 'undefined' && import.meta.env) {
+        base = import.meta.env.VITE_API_URL || import.meta.env.REACT_APP_API_URL || base;
+      }
+    } catch (_) {}
+    if (typeof process !== 'undefined' && process.env && process.env.REACT_APP_API_URL) {
+      base = process.env.REACT_APP_API_URL;
+    }
+    return base;
+  };
+  const API_BASE_URL = getApiBaseUrl();
 
   // Define computed values before useEffect hooks
   const isTaskOwner = currentUser && task && task.customer && 
@@ -357,8 +375,20 @@ const TaskDetails = () => {
   const getDocumentUrl = (docPath) => {
     // Handle both absolute and relative paths
     return docPath.includes('uploads/') 
-      ? `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/${docPath}`
-      : `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/uploads/tasker-docs/${docPath.split(/[\\\/]/).pop()}`;
+      ? `${API_BASE_URL}/${docPath}`
+      : `${API_BASE_URL}/uploads/tasker-docs/${docPath.split(/[\\\/]/).pop()}`;
+  };
+
+  // Helper to construct absolute URLs for images saved in backend uploads
+  const getTaskPhotoUrl = (photoPath) => {
+    if (!photoPath) return '';
+    // If already an absolute URL or data URI
+    if (/^https?:\/\//i.test(photoPath) || /^data:image\//i.test(photoPath)) return photoPath;
+    const base = API_BASE_URL;
+    // Normalize Windows backslashes
+    const normalized = photoPath.replace(/\\/g, '/');
+    const cleaned = normalized.startsWith('/') ? normalized.slice(1) : normalized;
+    return `${base}/${cleaned}`;
   };
 
   const getStatusIcon = (status) => {
@@ -393,7 +423,7 @@ const TaskDetails = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20 flex items-center justify-center">
+      <div className={`min-h-screen ${backgroundGradient} flex items-center justify-center`}>
         <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-white/20">
           <div className="flex items-center space-x-4">
             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600"></div>
@@ -406,7 +436,7 @@ const TaskDetails = () => {
 
   if (error || !task) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20 flex items-center justify-center">
+      <div className={`min-h-screen ${backgroundGradient} flex items-center justify-center`}>
         <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-white/20 text-center max-w-md">
           <h2 className="text-2xl font-bold text-slate-800 mb-4">Task Not Found</h2>
           <p className="text-slate-600 mb-6">{error || 'The task you are looking for does not exist.'}</p>
@@ -423,17 +453,11 @@ const TaskDetails = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20 py-8">
+    <div className={`min-h-screen relative overflow-hidden ${backgroundGradient} py-8`}>
       <div className="max-w-7xl mx-auto px-4">
         {/* Back Button */}
         <div className="mb-6">
-          <button 
-            onClick={() => navigate(isTaskOwner ? '/my-tasks' : '/tasks')}
-            className="bg-white/70 backdrop-blur-sm border border-white/30 text-slate-700 px-4 py-2 rounded-xl hover:bg-white/90 transition-all duration-300 flex items-center font-medium shadow-lg"
-          >
-            <FaArrowLeft className="mr-2" />
-            {isTaskOwner ? 'Back to My Tasks' : 'Back to Tasks'}
-          </button>
+          <BackToTasksButton to={isTaskOwner ? '/my-tasks' : '/tasks'} isMyTasks={isTaskOwner} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -487,7 +511,7 @@ const TaskDetails = () => {
                   {task.photos.map((photo, index) => (
                     <div key={index} className="relative group">
                       <img 
-                        src={photo} 
+                        src={getTaskPhotoUrl(photo)} 
                         alt={`Task photo ${index + 1}`}
                         className="w-full h-48 object-cover rounded-xl shadow-lg group-hover:shadow-xl transition-all duration-300"
                       />
@@ -894,8 +918,8 @@ const TaskDetails = () => {
                                 <button 
                                   onClick={() => {
                                     const url = doc.includes('uploads/') 
-                                      ? `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/${doc}`
-                                      : `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/uploads/tasker-docs/${doc.split(/[\\\/]/).pop()}`;
+                                      ? `${API_BASE_URL}/${doc}`
+                                      : `${API_BASE_URL}/uploads/tasker-docs/${doc.split(/[\\\/]/).pop()}`;
                                     window.open(url, '_blank');
                                   }}
                                   className="text-blue-600 hover:text-blue-700 text-xs font-medium flex items-center space-x-1 bg-blue-50 px-2 py-1 rounded hover:bg-blue-100 transition-colors"
@@ -1043,10 +1067,10 @@ const TaskDetails = () => {
                           {task.completionPhotos.map((photo, index) => (
                             <div key={index} className="relative group">
                               <img
-                                src={photo}
+                                src={getTaskPhotoUrl(photo)}
                                 alt={`Completion photo ${index + 1}`}
                                 className="w-full h-32 object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-90 transition-opacity shadow-md"
-                                onClick={() => window.open(photo, '_blank')}
+                                onClick={() => window.open(getTaskPhotoUrl(photo), '_blank')}
                                 onError={(e) => {
                                   // Handle broken/invalid image URLs
                                   e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEyOCIgdmlld0JveD0iMCAwIDIwMCAxMjgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMTI4IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik04MCA2NEw5NiA0OEwxMjAgNzJMMTQ0IDQ4TDE2MCA2NEwxNDQgODBMMTIwIDU2TDk2IDgwTDgwIDY0WiIgZmlsbD0iIzlDQTNBRiIvPgo8dGV4dCB4PSIxMDAiIHk9IjEwMCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEyIiBmaWxsPSIjNkI3MjgwIj5JbWFnZSBub3QgYXZhaWxhYmxlPC90ZXh0Pgo8L3N2Zz4K';

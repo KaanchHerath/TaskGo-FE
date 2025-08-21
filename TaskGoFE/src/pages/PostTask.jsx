@@ -245,8 +245,16 @@ const PostTask = () => {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
+      <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-sky-100 via-blue-200 to-indigo-200 flex items-center justify-center">
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute -top-24 -left-24 w-96 h-96 bg-gradient-to-tr from-sky-400/40 via-blue-500/30 to-indigo-500/30 rounded-full blur-3xl"></div>
+          <div className="absolute top-1/3 -right-24 w-[32rem] h-[32rem] bg-gradient-to-tr from-indigo-400/30 via-blue-400/30 to-sky-300/30 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-[-6rem] left-1/3 w-[28rem] h-[28rem] bg-gradient-to-tr from-sky-300/40 to-blue-400/30 rounded-full blur-3xl"></div>
+          <div className="absolute inset-0 opacity-10" style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
+          }}></div>
+        </div>
+        <div className="relative z-10 max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -261,9 +269,18 @@ const PostTask = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-sky-100 via-blue-200 to-indigo-200">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -top-24 -left-24 w-96 h-96 bg-gradient-to-tr from-sky-400/40 via-blue-500/30 to-indigo-500/30 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/3 -right-24 w-[32rem] h-[32rem] bg-gradient-to-tr from-indigo-400/30 via-blue-400/30 to-sky-300/30 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-[-6rem] left-1/3 w-[28rem] h-[28rem] bg-gradient-to-tr from-sky-300/40 to-blue-400/30 rounded-full blur-3xl"></div>
+        <div className="absolute inset-0 opacity-10" style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
+        }}></div>
+      </div>
+      <div className="relative z-10">
       {/* Header */}
-      <div className="bg-white shadow-sm">
+      <div className="bg-white/30 backdrop-blur-sm border-b border-white/20 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <h1 className="text-3xl font-bold text-gray-900">Post a Task</h1>
           <p className="mt-2 text-gray-600">Tell us what you need done and get offers from skilled taskers</p>
@@ -309,26 +326,7 @@ const PostTask = () => {
 
             {/* Tags and Category Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label htmlFor="tags" className="block text-sm font-semibold text-gray-900 mb-2">
-                  Tags
-                </label>
-                <div className="relative">
-                  <svg className="w-5 h-5 text-gray-400 absolute left-3 top-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                  </svg>
-                  <input
-                    type="text"
-                    id="tags"
-                    name="tags"
-                    value={formData.tags}
-                    onChange={handleInputChange}
-                    placeholder="Job keyword, tags etc..."
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                  />
-                </div>
-                <p className="text-xs text-gray-500 mt-1">Separate tags with commas</p>
-              </div>
+              
 
               <div>
                 <label htmlFor="category" className="block text-sm font-semibold text-gray-900 mb-2">
@@ -625,6 +623,7 @@ const PostTask = () => {
             </div>
           </form>
         </div>
+      </div>
       </div>
     </div>
   );

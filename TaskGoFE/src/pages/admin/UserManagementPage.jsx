@@ -4,13 +4,9 @@ import {
   FaUserCheck, 
   FaUserSlash, 
   FaUserTimes, 
-  FaFilter,
   FaDownload,
   FaChartBar,
-  FaBell,
   FaSearch,
-  FaEye,
-  FaTrash,
   FaUserCog,
   FaInfoCircle
 } from 'react-icons/fa';
@@ -34,10 +30,7 @@ const UserManagementPage = () => {
   const fetchUserStats = async () => {
     try {
       setLoading(true);
-      const response = await getUsers({ limit: 1 }); // Just to get counts
-      
-      // In a real implementation, you'd have separate endpoints for these stats
-      // For now, we'll simulate the data
+      const response = await getUsers({ limit: 1 }); 
       const total = response.total || 0;
       setStats({
         total,
@@ -67,22 +60,22 @@ const UserManagementPage = () => {
   ];
 
   const StatCard = ({ title, value, icon: Icon, color, loading, subtitle }) => (
-    <div className="bg-white rounded-lg shadow-md p-6">
+    <div className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 p-6 border border-slate-100 group">
       <div className="flex items-center justify-between">
-        <div>
-          <p className="text-gray-600 text-sm font-medium">{title}</p>
-          <p className={`text-2xl font-bold ${color} mt-1`}>
+        <div className="flex-1">
+          <p className="text-slate-600 text-sm font-medium">{title}</p>
+          <div className={`text-3xl font-bold ${color} mt-1`}>
             {loading ? (
-              <div className="animate-pulse bg-gray-300 h-8 w-16 rounded"></div>
+              <div className="animate-pulse bg-slate-200 h-10 w-20 rounded-lg"></div>
             ) : (
               value.toLocaleString()
             )}
-          </p>
+          </div>
           {subtitle && (
-            <p className="text-xs text-gray-500 mt-1">{subtitle}</p>
+            <p className="text-xs text-slate-500 mt-1">{subtitle}</p>
           )}
         </div>
-        <div className={`p-3 rounded-full ${color.replace('text-', 'bg-').replace('-600', '-100')}`}>
+        <div className={`p-4 rounded-2xl ${color.replace('text-', 'bg-').replace('-600', '-100')} group-hover:scale-110 transition-transform duration-300`}>
           <Icon className={`text-2xl ${color}`} />
         </div>
       </div>
@@ -92,22 +85,12 @@ const UserManagementPage = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
-              <p className="text-gray-600 mt-1">Manage and monitor all platform users</p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <button className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                <FaDownload className="w-4 h-4" />
-                <span>Export Users</span>
-              </button>
-              <button className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-                <FaBell className="w-4 h-4" />
-                <span>Notifications</span>
-              </button>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+        <div className="bg-white rounded-2xl shadow-lg p-8 border border-slate-100">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+            <div className="mb-6 lg:mb-0">
+              <h1 className="text-3xl font-bold text-slate-800 mb-2">User Management</h1>
+              <p className="text-slate-600 text-lg">Manage and monitor all platform users</p>
             </div>
           </div>
         </div>
@@ -180,28 +163,28 @@ const UserManagementPage = () => {
         </div>
 
         {/* Tabs */}
-        <div className="bg-white rounded-lg shadow-md mb-8">
-          <div className="border-b border-gray-200">
-            <nav className="flex space-x-8 px-6">
+        <div className="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden mb-8">
+          <div className="border-b border-slate-200 bg-gradient-to-r from-slate-50 to-blue-50">
+            <nav className="flex space-x-1 p-2">
               {tabs.map((tab) => {
                 const Icon = tab.icon;
                 return (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                    className={`flex items-center space-x-3 py-4 px-6 rounded-xl font-medium text-sm transition-all duration-300 relative ${
                       activeTab === tab.id
-                        ? 'border-blue-500 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                        ? 'bg-white text-slate-800 shadow-lg border border-slate-200'
+                        : 'text-slate-600 hover:text-slate-800 hover:bg-white/50'
                     }`}
                   >
-                    <Icon className="w-4 h-4" />
+                    <Icon className={`w-5 h-5 ${activeTab === tab.id ? 'text-blue-600' : ''}`} />
                     <span>{tab.label}</span>
                     {tab.count > 0 && (
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${
                         activeTab === tab.id
                           ? 'bg-blue-100 text-blue-800'
-                          : 'bg-gray-100 text-gray-800'
+                          : 'bg-slate-200 text-slate-700'
                       }`}>
                         {tab.count}
                       </span>
@@ -213,27 +196,10 @@ const UserManagementPage = () => {
           </div>
 
           {/* Tab Content */}
-          <div className="p-6">
+          <div className="p-8">
             {activeTab === 'all' && (
               <div>
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h2 className="text-xl font-semibold text-gray-900">All Users</h2>
-                    <p className="text-gray-600 mt-1">
-                      Manage all users across the platform
-                    </p>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <button className="flex items-center space-x-2 px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
-                      <FaFilter className="w-4 h-4" />
-                      <span>Advanced Filters</span>
-                    </button>
-                    <button className="flex items-center space-x-2 px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                      <FaChartBar className="w-4 h-4" />
-                      <span>View Analytics</span>
-                    </button>
-                  </div>
-                </div>
+                
                 <UserManagement />
               </div>
             )}
@@ -280,48 +246,48 @@ const UserManagementPage = () => {
         </div>
 
         {/* Quick Actions */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <button className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <FaSearch className="w-6 h-6 text-blue-600" />
+        <div className="bg-white rounded-2xl shadow-lg p-8 border border-slate-100">
+          <h3 className="text-2xl font-bold text-slate-800 mb-6">Quick Actions</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <button className="group flex items-start space-x-4 p-6 border border-slate-200 rounded-2xl hover:border-slate-300 hover:shadow-lg transition-all duration-300">
+              <div className="p-4 bg-gradient-to-br from-blue-100 to-blue-200 rounded-2xl group-hover:scale-110 transition-transform duration-300">
+                <FaSearch className="w-8 h-8 text-blue-600" />
               </div>
-              <div className="text-left">
-                <p className="font-medium text-gray-900">Bulk Actions</p>
-                <p className="text-sm text-gray-600">Suspend or delete multiple users</p>
-              </div>
-            </button>
-            <button className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <FaDownload className="w-6 h-6 text-green-600" />
-              </div>
-              <div className="text-left">
-                <p className="font-medium text-gray-900">Export Report</p>
-                <p className="text-sm text-gray-600">Download user statistics</p>
+              <div className="flex-1 text-left">
+                <h4 className="font-bold text-slate-800 text-lg mb-2">Bulk Actions</h4>
+                <p className="text-slate-600 leading-relaxed">Suspend or delete multiple users</p>
               </div>
             </button>
-            <button className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <FaChartBar className="w-6 h-6 text-purple-600" />
+            <button className="group flex items-start space-x-4 p-6 border border-slate-200 rounded-2xl hover:border-slate-300 hover:shadow-lg transition-all duration-300">
+              <div className="p-4 bg-gradient-to-br from-emerald-100 to-emerald-200 rounded-2xl group-hover:scale-110 transition-transform duration-300">
+                <FaDownload className="w-8 h-8 text-emerald-600" />
               </div>
-              <div className="text-left">
-                <p className="font-medium text-gray-900">User Analytics</p>
-                <p className="text-sm text-gray-600">View user trends and insights</p>
+              <div className="flex-1 text-left">
+                <h4 className="font-bold text-slate-800 text-lg mb-2">Export Report</h4>
+                <p className="text-slate-600 leading-relaxed">Download user statistics</p>
+              </div>
+            </button>
+            <button className="group flex items-start space-x-4 p-6 border border-slate-200 rounded-2xl hover:border-slate-300 hover:shadow-lg transition-all duration-300">
+              <div className="p-4 bg-gradient-to-br from-purple-100 to-purple-200 rounded-2xl group-hover:scale-110 transition-transform duration-300">
+                <FaChartBar className="w-8 h-8 text-purple-600" />
+              </div>
+              <div className="flex-1 text-left">
+                <h4 className="font-bold text-slate-800 text-lg mb-2">User Analytics</h4>
+                <p className="text-slate-600 leading-relaxed">View user trends and insights</p>
               </div>
             </button>
           </div>
         </div>
 
         {/* User Management Tips */}
-        <div className="bg-blue-50 rounded-lg p-6 mt-8">
-          <h3 className="text-lg font-semibold text-blue-900 mb-4 flex items-center">
-            <FaInfoCircle className="w-5 h-5 mr-2" />
+        <div className="bg-white rounded-2xl shadow-lg p-8 border border-slate-100 mt-8">
+          <h3 className="text-2xl font-bold text-slate-800 mb-6 flex items-center">
+            <FaInfoCircle className="w-6 h-6 mr-2 text-blue-600" />
             User Management Tips
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-blue-800">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-slate-700">
             <div>
-              <h4 className="font-medium mb-2">Suspending Users</h4>
+              <h4 className="font-semibold mb-2">Suspending Users</h4>
               <ul className="space-y-1 list-disc list-inside">
                 <li>Always provide a clear reason for suspension</li>
                 <li>Consider temporary suspensions before permanent deletion</li>
@@ -329,7 +295,7 @@ const UserManagementPage = () => {
               </ul>
             </div>
             <div>
-              <h4 className="font-medium mb-2">Deleting Users</h4>
+              <h4 className="font-semibold mb-2">Deleting Users</h4>
               <ul className="space-y-1 list-disc list-inside">
                 <li>Deletion is permanent and cannot be undone</li>
                 <li>Ensure all user data is properly backed up</li>

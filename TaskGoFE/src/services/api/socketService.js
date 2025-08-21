@@ -24,7 +24,8 @@ class SocketService {
     }
 
     // Get API base URL from environment or use default
-    const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+    // Prefer vite proxy in dev if available
+    const apiUrl = import.meta.env.VITE_API_BASE_URL || (window.location.port ? `${window.location.protocol}//${window.location.hostname}:5000` : 'http://localhost:5000');
     console.log('🔌 Connecting to Socket.IO server:', apiUrl);
     
     // Disconnect existing socket if any
@@ -36,7 +37,9 @@ class SocketService {
       auth: {
         token: token
       },
-      transports: ['websocket', 'polling'],
+      // Prefer polling first to avoid websocket upgrade issues in dev proxies
+      transports: ['polling', 'websocket'],
+      withCredentials: true,
       timeout: 20000,
       reconnection: true,
       reconnectionAttempts: 5,

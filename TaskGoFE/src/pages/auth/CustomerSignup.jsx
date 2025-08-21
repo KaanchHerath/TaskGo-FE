@@ -5,11 +5,7 @@ import loginImage from '../../assets/login.png';
 import { registerCustomer } from '../../services/api/authService';
 import { 
   validateCustomerSignup, 
-  validateMobileNumber, 
-  validateEmail, 
   validatePassword, 
-  validateName,
-  validateProvince,
   formatPhoneNumber,
   getFieldError 
 } from '../../utils/validation';
@@ -68,24 +64,21 @@ const CustomerSignup = () => {
     
     setFormData(prev => ({ ...prev, [name]: value }));
     
-    // Format phone number as user types
+
     if (name === 'phone') {
       const formattedPhone = formatPhoneNumber(value);
       setFormData(prev => ({ ...prev, [name]: formattedPhone }));
     }
     
-    // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: null }));
     }
-    
-    // Validate field if it has been touched
+
     if (touched[name]) {
       const fieldError = validateField(name, value);
       setErrors(prev => ({ ...prev, [name]: fieldError }));
     }
     
-    // Clear submit error when user makes changes
     if (submitError) {
       setSubmitError('');
     }
@@ -155,7 +148,6 @@ const CustomerSignup = () => {
       window.dispatchEvent(new Event('authStateChanged'));
       
       // For taskers, redirect to waiting approval page instead of dashboard
-      // since they need admin approval before accessing the platform
       if (data.user.role === 'tasker') {
         navigate('/tasker/waiting-approval');
       } else {

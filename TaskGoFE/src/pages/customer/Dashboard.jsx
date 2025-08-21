@@ -95,7 +95,7 @@ const RecentTasks = () => {
 
   if (loading) {
     return (
-      <section className="py-12 bg-white">
+      <section className="py-12 bg-transparent">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-3xl font-bold">
@@ -114,7 +114,7 @@ const RecentTasks = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[...Array(4)].map((_, index) => (
-              <div key={index} className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20 animate-pulse">
+              <div key={index} className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/30 animate-pulse">
                 <div className="h-6 bg-gray-300 rounded mb-4"></div>
                 <div className="h-4 bg-gray-200 rounded mb-2"></div>
                 <div className="h-4 bg-gray-200 rounded w-2/3 mb-4"></div>
@@ -129,7 +129,7 @@ const RecentTasks = () => {
 
   if (error) {
     return (
-      <section className="py-12 bg-white">
+      <section className="py-12 bg-transparent">
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center">
             <h2 className="text-3xl font-bold mb-4 text-red-600">Error Loading Tasks</h2>
@@ -141,17 +141,17 @@ const RecentTasks = () => {
   }
 
   return (
-    <section className="py-12 bg-white">
+    <section className="py-10 bg-transparent">
       <div className="max-w-7xl mx-auto px-4">
-        <div className="flex justify-between items-center mb-8">
-          <h2 className="text-3xl font-bold">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold">
             <span className="bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
               Recent Tasks
             </span>
           </h2>
           <Link 
             to="/my-tasks" 
-            className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 font-semibold flex items-center shadow-lg transform hover:scale-105"
+            className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-5 py-2.5 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 font-semibold flex items-center shadow-lg"
           >
             View All Tasks
             <FaEye className="ml-2" />
@@ -159,14 +159,14 @@ const RecentTasks = () => {
         </div>
         
         {tasks.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-white/20">
+          <div className="text-center py-10">
+            <div className="bg-white/10 backdrop-blur-sm rounded-[2rem] p-6 shadow-lg border border-white/30">
               <FaTasks className="text-6xl text-slate-400 mb-4 mx-auto" />
-              <h3 className="text-xl font-semibold text-slate-800 mb-2">No Tasks Yet</h3>
+              <h3 className="text-lg font-semibold text-slate-800 mb-2">No Tasks Yet</h3>
               <p className="text-slate-600 mb-6">Get started by posting your first task!</p>
               <Link 
                 to="/post-task" 
-                className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 font-semibold inline-flex items-center shadow-lg"
+                className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-5 py-2.5 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 font-semibold inline-flex items-center shadow-lg"
               >
                 <FaPlus className="mr-2" />
                 Post Your First Task
@@ -174,45 +174,47 @@ const RecentTasks = () => {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {tasks.map((task) => (
-              <div key={task._id} className="group bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20 hover:shadow-xl hover:scale-105 transition-all duration-300">
-                <div className="flex justify-between items-start mb-4">
-                  <h3 className="font-bold text-lg text-slate-800 group-hover:text-blue-600 transition-colors line-clamp-2">
-                    {task.title}
-                  </h3>
-                  <div className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(task.status)} flex items-center gap-1`}>
-                    {getStatusIcon(task.status)}
-                    {getStatusText(task.status)}
+          <div className="bg-white/10 backdrop-blur-sm rounded-[2.5rem] p-6 shadow-lg border border-white/30">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {tasks.map((task) => (
+                <div key={task._id} className="group bg-white/10 backdrop-blur-sm rounded-2xl p-5 shadow-md border border-white/30 hover:shadow-xl transition-all duration-300">
+                  <div className="flex justify-between items-start mb-4">
+                    <h3 className="font-bold text-base text-slate-800 group-hover:text-blue-600 transition-colors line-clamp-2">
+                      {task.title}
+                    </h3>
+                    <div className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(task.status)} flex items-center gap-1`}>
+                      {getStatusIcon(task.status)}
+                      {getStatusText(task.status)}
+                    </div>
+                  </div>
+                  
+                  <p className="text-slate-600 text-sm mb-3 line-clamp-3">{task.description}</p>
+                  
+                  <div className="flex justify-between items-center mb-4">
+                    <div className="flex items-center text-sm text-slate-500">
+                      <FaMapMarkerAlt className="mr-1" />
+                      {task.location}
+                    </div>
+                    <div className="text-lg font-bold text-green-600">
+                      ${task.budget || task.agreedPayment || 0}
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-between items-center">
+                    <div className="text-sm text-slate-500">
+                      {task.applications?.length || 0} applications
+                    </div>
+                    <Link 
+                      to={`/task/${task._id}`} 
+                      className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center"
+                    >
+                      View Details
+                      <FaEye className="ml-1" />
+                    </Link>
                   </div>
                 </div>
-                
-                <p className="text-slate-600 text-sm mb-4 line-clamp-3">{task.description}</p>
-                
-                <div className="flex justify-between items-center mb-4">
-                  <div className="flex items-center text-sm text-slate-500">
-                    <FaMapMarkerAlt className="mr-1" />
-                    {task.location}
-                  </div>
-                  <div className="text-lg font-bold text-green-600">
-                    ${task.budget || task.agreedPayment || 0}
-                  </div>
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <div className="text-sm text-slate-500">
-                    {task.applications?.length || 0} applications
-                  </div>
-                  <Link 
-                    to={`/task/${task._id}`} 
-                    className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center"
-                  >
-                    View Details
-                    <FaEye className="ml-1" />
-                  </Link>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -286,7 +288,9 @@ const CustomerDashboard = () => {
     },
     image: homeImage,
     imageAlt: "Customer Dashboard",
-    colorScheme: "blue"
+    colorScheme: "lightBlue",
+    transparent: true,
+    headingSize: 'text-5xl md:text-7xl lg:text-8xl mb-4'
   };
 
   // Stats configuration for customer dashboard
@@ -342,16 +346,29 @@ const CustomerDashboard = () => {
   const getCategoryStats = taskService.useCategoryStats();
 
   return (
-    <div className="min-h-screen bg-white">
-      <main>
-        <HeroSection {...heroConfig} />
-        <StatsSection {...statsConfig} />
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-sky-100 via-blue-200 to-indigo-200">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -top-24 -left-24 w-96 h-96 bg-gradient-to-tr from-sky-400/40 via-blue-500/30 to-indigo-500/30 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/3 -right-24 w-[32rem] h-[32rem] bg-gradient-to-tr from-indigo-400/30 via-blue-400/30 to-sky-300/30 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-[-6rem] left-1/3 w-[28rem] h-[28rem] bg-gradient-to-tr from-sky-300/40 to-blue-400/30 rounded-full blur-3xl"></div>
+        <div className="absolute inset-0 opacity-10" style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
+        }}></div>
+      </div>
+      <main className="relative z-10">
+        <HeroSection {...heroConfig} density="compact" />
+        <StatsSection {...statsConfig} density="compact" transparent pill pillSize="lg" />
         <RecentTasks />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <RecentReviews 
             title="Recent Community Reviews"
             limit={6}
-            className="mb-8"
+            className="mb-6"
+            density="compact"
+            cardStyle="compact"
+            transparent
+            pill
+            pillSize="sm"
           />
         </div>
         <CategoriesGrid 
@@ -362,8 +379,12 @@ const CustomerDashboard = () => {
           showViewAll={true}
           viewAllLink="/categories"
           maxCategories={4}
+          density="compact"
+          transparent
+          pill
+          pillSize="md"
         />
-        <FeaturedTaskers />
+        <FeaturedTaskers transparent pill pillSize="lg" />
       </main>
     </div>
   );

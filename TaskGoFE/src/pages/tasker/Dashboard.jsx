@@ -131,7 +131,7 @@ const RecentActivity = () => {
 
   if (loading) {
     return (
-      <section className="py-12 bg-white">
+      <section className="py-12 bg-transparent">
         <div className="max-w-7xl mx-auto px-4">
           <h2 className="text-3xl font-bold mb-8">
             <span className="bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
@@ -140,7 +140,7 @@ const RecentActivity = () => {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[...Array(6)].map((_, index) => (
-              <div key={index} className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20 animate-pulse">
+              <div key={index} className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/30 animate-pulse">
                 <div className="h-6 bg-gray-300 rounded mb-4"></div>
                 <div className="h-4 bg-gray-200 rounded mb-2"></div>
                 <div className="h-4 bg-gray-200 rounded w-2/3 mb-4"></div>
@@ -155,7 +155,7 @@ const RecentActivity = () => {
 
   if (error) {
     return (
-      <section className="py-12 bg-white">
+      <section className="py-12 bg-transparent">
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center">
             <h2 className="text-3xl font-bold mb-4 text-red-600">Error Loading Activity</h2>
@@ -167,7 +167,7 @@ const RecentActivity = () => {
   }
 
   return (
-    <section className="py-12 bg-white">
+    <section className="py-12 bg-transparent">
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex justify-between items-center mb-8">
           <h2 className="text-3xl font-bold">
@@ -186,7 +186,7 @@ const RecentActivity = () => {
         
         {activities.length === 0 ? (
           <div className="text-center py-12">
-            <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-white/20">
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-white/30">
               <FaTasks className="text-6xl text-slate-400 mb-4 mx-auto" />
               <h3 className="text-xl font-semibold text-slate-800 mb-2">No Activity Yet</h3>
               <p className="text-slate-600 mb-6">Start by browsing available tasks!</p>
@@ -202,7 +202,7 @@ const RecentActivity = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {activities.map((activity) => (
-              <div key={activity.id} className="group bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20 hover:shadow-xl hover:scale-105 transition-all duration-300">
+              <div key={activity.id} className="group bg-white/10 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/30 hover:shadow-xl transition-all duration-300">
                 <div className="flex justify-between items-start mb-4">
                   <h3 className="font-bold text-lg text-slate-800 group-hover:text-green-600 transition-colors line-clamp-2">
                     {activity.title}
@@ -275,7 +275,7 @@ const AvailableTasks = () => {
 
   if (loading) {
     return (
-      <section className="py-12 bg-gradient-to-br from-slate-50 via-green-50/30 to-emerald-50/20">
+      <section className="py-12 bg-transparent">
         <div className="max-w-7xl mx-auto px-4">
           <h2 className="text-3xl font-bold mb-8 text-center">
             <span className="bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
@@ -284,7 +284,7 @@ const AvailableTasks = () => {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[...Array(6)].map((_, index) => (
-              <div key={index} className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20 animate-pulse">
+              <div key={index} className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/30 animate-pulse">
                 <div className="h-6 bg-gray-300 rounded mb-4"></div>
                 <div className="h-4 bg-gray-200 rounded mb-2"></div>
                 <div className="h-4 bg-gray-200 rounded w-2/3 mb-4"></div>
@@ -299,7 +299,7 @@ const AvailableTasks = () => {
 
   if (error) {
     return (
-      <section className="py-12 bg-gradient-to-br from-slate-50 via-green-50/30 to-emerald-50/20">
+      <section className="py-12 bg-transparent">
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center">
             <h2 className="text-3xl font-bold mb-4 text-red-600">Error Loading Tasks</h2>
@@ -311,7 +311,7 @@ const AvailableTasks = () => {
   }
 
   return (
-    <section className="py-12 bg-gradient-to-br from-slate-50 via-green-50/30 to-emerald-50/20">
+    <section className="py-12 bg-transparent">
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex justify-between items-center mb-8">
           <h2 className="text-3xl font-bold">
@@ -330,7 +330,7 @@ const AvailableTasks = () => {
         
         {jobs.length === 0 ? (
           <div className="text-center py-12">
-            <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-white/20">
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-white/30">
               <FaTasks className="text-6xl text-slate-400 mb-4 mx-auto" />
               <h3 className="text-xl font-semibold text-slate-800 mb-2">No Available Tasks</h3>
               <p className="text-slate-600 mb-6">Check back later for new opportunities!</p>
@@ -434,7 +434,10 @@ const TaskerDashboard = () => {
     },
     image: homeImage,
     imageAlt: "Tasker Dashboard",
-    colorScheme: "green"
+    colorScheme: "green",
+    density: "compact",
+    transparent: true,
+    headingSize: isLoggedIn ? 'text-5xl md:text-7xl lg:text-8xl mb-4' : undefined
   };
 
   // Stats configuration for tasker dashboard
@@ -490,8 +493,21 @@ const TaskerDashboard = () => {
   const getCategoryStats = taskService.useCategoryStats();
 
   return (
-    <div className="min-h-screen bg-white">
-      <main>
+<div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-[#48d669af] via-[#d8dad898] to-[#498f649f]">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -top-24 -left-24 w-96 h-96 bg-gradient-to-tr from-[#4a7c59]/30 via-[#8b9f47]/25 to-[#e8f5df]/20 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/3 -right-24 w-[32rem] h-[32rem] bg-gradient-to-tr from-[#8b9f47]/20 via-[#e8f5df]/25 to-[#4a7c59]/15 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-[-6rem] left-1/3 w-[28rem] h-[28rem] bg-gradient-to-tr from-[#e8f5df]/25 to-[#8b9f47]/30 rounded-full blur-3xl"></div></div>
+      <div 
+        className="absolute inset-0 opacity-10" 
+        style={{ 
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")` 
+        }}
+      ></div>
+     
+      
+
+      <main className="relative z-10">
         <HeroSection {...heroConfig} />
         
                 {/* Profile Completion Prompt */}
@@ -501,17 +517,11 @@ const TaskerDashboard = () => {
           </div>
         )}
         
-        {isLoggedIn && <StatsSection {...statsConfig} />}
+        {isLoggedIn && <StatsSection {...statsConfig} density="compact" transparent pill pillSize="lg" />}
 
-        {isLoggedIn && <RecentActivity />}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <RecentReviews 
-            title="Recent Community Reviews"
-            limit={6}
-            className="mb-8"
-          />
-        </div>
         <AvailableTasks />
+
+        {isLoggedIn && <RecentActivity />}        
         <CategoriesGrid 
           title="Popular Categories"
           description="Discover the most in-demand services"
@@ -520,8 +530,24 @@ const TaskerDashboard = () => {
           showViewAll={true}
           viewAllLink="/categories"
           colorScheme="green"
-          maxCategories={4}
+          maxCategories={6}
+          density="compact"
+          transparent
+          pill
+          pillSize="md"
         />
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <RecentReviews 
+            title="Recent Community Reviews"
+            limit={6}
+            className="mb-8"
+            density="compact"
+            transparent
+            pill
+            pillSize="sm"
+          />
+        </div>
       </main>
     </div>
   );

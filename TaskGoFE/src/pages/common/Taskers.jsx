@@ -213,7 +213,7 @@ const Taskers = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20">
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-sky-100 via-blue-200 to-indigo-200">
       {/* Search Header */}
       <SearchHeader 
         title="Find Taskers" 

@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { FaEye, FaEyeSlash, FaEnvelope, FaLock, FaGoogle, FaApple, FaFacebook, FaArrowLeft, FaSpinner } from 'react-icons/fa';
 import loginImage from '../../assets/login.png';
 import { login } from '../../services/api/authService';
-import { parseJwt, roleToDashboard, setToken } from '../../utils/auth';
+import { parseJwt, roleToDashboard, setToken, setCachedUserName } from '../../utils/auth';
 
 const Login = () => {
   const [credentials, setCredentials] = useState({
@@ -22,6 +22,12 @@ const Login = () => {
     try {
       const data = await login(credentials);
       setToken(data.token);
+      
+      // Store the user's name for display in navbar
+      if (data.user?.fullName) {
+        setCachedUserName(data.user.fullName);
+      }
+      
       window.dispatchEvent(new Event('authStateChanged'));
       const payload = parseJwt(data.token);
       const dashboard = roleToDashboard[payload?.role] || '/';
@@ -53,13 +59,10 @@ const Login = () => {
         }
         setError('Your account is pending approval. You will be notified once approved.');
       } else if (err.status === 401) {
-        // Handle invalid credentials specifically
         setError(err.message || 'Invalid email or password. Please check your credentials and try again.');
       } else if (err.status === 400) {
-        // Handle validation errors
         setError(err.message || 'Please check your input and try again.');
       } else {
-        // Handle other errors
         setError(err.message || 'Login failed. Please try again.');
       }
       console.error('Login Error:', err);

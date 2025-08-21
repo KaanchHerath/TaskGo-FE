@@ -1,11 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState} from 'react';
 import { FaGoogle, FaApple, FaFacebook, FaEye, FaEyeSlash } from 'react-icons/fa';
 import { 
   validateStep1, 
-  validateMobileNumber, 
-  validateEmail, 
   validatePassword, 
-  validateName,
   formatPhoneNumber,
   getFieldError 
 } from '../../utils/validation';
@@ -56,12 +53,10 @@ const TaskerSignUpStep1 = ({ onNext, initialData = {} }) => {
       setForm(prev => ({ ...prev, [name]: formattedPhone }));
     }
     
-    // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: null }));
     }
     
-    // Validate field if it has been touched
     if (touched[name]) {
       const fieldError = validateField(name, fieldValue);
       setErrors(prev => ({ ...prev, [name]: fieldError }));
@@ -80,7 +75,6 @@ const TaskerSignUpStep1 = ({ onNext, initialData = {} }) => {
     e.preventDefault();
     setIsSubmitting(true);
     
-    // Mark all fields as touched
     const allTouched = {
       fullName: true,
       email: true,

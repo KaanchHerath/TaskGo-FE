@@ -75,14 +75,14 @@ const TaskerCategories = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20 relative">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50/40 to-teal-50/30 relative">
       {/* Background decorations */}
       <div className="absolute top-0 left-0 w-full h-full opacity-10">
-        <div className="absolute top-5 left-5 w-16 h-16 bg-blue-300 rounded-full blur-xl"></div>
-        <div className="absolute bottom-5 right-5 w-20 h-20 bg-indigo-300 rounded-full blur-2xl"></div>
-        <div className="absolute top-1/2 left-1/3 w-12 h-12 bg-purple-300 rounded-full blur-lg"></div>
-        <div className="absolute top-1/4 right-1/4 w-14 h-14 bg-emerald-300 rounded-full blur-xl"></div>
-        <div className="absolute bottom-1/3 left-1/4 w-18 h-18 bg-pink-300 rounded-full blur-2xl"></div>
+        <div className="absolute top-5 left-5 w-16 h-16 bg-green-300 rounded-full blur-xl"></div>
+        <div className="absolute bottom-5 right-5 w-20 h-20 bg-emerald-300 rounded-full blur-2xl"></div>
+        <div className="absolute top-1/2 left-1/3 w-12 h-12 bg-teal-300 rounded-full blur-lg"></div>
+        <div className="absolute top-1/4 right-1/4 w-14 h-14 bg-lime-300 rounded-full blur-xl"></div>
+        <div className="absolute bottom-1/3 left-1/4 w-18 h-18 bg-green-400 rounded-full blur-2xl"></div>
       </div>
       
       {/* Header Section */}

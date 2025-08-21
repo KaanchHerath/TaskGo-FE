@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaUsers, FaComments, FaCheck, FaClock, FaSpinner, FaStar, FaDollarSign, FaCalendarAlt, FaUser, FaCreditCard, FaCheckCircle, FaEye } from 'react-icons/fa';
+import BackToTasksButton from '../../components/common/BackToTasksButton';
 import { getTask, getTaskApplications, selectTasker } from '../../services/api/taskService';
 import TaskChatWindow from '../../components/task/TaskChatWindow';
 import { useToast, ToastContainer } from '../../components/common/Toast';
@@ -176,7 +177,7 @@ const TaskApplicationsPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-sky-100 via-blue-200 to-indigo-200 flex items-center justify-center">
         <div className="text-center">
           <FaSpinner className="animate-spin text-4xl text-blue-600 mx-auto mb-4" />
           <p className="text-gray-600">Loading applications...</p>
@@ -187,7 +188,7 @@ const TaskApplicationsPage = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-sky-100 via-blue-200 to-indigo-200 flex items-center justify-center">
         <div className="text-center">
           <div className="bg-red-100 text-red-700 p-4 rounded-lg mb-4">
             {error}
@@ -204,17 +205,11 @@ const TaskApplicationsPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-sky-100 via-blue-200 to-indigo-200">
       <div className="max-w-4xl mx-auto py-8 px-4">
         {/* Header */}
         <div className="mb-8">
-          <button
-            onClick={() => navigate('/my-tasks')}
-            className="flex items-center space-x-2 text-blue-600 hover:text-blue-800 mb-4"
-          >
-            <FaArrowLeft />
-            <span>Back to My Tasks</span>
-          </button>
+          <BackToTasksButton to="/my-tasks" isMyTasks className="mb-4" />
           
           <div className="bg-white rounded-lg shadow-sm p-6">
             <h1 className="text-2xl font-bold text-gray-800 mb-2">Task Applications</h1>

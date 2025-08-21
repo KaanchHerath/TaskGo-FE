@@ -7,7 +7,11 @@ const RecentReviews = ({
   limit = 6, 
   showType = true,
   className = "",
-  cardStyle = "default" // "default", "compact", "detailed" 
+  cardStyle = "default",
+  transparent = false,
+  pill = false,
+  pillSize = 'md',
+  density = "comfortable" // density can further tighten spacing
 }) => {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -79,9 +83,22 @@ const RecentReviews = ({
     }
   };
 
+  const isCompact = density === 'compact' || cardStyle === 'compact';
+  const getPillClasses = (size) => {
+    switch (size) {
+      case 'sm':
+        return `${isCompact ? 'p-4' : 'p-6'} bg-white/40 backdrop-blur-md border border-white/30 rounded-2xl shadow-lg`;
+      case 'lg':
+        return `${isCompact ? 'p-8' : 'p-10'} bg-white/50 backdrop-blur-lg border border-white/40 rounded-[2.5rem] shadow-2xl`;
+      case 'md':
+      default:
+        return `${isCompact ? 'p-6' : 'p-8'} bg-white/45 backdrop-blur-md border border-white/30 rounded-[2rem] shadow-xl`;
+    }
+  };
+
   if (loading) {
     return (
-      <div className={`bg-white rounded-xl shadow-sm border border-gray-100 p-6 ${className}`}>
+      <div className={`${pill ? getPillClasses(pillSize) : ''} ${transparent ? 'bg-transparent border border-white/30 shadow-none' : 'bg-white rounded-xl shadow-sm border border-gray-100'} ${isCompact ? 'p-5' : 'p-6'} ${className}`}>
         <div className="flex items-center justify-center py-12">
           <FaSpinner className="w-6 h-6 text-gray-400 animate-spin mr-3" />
           <p className="text-gray-600">Loading recent reviews...</p>
@@ -92,7 +109,7 @@ const RecentReviews = ({
 
   if (error) {
     return (
-      <div className={`bg-white rounded-xl shadow-sm border border-gray-100 p-6 ${className}`}>
+      <div className={`${pill ? getPillClasses(pillSize) : ''} ${transparent ? 'bg-transparent border border-white/30 shadow-none' : 'bg-white rounded-xl shadow-sm border border-gray-100'} ${isCompact ? 'p-5' : 'p-6'} ${className}`}>
         <div className="flex items-center justify-center py-12">
           <FaExclamationTriangle className="w-6 h-6 text-red-400 mr-3" />
           <p className="text-red-600">{error}</p>
@@ -103,12 +120,12 @@ const RecentReviews = ({
 
   if (reviews.length === 0) {
     return (
-      <div className={`bg-white rounded-xl shadow-sm border border-gray-100 p-6 ${className}`}>
-        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+      <div className={`${pill ? getPillClasses(pillSize) : ''} ${transparent ? 'bg-transparent border border-white/30 shadow-none' : 'bg-white rounded-xl shadow-sm border border-gray-100'} ${isCompact ? 'p-5' : 'p-6'} ${className}`}>
+        <h3 className={`${isCompact ? 'text-base' : 'text-lg'} font-semibold text-gray-800 mb-4 flex items-center`}>
           <FaAward className="text-purple-600 mr-2" />
           {title}
         </h3>
-        <div className="text-center py-12">
+        <div className="text-center py-10">
           <FaAward className="w-12 h-12 text-gray-300 mx-auto mb-4" />
           <p className="text-gray-500">No reviews available yet</p>
         </div>
@@ -117,9 +134,9 @@ const RecentReviews = ({
   }
 
   return (
-    <div className={`bg-white rounded-xl shadow-sm border border-gray-100 p-6 ${className}`}>
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-gray-800 flex items-center">
+    <div className={`${pill ? getPillClasses(pillSize) : ''} ${transparent ? 'bg-transparent border border-white/30 shadow-none' : 'bg-white rounded-xl shadow-sm border border-gray-100'} ${isCompact ? 'p-5' : 'p-6'} ${className}`}>
+      <div className={`flex items-center justify-between ${isCompact ? 'mb-4' : 'mb-6'}`}>
+        <h3 className={`${isCompact ? 'text-base' : 'text-lg'} font-semibold text-gray-800 flex items-center`}>
           <FaAward className="text-purple-600 mr-2" />
           {title} ({reviews.length})
         </h3>
@@ -131,24 +148,24 @@ const RecentReviews = ({
         </button>
       </div>
       
-      <div className="space-y-4 max-h-96 overflow-y-auto">
+      <div className={`${isCompact ? 'space-y-3' : 'space-y-4'} max-h-96 overflow-y-auto`}>
         {reviews.map((review) => {
           const reviewInfo = getReviewerInfo(review);
           
           return (
-            <div key={review._id} className="bg-gray-50 border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow">
+            <div key={review._id} className={`bg-gray-50 border border-gray-200 rounded-lg ${isCompact ? 'p-3.5' : 'p-4'} hover:shadow-sm transition-shadow`}>
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-start space-x-3">
-                  <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
+                  <div className="w-9 h-9 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
                     <FaUser className="text-purple-600 text-sm" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center space-x-2 mb-1">
-                      <h5 className="font-medium text-gray-800 truncate">
+                      <h5 className={`font-medium text-gray-800 truncate ${isCompact ? 'text-sm' : ''}`}>
                         {reviewInfo.reviewer?.fullName || 'Anonymous'}
                       </h5>
                       {showType && (
-                        <span className={`text-xs px-2 py-1 rounded-full bg-gray-100 ${reviewInfo.reviewerColor}`}>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full bg-gray-100 ${reviewInfo.reviewerColor}`}>
                           {reviewInfo.reviewerLabel}
                         </span>
                       )}

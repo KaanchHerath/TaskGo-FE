@@ -40,7 +40,7 @@ const TaskerSignup = () => {
       
       // Add step 1 data
       Object.keys(formData.step1).forEach(key => {
-        if (key !== 'confirmPassword') { // Don't send confirmPassword to backend
+        if (key !== 'confirmPassword') { 
           finalData.append(key, formData.step1[key]);
         }
       });
@@ -71,7 +71,6 @@ const TaskerSignup = () => {
       window.dispatchEvent(new Event('authStateChanged'));
       
       // Redirect new taskers to waiting approval page instead of dashboard
-      // since they need admin approval before accessing the platform
       navigate('/tasker/waiting-approval');
     } catch (error) {
       console.error('Registration error:', error);
@@ -113,7 +112,7 @@ const TaskerSignup = () => {
   const goToPreviousStep = () => {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
-      setSubmitError(''); // Clear any previous errors
+      setSubmitError(''); 
     }
   };
 

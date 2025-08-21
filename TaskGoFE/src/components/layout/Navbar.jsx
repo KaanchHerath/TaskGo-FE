@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { FaUser, FaChevronDown, FaBell, FaPlus, FaSearch, FaTasks } from "react-icons/fa";
+import { useRef } from "react";
+import socketService from "../../services/api/socketService";
 import TaskGoLogo from "../common/TaskGoLogo";
-import { parseJwt, getToken, clearToken } from "../../utils/auth";
+import { parseJwt, getToken, clearToken, getCachedUserName } from "../../utils/auth";
 
 const Navbar = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -12,6 +14,9 @@ const Navbar = () => {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const notificationsRef = useRef(null);
 
   const checkAuthState = () => {
     const token = getToken();
@@ -20,7 +25,9 @@ const Navbar = () => {
       if (payload) {
         setIsLoggedIn(true);
         setUserRole(payload.role);
-        setUserName(payload.fullName || payload.name || payload.email || 'User');
+        // Get user name from cache instead of JWT token
+        const cachedName = getCachedUserName();
+        setUserName(cachedName || 'User');
       } else {
         // Invalid token
         clearToken();
@@ -31,7 +38,7 @@ const Navbar = () => {
     } else {
       setIsLoggedIn(false);
       setUserRole(null);
-      setUserName('');
+        setUserName('');
     }
   };
 
@@ -53,6 +60,65 @@ const Navbar = () => {
 
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener('authStateChanged', handleAuthStateChange);
+    
+    // Setup socket listeners for notifications when logged in
+    const handleChatMessage = (data) => {
+      const senderName = data?.message?.senderId?.fullName || 'Someone';
+      const taskTitle = data?.message?.taskId?.title;
+      const text = data?.message?.message || 'You received a new message';
+      setNotifications(prev => [
+        {
+          id: `${data.message?._id || Date.now()}-chat`,
+          type: 'chat-message',
+          title: `New message from ${senderName}`,
+          message: taskTitle ? `${text} · ${taskTitle}` : text,
+          meta: { taskId: data.taskId, senderId: data.senderId, senderName },
+          createdAt: new Date().toISOString(),
+          unread: true
+        },
+        ...prev
+      ].slice(0, 20));
+    };
+
+    const handleTaskUpdate = (data) => {
+      setNotifications(prev => [
+        {
+          id: `${data.taskId}-${data.type}-${Date.now()}`,
+          type: data.type || 'task-update',
+          title: 'Task update',
+          message: data.message || 'Your task has an update',
+          meta: { taskId: data.taskId, taskTitle: data.taskTitle },
+          createdAt: data.timestamp || new Date().toISOString(),
+          unread: true
+        },
+        ...prev
+      ].slice(0, 20));
+    };
+
+    const handlePaymentSuccess = (data) => {
+      setNotifications(prev => [
+        {
+          id: `${data.paymentId || Date.now()}-payment`,
+          type: 'payment-success',
+          title: 'Payment successful',
+          message: data.message || 'Payment completed successfully',
+          meta: { taskId: data.taskId, orderId: data.orderId },
+          createdAt: new Date().toISOString(),
+          unread: true
+        },
+        ...prev
+      ].slice(0, 20));
+    };
+
+    // Connect socket lazily and attach listeners
+    if (getToken()) {
+      if (!socketService.getConnectionStatus()) {
+        socketService.connect();
+      }
+      socketService.onChatMessage(handleChatMessage);
+      socketService.onTaskUpdate(handleTaskUpdate);
+      socketService.onPaymentSuccess(handlePaymentSuccess);
+    }
 
     // Also check auth state periodically in case of token changes
     const interval = setInterval(checkAuthState, 1000);
@@ -61,6 +127,9 @@ const Navbar = () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('authStateChanged', handleAuthStateChange);
       clearInterval(interval);
+      socketService.off('chat-message', handleChatMessage);
+      socketService.off('task-update', handleTaskUpdate);
+      socketService.off('payment-success', handlePaymentSuccess);
     };
   }, []);
 
@@ -74,6 +143,9 @@ const Navbar = () => {
     const handleClickOutside = (event) => {
       if (isProfileMenuOpen && !event.target.closest('.profile-menu-container')) {
         setIsProfileMenuOpen(false);
+      }
+      if (notificationsOpen && notificationsRef.current && !notificationsRef.current.contains(event.target)) {
+        setNotificationsOpen(false);
       }
     };
 
@@ -128,8 +200,21 @@ const Navbar = () => {
     return location.pathname === path;
   };
 
+  const unreadCount = notifications.filter(n => n.unread).length;
+  const markAllRead = () => {
+    setNotifications(prev => prev.map(n => ({ ...n, unread: false })));
+  };
+  const clearAll = () => setNotifications([]);
+  const navigateToNotification = (n) => {
+    setNotifications(prev => prev.map(item => item.id === n.id ? { ...item, unread: false } : item));
+    setNotificationsOpen(false);
+    if (n.meta?.taskId) {
+      navigate(`/tasks/${n.meta.taskId}`);
+    }
+  };
+
   return (
-    <nav className="bg-white/80 backdrop-blur-md shadow-lg border-b border-slate-200/60 fixed w-full top-0 z-50">
+    <nav className="bg-white/60 backdrop-blur-md border-b border-white/20 shadow-sm fixed w-full top-0 z-50">
       <div className="w-full px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo - Left Corner */}
@@ -289,14 +374,51 @@ const Navbar = () => {
                   </Link>
                 )}
 
-                {/* Notification Icon */}
-                <div className="relative">
-                  <button className="p-2.5 text-slate-600 hover:text-blue-600 hover:bg-slate-50 rounded-xl transition-all duration-200">
+                {/* Notification Icon + Dropdown */}
+                <div className="relative" ref={notificationsRef}>
+                  <button 
+                    className="p-2.5 text-slate-600 hover:text-blue-600 hover:bg-slate-50 rounded-xl transition-all duration-200 relative"
+                    onClick={() => setNotificationsOpen(v => !v)}
+                    title="Notifications"
+                  >
                     <FaBell className="w-5 h-5" />
-                    <span className="absolute -top-1 -right-1 bg-gradient-to-r from-red-500 to-red-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center shadow-lg animate-pulse">
-                      1
-                    </span>
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-gradient-to-r from-red-500 to-red-600 text-white text-xs rounded-full h-5 min-w-[1.25rem] px-1 flex items-center justify-center shadow-lg">
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                      </span>
+                    )}
                   </button>
+                  {notificationsOpen && (
+                    <div className="absolute right-0 mt-2 w-96 max-w-[95vw] bg-white/90 backdrop-blur-md rounded-2xl shadow-xl py-2 z-50 border border-slate-200/60">
+                      <div className="px-4 py-2 flex items-center justify-between border-b border-slate-200/60">
+                        <div className="font-semibold text-slate-800">Notifications</div>
+                        <div className="space-x-2">
+                          <button onClick={markAllRead} className="text-xs text-slate-500 hover:text-slate-700">Mark all read</button>
+                          <button onClick={clearAll} className="text-xs text-red-500 hover:text-red-600">Clear</button>
+                        </div>
+                      </div>
+                      <div className="max-h-96 overflow-auto">
+                        {notifications.length === 0 ? (
+                          <div className="px-4 py-6 text-center text-slate-500 text-sm">No notifications yet</div>
+                        ) : (
+                          notifications.map((n) => (
+                            <button
+                              key={n.id}
+                              onClick={() => navigateToNotification(n)}
+                              className={`w-full text-left px-4 py-3 flex items-start space-x-3 hover:bg-slate-50 transition-colors ${n.unread ? 'bg-blue-50/40' : ''}`}
+                            >
+                              <div className={`mt-1 h-2 w-2 rounded-full ${n.unread ? 'bg-blue-500' : 'bg-slate-300'}`}></div>
+                              <div className="flex-1">
+                                <div className="text-sm font-medium text-slate-800">{n.title}</div>
+                                <div className="text-sm text-slate-600">{n.message}</div>
+                                <div className="text-xs text-slate-400 mt-1">{new Date(n.createdAt).toLocaleString()}</div>
+                              </div>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Profile Button */}
@@ -311,10 +433,10 @@ const Navbar = () => {
                       </div>
                       <div className="text-left">
                         <div className="text-sm font-semibold text-slate-800 leading-tight">
-                          {userName.split(' ')[0]}
+                        {userName}
                         </div>
                         <div className="text-xs text-slate-500 leading-tight">
-                          {getRoleDisplayName()}
+                         User
                         </div>
                       </div>
                     </div>
@@ -519,7 +641,7 @@ const Navbar = () => {
                       </div>
                       <div>
                         <div className="font-semibold text-slate-800">{userName}</div>
-                        <div className="text-sm text-slate-500">{getRoleDisplayName()}</div>
+                        <div className="text-sm text-slate-500">{userName}</div>
                       </div>
                     </div>
                   </div>
