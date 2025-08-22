@@ -69,10 +69,7 @@ const DashboardRedirect = () => {
   const payload = parseJwt(token);
   const userRole = payload?.role;
   
-  // For taskers, we need to check if they can access the dashboard
-  // Since the backend prevents unapproved taskers from logging in,
-  // if they have a token, they should be approved
-  // But we'll add a safety check here
+  // taskers safety check
   if (userRole === 'tasker') {
     // Check if tasker is approved by looking at the token payload
     // If not approved, redirect to waiting approval page
@@ -159,7 +156,6 @@ function App() {
             <Route path="/admin/task-management" element={<TaskManagementPage />} />
           </Route>
 
-          {/* Legacy redirects for backward compatibility */}
           <Route path="/customer-dashboard" element={<CustomerDashboard />} />
           <Route path="/tasker-dashboard" element={<TaskerDashboard />} />
           <Route path="/admin-dashboard" element={<AdminDashboard />} />

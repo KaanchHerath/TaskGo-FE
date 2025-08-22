@@ -14,6 +14,7 @@ import HeroSection from '../../components/common/HeroSection';
 import StatsSection from '../../components/common/StatsSection';
 import CategoriesGrid from '../../components/common/CategoriesGrid';
 import RecentReviews from '../../components/common/RecentReviews';
+import { getMyRecentTasks } from '../../services/api/taskService';
 
  
 
@@ -50,11 +51,8 @@ const RecentTasks = () => {
       
       try {
         setError(null);
-        const response = await taskService.getTasksByCustomerId(currentUserId, {
-          page: 1,
-          limit: 4
-        });
-        setTasks(response.data);
+        const response = await getMyRecentTasks(4);
+        setTasks(response.data || []);
       } catch (error) {
         console.error('Error fetching recent tasks:', error);
         setError('Failed to load recent tasks');
@@ -160,7 +158,7 @@ const RecentTasks = () => {
         
         {tasks.length === 0 ? (
           <div className="text-center py-10">
-            <div className="bg-white/10 backdrop-blur-sm rounded-[2rem] p-6 shadow-lg border border-white/30">
+            <div className="bg-white/60 backdrop-blur-sm rounded-[2rem] p-6 shadow-lg border border-white/30">
               <FaTasks className="text-6xl text-slate-400 mb-4 mx-auto" />
               <h3 className="text-lg font-semibold text-slate-800 mb-2">No Tasks Yet</h3>
               <p className="text-slate-600 mb-6">Get started by posting your first task!</p>
@@ -174,10 +172,10 @@ const RecentTasks = () => {
             </div>
           </div>
         ) : (
-          <div className="bg-white/10 backdrop-blur-sm rounded-[2.5rem] p-6 shadow-lg border border-white/30">
+          <div className="bg-white/60 backdrop-blur-sm rounded-[2.5rem] p-6 shadow-lg border border-white/30">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {tasks.map((task) => (
-                <div key={task._id} className="group bg-white/10 backdrop-blur-sm rounded-2xl p-5 shadow-md border border-white/30 hover:shadow-xl transition-all duration-300">
+                <div key={task._id} className="group bg-white/60 backdrop-blur-sm rounded-2xl p-5 shadow-md border border-white/30 hover:shadow-xl transition-all duration-300">
                   <div className="flex justify-between items-start mb-4">
                     <h3 className="font-bold text-base text-slate-800 group-hover:text-blue-600 transition-colors line-clamp-2">
                       {task.title}
@@ -202,10 +200,10 @@ const RecentTasks = () => {
                   
                   <div className="flex justify-between items-center">
                     <div className="text-sm text-slate-500">
-                      {task.applications?.length || 0} applications
+                      {task.applicationCount || 0} applications
                     </div>
                     <Link 
-                      to={`/task/${task._id}`} 
+                      to={`/tasks/${task._id}`} 
                       className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center"
                     >
                       View Details
@@ -294,7 +292,7 @@ const CustomerDashboard = () => {
   };
 
   // Stats configuration for customer dashboard
-  const statsConfig = {
+  const statsConfig = useMemo(() => ({
     title: "Your Activity Overview",
     stats: [
       {
@@ -322,11 +320,11 @@ const CustomerDashboard = () => {
         fallbackValue: 0
       },
       {
-        title: "Money Saved",
-        key: "savedMoney",
-        icon: <FaChartLine className="text-2xl text-white" />,
+        title: "Scheduled Tasks",
+        key: "scheduledTasks",
+        icon: <FaCalendar className="text-2xl text-white" />,
         color: "from-orange-500 to-orange-600",
-        description: "Estimated savings",
+        description: "Upcoming appointments",
         fallbackValue: 0
       }
     ],
@@ -335,9 +333,9 @@ const CustomerDashboard = () => {
       activeTasks: 0,
       completedTasks: 0,
       totalSpent: 0,
-      savedMoney: 0
+      scheduledTasks: 0
     }
-  };
+  }), [currentUserId]);
 
   // Memoize fallback categories to prevent infinite re-renders
   const fallbackCategories = useMemo(() => generateCategoriesWithMetadata(dashboardCategories), []);

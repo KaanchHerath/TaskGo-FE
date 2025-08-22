@@ -138,7 +138,7 @@ const ProfileCompletionPrompt = ({ userProfile, className = "" }) => {
           
           <div className="flex flex-col sm:flex-row gap-3">
             <Link
-              to="/tasker/profile"
+              to="/tasker/profile?tab=personal"
               className="inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-amber-600 to-orange-600 text-white font-semibold rounded-xl hover:from-amber-700 hover:to-orange-700 transition-all duration-300 shadow-lg transform hover:scale-105"
             >
               <FaUser className="mr-2" />

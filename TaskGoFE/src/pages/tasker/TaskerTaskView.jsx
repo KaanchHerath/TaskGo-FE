@@ -703,7 +703,41 @@ const TaskerTaskView = () => {
                   </div>
                 )}
 
-                {/* Action Button moved to Quick Actions */}
+                {/* Confirm Availability Button */}
+                {!application.confirmedByTasker && task.status === 'active' && (
+                  <div className="mt-6">
+                    <button
+                      onClick={handleConfirmAvailability}
+                      className="w-full px-4 py-3 rounded-xl bg-green-600 text-white hover:bg-green-700 transition-colors font-semibold flex items-center justify-center space-x-2"
+                    >
+                      <FaCheckCircle />
+                      <span>Confirm Availability</span>
+                    </button>
+                    <p className="text-sm text-gray-600 text-center mt-2">
+                      Confirm your availability to let the customer know you're ready to proceed
+                    </p>
+                  </div>
+                )}
+
+                {/* Application Status */}
+                {application.confirmedByTasker && (
+                  <div className="mt-4 bg-green-50 border border-green-200 rounded-lg p-3">
+                    <div className="flex items-center space-x-2">
+                      <FaCheckCircle className="text-green-600" />
+                      <span className="font-medium text-green-800">Availability Confirmed</span>
+                    </div>
+                    {application.confirmedTime && (
+                      <p className="text-sm text-green-700 mt-1">
+                        <strong>Preferred time:</strong> {formatDate(application.confirmedTime)}
+                      </p>
+                    )}
+                    {application.confirmedPayment && (
+                      <p className="text-sm text-green-700 mt-1">
+                        <strong>Confirmed payment:</strong> LKR {application.confirmedPayment?.toLocaleString()}
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
@@ -722,7 +756,14 @@ const TaskerTaskView = () => {
                 <p className="text-gray-600 mb-4">
                   Ready to take on this task? Confirm your availability and set your preferred schedule.
                 </p>
-             
+                
+                <button
+                  onClick={handleConfirmAvailability}
+                  className="w-full px-4 py-3 rounded-xl bg-green-600 text-white hover:bg-green-700 transition-colors font-semibold flex items-center justify-center space-x-2"
+                >
+                  <FaCheckCircle />
+                  <span>Confirm Availability</span>
+                </button>
               </div>
             )}
           </div>

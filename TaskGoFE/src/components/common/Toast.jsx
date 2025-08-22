@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { FaCheck, FaTimes, FaExclamationTriangle, FaInfoCircle } from 'react-icons/fa';
 
 const Toast = ({ 
@@ -9,22 +9,38 @@ const Toast = ({
   isVisible = false 
 }) => {
   const [show, setShow] = useState(isVisible);
+  const [progress, setProgress] = useState(100);
+  const startTimeRef = useRef(null);
+  const rafRef = useRef(null);
 
   useEffect(() => {
     setShow(isVisible);
   }, [isVisible]);
 
   useEffect(() => {
-    if (show && duration > 0) {
-      const timer = setTimeout(() => {
+    if (!show || duration <= 0) return;
+
+    startTimeRef.current = performance.now();
+
+    const tick = (now) => {
+      const elapsed = now - startTimeRef.current;
+      const ratio = Math.min(elapsed / duration, 1);
+      setProgress(100 - ratio * 100);
+
+      if (ratio < 1) {
+        rafRef.current = requestAnimationFrame(tick);
+      } else {
         setShow(false);
         setTimeout(() => {
           onClose && onClose();
-        }, 300); // Wait for animation to complete
-      }, duration);
+        }, 300);
+      }
+    };
 
-      return () => clearTimeout(timer);
-    }
+    rafRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
   }, [show, duration, onClose]);
 
   const getToastConfig = () => {
@@ -32,37 +48,37 @@ const Toast = ({
       case 'success':
         return {
           icon: FaCheck,
-          bgColor: 'bg-green-500',
-          textColor: 'text-white',
-          borderColor: 'border-green-600'
+          accent: 'bg-green-500',
+          iconBg: 'bg-green-100',
+          iconText: 'text-green-700'
         };
       case 'error':
         return {
           icon: FaTimes,
-          bgColor: 'bg-red-500',
-          textColor: 'text-white',
-          borderColor: 'border-red-600'
+          accent: 'bg-red-500',
+          iconBg: 'bg-red-100',
+          iconText: 'text-red-700'
         };
       case 'warning':
         return {
           icon: FaExclamationTriangle,
-          bgColor: 'bg-yellow-500',
-          textColor: 'text-white',
-          borderColor: 'border-yellow-600'
+          accent: 'bg-yellow-500',
+          iconBg: 'bg-yellow-100',
+          iconText: 'text-yellow-700'
         };
       case 'info':
         return {
           icon: FaInfoCircle,
-          bgColor: 'bg-blue-500',
-          textColor: 'text-white',
-          borderColor: 'border-blue-600'
+          accent: 'bg-blue-500',
+          iconBg: 'bg-blue-100',
+          iconText: 'text-blue-700'
         };
       default:
         return {
           icon: FaInfoCircle,
-          bgColor: 'bg-gray-500',
-          textColor: 'text-white',
-          borderColor: 'border-gray-600'
+          accent: 'bg-slate-500',
+          iconBg: 'bg-slate-100',
+          iconText: 'text-slate-700'
         };
     }
   };
@@ -73,30 +89,46 @@ const Toast = ({
   if (!show) return null;
 
   return (
-    <div className="fixed top-4 right-4 z-50">
-      <div
-        className={`
-          ${config.bgColor} ${config.textColor} ${config.borderColor}
-          px-6 py-4 rounded-lg shadow-lg border-l-4
-          transform transition-all duration-300 ease-in-out
-          ${show ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'}
-          max-w-md flex items-center space-x-3
-        `}
-      >
-        <Icon className="text-lg flex-shrink-0" />
-        <p className="text-sm font-medium flex-1">{message}</p>
+    <div
+      role="status"
+      aria-live="polite"
+      className={`
+        relative w-[22rem] max-w-sm
+        bg-white/90 dark:bg-slate-900/90 backdrop-blur-md
+        border border-slate-200/60 dark:border-slate-700/60
+        rounded-xl shadow-xl ring-1 ring-black/5
+        transform transition-all duration-300 ease-in-out
+        ${show ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'}
+        px-4 py-3 pr-3
+      `}
+    >
+      <div className={`absolute left-0 top-0 bottom-0 w-1 rounded-l-xl ${config.accent}`} />
+      <div className="flex items-start gap-3">
+        <div className={`mt-0.5 p-2 rounded-full ${config.iconBg} ${config.iconText} shadow-inner`}> 
+          <Icon className="text-base" />
+        </div>
+        <p className="text-sm font-medium text-slate-800 dark:text-slate-100 flex-1">{message}</p>
         <button
+          aria-label="Close notification"
           onClick={() => {
             setShow(false);
             setTimeout(() => {
               onClose && onClose();
             }, 300);
           }}
-          className="text-white hover:text-gray-200 transition-colors ml-2"
+          className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors ml-1"
         >
           <FaTimes className="text-sm" />
         </button>
       </div>
+      {duration > 0 && (
+        <div className="absolute left-0 right-0 bottom-0 h-1 bg-slate-200/60 dark:bg-slate-700/60 rounded-b-xl overflow-hidden">
+          <div
+            className={`${config.accent} h-full transition-[width] duration-75`}
+            style={{ width: `${Math.max(0, Math.min(100, progress))}%` }}
+          />
+        </div>
+      )}
     </div>
   );
 };

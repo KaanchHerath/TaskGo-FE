@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { FaSearch, FaTasks, FaDollarSign, FaStar, FaMapMarkerAlt, FaClock, FaCheck, FaSpinner, FaEye, FaUser, FaCalendar, FaPlus, FaUsers, FaChartLine, FaAward, FaThumbsUp } from "react-icons/fa";
 import homeImage from '../../assets/homeimage.png';
 import { taskService } from '../../services/api/taskService';
@@ -191,7 +191,7 @@ const RecentActivity = () => {
               <h3 className="text-xl font-semibold text-slate-800 mb-2">No Activity Yet</h3>
               <p className="text-slate-600 mb-6">Start by browsing available tasks!</p>
               <Link 
-                to="/browse-jobs" 
+                to="/tasks" 
                 className="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-300 font-semibold inline-flex items-center shadow-lg"
               >
                 <FaSearch className="mr-2" />
@@ -202,7 +202,7 @@ const RecentActivity = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {activities.map((activity) => (
-              <div key={activity.id} className="group bg-white/10 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/30 hover:shadow-xl transition-all duration-300">
+              <div key={activity.id} className="group bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/40 hover:shadow-xl transition-all duration-300">
                 <div className="flex justify-between items-start mb-4">
                   <h3 className="font-bold text-lg text-slate-800 group-hover:text-green-600 transition-colors line-clamp-2">
                     {activity.title}
@@ -231,7 +231,7 @@ const RecentActivity = () => {
                     {activity.type}
                   </div>
                   <Link 
-                    to={`/task/${activity.taskId}`} 
+                    to={`/tasker/task/${activity.taskId}`} 
                     className="text-green-600 hover:text-green-700 font-medium text-sm flex items-center"
                   >
                     View Details
@@ -248,11 +248,12 @@ const RecentActivity = () => {
 };
 
 const AvailableTasks = () => {
+  const navigate = useNavigate();
   const { jobs, loading, error } = useJobs();
   const [savedTasks, setSavedTasks] = useState([]);
 
-  const handleTaskClick = (taskId) => {
-    // Navigate to task details or handle task selection
+  const handleTaskClick = (taskId) => { 
+    navigate(`/tasker/task/${taskId}`);
   };
 
   const toggleSaveTask = (taskId, e) => {
@@ -320,7 +321,7 @@ const AvailableTasks = () => {
             </span>
           </h2>
           <Link 
-            to="/browse-jobs" 
+            to="/tasks" 
             className="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-300 font-semibold flex items-center shadow-lg transform hover:scale-105"
           >
             Browse All Tasks
@@ -395,10 +396,12 @@ const TaskerDashboard = () => {
           if (payload) {
             const fallbackName = payload.name || payload.username || payload.fullName || 'Tasker';
             const displayName = fallbackName.split(' ')[0];
+            const userId = payload.userId || payload.id || payload._id || payload.sub;
+
             setUserName(displayName);
             setCachedUserName(displayName);
             setIsLoggedIn(true);
-            setCurrentUserId(payload.userId || payload.id || payload._id || payload.sub);
+            setCurrentUserId(userId);
           }
         }
       } finally {
@@ -420,12 +423,12 @@ const TaskerDashboard = () => {
     searchPlaceholder: "What tasks can you do?",
     primaryButton: {
       text: "Browse Tasks",
-      to: "/browse-jobs",
+      to: "/tasks",
       icon: <FaSearch />
     },
     secondaryButton: isLoggedIn ? {
       text: "Update Profile",
-      to: "/tasker/profile",
+      to: "/tasker/profile?tab=personal",
       icon: <FaUser />
     } : {
       text: "Join as Tasker",

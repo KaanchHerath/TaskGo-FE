@@ -543,11 +543,11 @@ const TaskerProfile = () => {
               <ProfileCompletionPrompt userProfile={user} />
             </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 py-8 ">
         <div className="flex gap-8">
           {/* Sidebar */}
           <div className="w-80">
-            <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-6">
+            <div className="sticky top-20 bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-6 max-h-[calc(100vh-6rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
               <nav className="space-y-2">
                 {tabs.map((tab) => (
             <button 

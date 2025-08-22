@@ -15,7 +15,7 @@ export default defineConfig({
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom', 'react-router-dom'],
-          // ui: ['@/components/ui'], // Removed because the directory does not exist
+          
         },
       },
     },

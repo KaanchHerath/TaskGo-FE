@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getDashboardStats } from '../../services/api/statsService';
+import { getDashboardStats, getTaskerStats } from '../../services/api/statsService';
 import axiosInstance from '../../services/api/axiosConfig';
 
 const StatsSection = ({
@@ -41,8 +41,10 @@ const StatsSection = ({
   const colors = getColorClasses(colorScheme);
 
   useEffect(() => {
+    console.log('StatsSection useEffect triggered with apiEndpoint:', apiEndpoint);
     const fetchStats = async () => {
       if (!apiEndpoint) {
+        console.log('No apiEndpoint provided, using fallback stats');
         setStatsData(prev => ({ ...prev, loading: false }));
         return;
       }
@@ -50,20 +52,32 @@ const StatsSection = ({
         let data;
         if (apiEndpoint.endsWith('/stats/dashboard')) {
           data = await getDashboardStats();
+        } else if (apiEndpoint.includes('/stats/tasker/')) {
+          // Extract tasker ID from the endpoint
+          const taskerId = apiEndpoint.split('/stats/tasker/')[1];
+          console.log('Fetching tasker stats for ID:', taskerId);
+          data = await getTaskerStats(taskerId);
+          console.log('Tasker stats response:', data);
         } else {
-          // Generic fetch for other stats endpoints, e.g., /stats/tasker/:id or /stats/customer/:id
+          // Generic fetch for other stats endpoints, e.g., /stats/customer/:id
+          console.log('Making generic API call to:', apiEndpoint);
           const res = await axiosInstance.get(apiEndpoint);
+          console.log('Generic API response:', res);
           data = res.data;
         }
+        console.log('Setting stats data:', data);
         setStatsData({
           ...data,
           loading: false
         });
       } catch (error) {
         console.error("Error fetching stats:", error);
+        console.error("Error details:", error.response?.data || error.message);
+        console.error("Using fallback stats:", fallbackStats);
         setStatsData({
           ...fallbackStats,
-          loading: false
+          loading: false,
+          error: error.message
         });
       }
     };
@@ -107,22 +121,38 @@ const StatsSection = ({
           </div>
           
           <div className={`grid grid-cols-1 md:grid-cols-4 ${isCompact ? 'gap-4' : 'gap-6'}`}>
-            {stats.map((stat, index) => (
-              <div key={index} className={`group ${transparent ? 'bg-transparent border border-white/30 shadow-none' : (pill ? 'bg-white/10 border border-white/30 shadow-md backdrop-blur-sm' : 'bg-white/70 backdrop-blur-sm border border-white/20 shadow-lg')} rounded-2xl ${isCompact ? 'p-5' : 'p-6'} hover:shadow-xl hover:scale-105 transition-all duration-300`}>
-                <div className="flex items-center justify-between mb-4">
-                  <div className={`p-3 bg-gradient-to-r ${stat.color} rounded-xl shadow-lg`}>
-                    {stat.icon}
-                  </div>
-                  <div className="text-right">
-                    <div className={`${isCompact ? 'text-xl' : 'text-2xl'} font-bold bg-gradient-to-r ${stat.color} bg-clip-text text-transparent`}>
-                      {statsData.loading ? '...' : (statsData[stat.key] || stat.fallbackValue || 0).toLocaleString()}
+            {stats.map((stat, index) => {
+              const statValue = statsData[stat.key];
+              const displayValue = statsData.loading ? '...' : (statValue || stat.fallbackValue || 0);
+              
+              console.log(`Rendering stat ${stat.key}:`, {
+                statValue,
+                fallbackValue: stat.fallbackValue,
+                displayValue,
+                loading: statsData.loading,
+                error: statsData.error
+              });
+              
+              return (
+                <div key={index} className={`group ${transparent ? 'bg-transparent border border-white/30 shadow-none' : (pill ? 'bg-white/10 border border-white/30 shadow-md backdrop-blur-sm' : 'bg-white/70 backdrop-blur-sm border border-white/20 shadow-lg')} rounded-2xl ${isCompact ? 'p-5' : 'p-6'} hover:shadow-xl hover:scale-105 transition-all duration-300`}>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className={`p-3 bg-gradient-to-r ${stat.color} rounded-xl shadow-lg`}>
+                      {stat.icon}
+                    </div>
+                    <div className="text-right">
+                      <div className={`${isCompact ? 'text-xl' : 'text-2xl'} font-bold bg-gradient-to-r ${stat.color} bg-clip-text text-transparent`}>
+                        {displayValue.toLocaleString()}
+                      </div>
                     </div>
                   </div>
+                  <div className={`text-slate-800 font-semibold ${isCompact ? 'text-base' : 'text-lg'}`}>{stat.title}</div>
+                  <div className="text-sm text-slate-600 mt-1">{stat.description}</div>
+                  {statsData.error && (
+                    <div className="text-xs text-red-500 mt-1">Using fallback data</div>
+                  )}
                 </div>
-                <div className={`text-slate-800 font-semibold ${isCompact ? 'text-base' : 'text-lg'}`}>{stat.title}</div>
-                <div className="text-sm text-slate-600 mt-1">{stat.description}</div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>

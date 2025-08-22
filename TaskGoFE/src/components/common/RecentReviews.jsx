@@ -11,7 +11,7 @@ const RecentReviews = ({
   transparent = false,
   pill = false,
   pillSize = 'md',
-  density = "comfortable" // density can further tighten spacing
+  density = "comfortable" 
 }) => {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -98,7 +98,7 @@ const RecentReviews = ({
 
   if (loading) {
     return (
-      <div className={`${pill ? getPillClasses(pillSize) : ''} ${transparent ? 'bg-transparent border border-white/30 shadow-none' : 'bg-white rounded-xl shadow-sm border border-gray-100'} ${isCompact ? 'p-5' : 'p-6'} ${className}`}>
+      <div className={`${pill ? getPillClasses(pillSize) : ''} ${transparent ? 'bg-white/80 backdrop-blur-sm border border-white/40 shadow-sm' : 'bg-white rounded-xl shadow-sm border border-gray-100'} ${isCompact ? 'p-5' : 'p-6'} ${className}`}>
         <div className="flex items-center justify-center py-12">
           <FaSpinner className="w-6 h-6 text-gray-400 animate-spin mr-3" />
           <p className="text-gray-600">Loading recent reviews...</p>
@@ -109,7 +109,7 @@ const RecentReviews = ({
 
   if (error) {
     return (
-      <div className={`${pill ? getPillClasses(pillSize) : ''} ${transparent ? 'bg-transparent border border-white/30 shadow-none' : 'bg-white rounded-xl shadow-sm border border-gray-100'} ${isCompact ? 'p-5' : 'p-6'} ${className}`}>
+      <div className={`${pill ? getPillClasses(pillSize) : ''} ${transparent ? 'bg-white/80 backdrop-blur-sm border border-white/40 shadow-sm' : 'bg-white rounded-xl shadow-sm border border-gray-100'} ${isCompact ? 'p-5' : 'p-6'} ${className}`}>
         <div className="flex items-center justify-center py-12">
           <FaExclamationTriangle className="w-6 h-6 text-red-400 mr-3" />
           <p className="text-red-600">{error}</p>
@@ -120,7 +120,7 @@ const RecentReviews = ({
 
   if (reviews.length === 0) {
     return (
-      <div className={`${pill ? getPillClasses(pillSize) : ''} ${transparent ? 'bg-transparent border border-white/30 shadow-none' : 'bg-white rounded-xl shadow-sm border border-gray-100'} ${isCompact ? 'p-5' : 'p-6'} ${className}`}>
+      <div className={`${pill ? getPillClasses(pillSize) : ''} ${transparent ? 'bg-white/80 backdrop-blur-sm border border-white/40 shadow-sm' : 'bg-white rounded-xl shadow-sm border border-gray-100'} ${isCompact ? 'p-5' : 'p-6'} ${className}`}>
         <h3 className={`${isCompact ? 'text-base' : 'text-lg'} font-semibold text-gray-800 mb-4 flex items-center`}>
           <FaAward className="text-purple-600 mr-2" />
           {title}
@@ -134,7 +134,7 @@ const RecentReviews = ({
   }
 
   return (
-    <div className={`${pill ? getPillClasses(pillSize) : ''} ${transparent ? 'bg-transparent border border-white/30 shadow-none' : 'bg-white rounded-xl shadow-sm border border-gray-100'} ${isCompact ? 'p-5' : 'p-6'} ${className}`}>
+    <div className={`${pill ? getPillClasses(pillSize) : ''} ${transparent ? 'bg-white/20 backdrop-blur-sm border border-white/40 shadow-sm' : 'bg-white rounded-xl shadow-sm border border-gray-100'} ${isCompact ? 'p-5' : 'p-6'} ${className}`}>
       <div className={`flex items-center justify-between ${isCompact ? 'mb-4' : 'mb-6'}`}>
         <h3 className={`${isCompact ? 'text-base' : 'text-lg'} font-semibold text-gray-800 flex items-center`}>
           <FaAward className="text-purple-600 mr-2" />

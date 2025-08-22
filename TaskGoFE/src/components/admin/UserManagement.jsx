@@ -180,9 +180,9 @@ const UserManagement = () => {
           <h3 className="text-lg font-semibold text-gray-900">User Filters</h3>
           <button
             onClick={() => setFilters({ search: '', role: '', status: '', province: '', registrationDate: '', lastActive: '' })}
-            className="text-sm text-gray-500 hover:text-gray-700"
+            className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
           >
-            Clear All
+            Clear Filters
           </button>
         </div>
 

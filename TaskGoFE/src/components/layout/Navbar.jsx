@@ -18,6 +18,12 @@ const Navbar = () => {
   const [notifications, setNotifications] = useState([]);
   const notificationsRef = useRef(null);
 
+  // Helper function to get first word of name
+  const getFirstName = (name) => {
+    if (!name) return 'User';
+    return name.split(' ')[0];
+  };
+
   const checkAuthState = () => {
     const token = getToken();
     if (token) {
@@ -366,7 +372,7 @@ const Navbar = () => {
                 {/* Browse Tasks Button - Only for Taskers */}
                 {userRole === 'tasker' && (
                   <Link 
-                    to="/browse-jobs" 
+                    to="/tasks" 
                     className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-5 py-2.5 rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all duration-200 flex items-center space-x-2 font-medium shadow-lg hover:shadow-green-200"
                   >
                     <FaSearch className="w-4 h-4" />
@@ -433,10 +439,10 @@ const Navbar = () => {
                       </div>
                       <div className="text-left">
                         <div className="text-sm font-semibold text-slate-800 leading-tight">
-                        {userName}
+                        {getFirstName(userName)}
                         </div>
                         <div className="text-xs text-slate-500 leading-tight">
-                         User
+                         {getRoleDisplayName()}
                         </div>
                       </div>
                     </div>
@@ -453,7 +459,7 @@ const Navbar = () => {
                             <FaUser className="text-white text-sm" />
                           </div>
                           <div>
-                            <div className="font-semibold text-slate-800">{userName}</div>
+                            <div className="font-semibold text-slate-800">{getFirstName(userName)}</div>
                             <div className="text-sm text-slate-500">{getRoleDisplayName()}</div>
                           </div>
                         </div>
@@ -623,7 +629,7 @@ const Navbar = () => {
 
               {isLoggedIn && userRole === 'tasker' && (
                 <Link 
-                  to="/browse-jobs" 
+                  to="/tasks" 
                   className="block mx-2 my-2 px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:from-green-600 hover:to-emerald-700 text-center font-medium shadow-lg"
                   onClick={() => setIsMenuOpen(false)}
                 >
@@ -640,8 +646,8 @@ const Navbar = () => {
                         <FaUser className="text-white text-sm" />
                       </div>
                       <div>
-                        <div className="font-semibold text-slate-800">{userName}</div>
-                        <div className="text-sm text-slate-500">{userName}</div>
+                        <div className="font-semibold text-slate-800">{getFirstName(userName)}</div>
+                        <div className="text-sm text-slate-500">{getRoleDisplayName()}</div>
                       </div>
                     </div>
                   </div>

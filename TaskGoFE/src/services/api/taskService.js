@@ -419,17 +419,18 @@ export const getAvailableTasks = async (filters = {}) => {
 };
 
 /**
- * Get the 3 most recent tasks for the current user (sorted by createdAt descending)
+ * Get the most recent tasks for the current user (sorted by createdAt descending)
+ * @param {number} limit - Number of recent tasks to return (default: 3)
  * @returns {Promise<Object>} Recent tasks data
  */
-export const getMyRecentTasks = async () => {
+export const getMyRecentTasks = async (limit = 3) => {
   const data = await getMyTasks();
   const allTasks = data.data || [];
-  // Sort by createdAt descending and take the first 3
+  // Sort by createdAt descending and take the specified number
   const recentTasks = allTasks
     .slice()
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-    .slice(0, 3);
+    .slice(0, limit);
   return { data: recentTasks };
 };
 

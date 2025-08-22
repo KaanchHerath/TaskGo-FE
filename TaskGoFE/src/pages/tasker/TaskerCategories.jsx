@@ -188,7 +188,7 @@ const TaskerCategories = () => {
                   Browse All Tasks
                 </button>
                 <button
-                  onClick={() => navigate('/tasker/profile')}
+                  onClick={() => navigate('/tasker/profile?tab=personal')}
                   className="bg-white/80 backdrop-blur-sm border-2 border-blue-600/30 text-blue-600 px-8 py-4 rounded-xl hover:bg-white/90 hover:border-blue-600/50 transition-all duration-300 font-semibold shadow-lg"
                 >
                   Update Profile
