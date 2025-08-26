@@ -10,16 +10,16 @@ class SocketService {
 
   // Initialize socket connection
   connect() {
-    console.log('🔌 SocketService.connect() called');
+    //console.log('SocketService.connect() called');
     
     if (this.socket && this.isConnected) {
-      console.log('✅ Socket already connected, returning existing socket');
+      //console.log('Socket already connected, returning existing socket');
       return this.socket;
     }
 
     const token = getToken();
     if (!token) {
-      console.warn('❌ No authentication token found for socket connection');
+      console.warn('No authentication token found for socket connection');
       return null;
     }
 
@@ -48,7 +48,7 @@ class SocketService {
       randomizationFactor: 0.5
     });
     
-    console.log('🔌 Socket.IO instance created:', !!this.socket);
+    //console.log(' Socket.IO instance created:', !!this.socket);
 
     this.setupEventHandlers();
     return this.socket;
@@ -56,15 +56,15 @@ class SocketService {
 
   // Setup socket event handlers
   setupEventHandlers() {
-    console.log('🔌 Setting up socket event handlers');
+    
     
     if (!this.socket) {
-      console.log('❌ No socket instance available for event handler setup');
+      //console.log('No socket instance available for event handler setup');
       return;
     }
 
     this.socket.on('connect', () => {
-      console.log('✅ Socket connected:', this.socket.id);
+      //console.log('Socket connected:', this.socket.id);
       this.isConnected = true;
       
       // Join user to their personal room
@@ -72,9 +72,9 @@ class SocketService {
       if (user && (user._id || user.userId)) {
         const userId = user._id || user.userId;
         this.socket.emit('join-user', userId);
-        console.log('✅ Joined user room:', userId);
+        console.log('Joined user room:', userId);
       } else {
-        console.warn('⚠️ No user data available to join room');
+        console.warn(' No user data available to join room');
       }
     });
 
@@ -84,18 +84,17 @@ class SocketService {
     });
 
     this.socket.on('connect_error', (error) => {
-      console.error('❌ Socket connection error:', error.message);
+      
       this.isConnected = false;
       
       // If authentication error, try to reconnect with fresh token
       if (error.message && error.message.includes('Authentication error')) {
-        console.log('🔄 Authentication error detected, will retry connection');
         // Socket.io will automatically retry with the reconnection logic
       }
     });
 
     this.socket.on('reconnect', (attemptNumber) => {
-      console.log('✅ Socket reconnected after', attemptNumber, 'attempts');
+      
       this.isConnected = true;
       
       // Rejoin user room after reconnection
@@ -103,28 +102,28 @@ class SocketService {
       if (user && (user._id || user.userId)) {
         const userId = user._id || user.userId;
         this.socket.emit('join-user', userId);
-        console.log('✅ Rejoined user room after reconnection:', userId);
+        
       }
     });
 
-    this.socket.on('reconnect_error', (error) => {
-      console.error('Socket reconnection error:', error);
-    });
+    // this.socket.on('reconnect_error', (error) => {
+    //   console.error('Socket reconnection error:', error);
+    // });
     
-    // Error handler
-    this.socket.on('error', (error) => {
-      console.error('❌ Socket error received:', error);
-    });
+    // // Error handler
+    // this.socket.on('error', (error) => {
+    //   
+    // });
     
-    // Join user success handler
-    this.socket.on('join-user-success', (data) => {
-      console.log('✅ Successfully joined user room:', data);
-    });
+    // // Join user success handler
+    // this.socket.on('join-user-success', (data) => {
+    //   
+    // });
     
-    // Test message listener
-    this.socket.on('test-message', (data) => {
-      console.log('🧪 Test message received:', data);
-    });
+    // // Test message listener
+    // this.socket.on('test-message', (data) => {
+    //  
+    // });
   }
 
   // Get current user from localStorage

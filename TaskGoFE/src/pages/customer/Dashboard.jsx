@@ -280,8 +280,8 @@ const CustomerDashboard = () => {
       icon: <FaPlus />
     },
     secondaryButton: {
-      text: "Browse Tasks",
-      to: "/tasks",
+      text: "Browse Taskers",
+      to: "/taskers",
       icon: <FaTasks />
     },
     image: homeImage,

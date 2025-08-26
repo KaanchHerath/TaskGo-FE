@@ -1,5 +1,3 @@
-// Centralized authentication utilities
-
 export const roleToDashboard = {
   customer: '/customer/dashboard',
   tasker: '/tasker/dashboard',

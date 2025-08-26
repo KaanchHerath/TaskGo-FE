@@ -37,7 +37,7 @@ export const taskerActions = [
     description: "Find available tasks", 
     icon: FaSearch, 
     color: "from-green-500 to-green-600",
-    link: "/browse-jobs"
+    link: "/tasks"
   },
   { 
     title: "My Applications", 

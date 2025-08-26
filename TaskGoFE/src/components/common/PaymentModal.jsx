@@ -190,7 +190,7 @@ const PaymentModal = ({
           "merchant_id": "1231112", // TODO: Replace with your actual PayHere Merchant ID
           "return_url": undefined, // Important - set to undefined for popup
           "cancel_url": undefined, // Important - set to undefined for popup
-          "notify_url": "https://564c5de1861b.ngrok-free.app/api/payments/notify", // ngrok URL for local development
+          "notify_url": "https://5d3fb76e53df.ngrok-free.app/api/payments/notify", // ngrok URL for local development
           "order_id": response.data.orderId, // Use the orderId from backend (IMPORTANT!)
           "items": `Advance Payment - ${task.title}`,
           "amount": advanceAmount.toFixed(2),

@@ -146,7 +146,7 @@ const ProfileCompletionPrompt = ({ userProfile, className = "" }) => {
             </Link>
             
             <Link
-              to="/browse-jobs"
+              to="/tasks"
               className="inline-flex items-center justify-center px-6 py-3 bg-white text-amber-700 font-semibold rounded-xl border-2 border-amber-300 hover:bg-amber-50 transition-all duration-300"
             >
               Browse Tasks Anyway

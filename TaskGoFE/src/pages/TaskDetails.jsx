@@ -374,9 +374,16 @@ const TaskDetails = () => {
   // Helper function to construct document URLs
   const getDocumentUrl = (docPath) => {
     // Handle both absolute and relative paths
-    return docPath.includes('uploads/') 
-      ? `${API_BASE_URL}/${docPath}`
-      : `${API_BASE_URL}/uploads/tasker-docs/${docPath.split(/[\\\/]/).pop()}`;
+    // Normalize the path and remove leading slashes
+    const normalized = docPath.replace(/\\/g, '/').replace(/^\/+/, '');
+    
+    // If the path already starts with 'uploads/', use it as is
+    if (normalized.startsWith('uploads/')) {
+      return `${API_BASE_URL}/${normalized}`;
+    }
+    
+    // If the path doesn't start with 'uploads/', add it
+    return `${API_BASE_URL}/uploads/tasker-docs/${normalized.split(/[\\\/]/).pop()}`;
   };
 
   // Helper to construct absolute URLs for images saved in backend uploads
@@ -384,11 +391,20 @@ const TaskDetails = () => {
     if (!photoPath) return '';
     // If already an absolute URL or data URI
     if (/^https?:\/\//i.test(photoPath) || /^data:image\//i.test(photoPath)) return photoPath;
-    const base = API_BASE_URL;
-    // Normalize Windows backslashes
+    
+    // Normalize Windows backslashes and clean the path
     const normalized = photoPath.replace(/\\/g, '/');
-    const cleaned = normalized.startsWith('/') ? normalized.slice(1) : normalized;
-    return `${base}/${cleaned}`;
+    
+    // Remove any leading slashes and check if path already contains 'uploads/'
+    const cleaned = normalized.replace(/^\/+/, '');
+    
+    // If the path already starts with 'uploads/', use it as is
+    if (cleaned.startsWith('uploads/')) {
+      return `${API_BASE_URL}/${cleaned}`;
+    }
+    
+    // If the path doesn't start with 'uploads/', add it
+    return `${API_BASE_URL}/uploads/${cleaned}`;
   };
 
   const getStatusIcon = (status) => {

@@ -104,9 +104,16 @@ const TaskerProfile = () => {
   // Helper function to construct document URLs
   const getDocumentUrl = (docPath) => {
     // Handle both absolute and relative paths
-    return docPath.includes('uploads/') 
-      ? `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/${docPath}`
-      : `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/uploads/tasker-docs/${docPath.split(/[\\\/]/).pop()}`;
+    // Normalize the path and remove leading slashes
+    const normalized = docPath.replace(/\\/g, '/').replace(/^\/+/, '');
+    
+    // If the path already starts with 'uploads/', use it as is
+    if (normalized.startsWith('uploads/')) {
+      return `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/${normalized}`;
+    }
+    
+    // If the path doesn't start with 'uploads/', add it
+    return `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/uploads/tasker-docs/${normalized.split(/[\\\/]/).pop()}`;
   };
 
   const getInitials = (name) => {

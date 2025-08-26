@@ -77,10 +77,20 @@ const resolvePhotoUrl = (photo) => {
   
   // absolute http(s)
   if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  
+  // Remove any leading slashes and check if path already contains 'uploads/'
+  const cleaned = trimmed.replace(/^\/+/, '');
+  
+  // If the path already starts with 'uploads/', use it as is
+  if (cleaned.startsWith('uploads/')) {
+    return `${APP_CONFIG.API.BASE_URL}/${cleaned}`;
+  }
+  
   // leading slash -> join with BASE_URL
   if (trimmed.startsWith('/')) return `${APP_CONFIG.API.BASE_URL}${trimmed}`;
-  // otherwise treat as uploads path on server
-  return `${APP_CONFIG.API.BASE_URL}/${trimmed}`;
+  
+  // otherwise treat as uploads path on server and add uploads/ prefix
+  return `${APP_CONFIG.API.BASE_URL}/uploads/${cleaned}`;
 };
 
 const TaskerTaskView = () => {

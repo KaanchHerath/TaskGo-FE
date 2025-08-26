@@ -348,7 +348,13 @@ const TaskerProfilePopup = ({ isOpen, onClose, taskerId, taskerName }) => {
                         
                         // Construct full URL (assuming the backend serves files from a base URL)
                         const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-                        const fullUrl = `${baseUrl}/${docPath}`;
+                        // Normalize the path and add uploads prefix if needed
+                        const normalizedPath = docPath.replace(/\\/g, '/');
+                        // Remove any leading slashes and check if path already contains 'uploads/'
+                        const cleaned = normalizedPath.replace(/^\/+/, '');
+                        const fullUrl = cleaned.startsWith('uploads/') 
+                          ? `${baseUrl}/${cleaned}`
+                          : `${baseUrl}/uploads/${cleaned}`;
                         
                         return (
                           <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">

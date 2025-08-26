@@ -370,9 +370,16 @@ const TaskerProfile = () => {
   // Helper functions for document handling
   const getDocumentUrl = (docPath) => {
     // Handle both absolute and relative paths
-    return docPath.includes('uploads/') 
-      ? `${APP_CONFIG.API.BASE_URL}/${docPath}`
-      : `${APP_CONFIG.API.BASE_URL}/uploads/tasker-docs/${docPath.split(/[\\\/]/).pop()}`;
+    // Normalize the path and remove leading slashes
+    const normalized = docPath.replace(/\\/g, '/').replace(/^\/+/, '');
+    
+    // If the path already starts with 'uploads/', use it as is
+    if (normalized.startsWith('uploads/')) {
+      return `${APP_CONFIG.API.BASE_URL}/${normalized}`;
+    }
+    
+    // If the path doesn't start with 'uploads/', add it
+    return `${APP_CONFIG.API.BASE_URL}/uploads/tasker-docs/${normalized.split(/[\\\/]/).pop()}`;
   };
 
   const getFileType = (filename) => {

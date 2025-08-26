@@ -96,6 +96,27 @@ const TaskDescription = () => {
     return `${diffInWeeks} weeks ago`;
   };
 
+  // Helper to construct absolute URLs for images saved in backend uploads
+  const getTaskPhotoUrl = (photoPath) => {
+    if (!photoPath) return '';
+    // If already an absolute URL or data URI
+    if (/^https?:\/\//i.test(photoPath) || /^data:image\//i.test(photoPath)) return photoPath;
+    
+    // Normalize Windows backslashes and clean the path
+    const normalized = photoPath.replace(/\\/g, '/');
+    
+    // Remove any leading slashes and check if path already contains 'uploads/'
+    const cleaned = normalized.replace(/^\/+/, '');
+    
+    // If the path already starts with 'uploads/', use it as is
+    if (cleaned.startsWith('uploads/')) {
+      return `http://localhost:5000/${cleaned}`;
+    }
+    
+    // If the path doesn't start with 'uploads/', add it
+    return `http://localhost:5000/uploads/${cleaned}`;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20 flex items-center justify-center">
@@ -270,7 +291,7 @@ const TaskDescription = () => {
                   {job.photos.map((photo, index) => (
                     <div key={index} className="relative group">
                       <img 
-                        src={photo} 
+                        src={getTaskPhotoUrl(photo)} 
                         alt={`Task photo ${index + 1}`}
                         className="w-full h-48 object-cover rounded-xl shadow-lg group-hover:shadow-xl transition-all duration-300"
                       />

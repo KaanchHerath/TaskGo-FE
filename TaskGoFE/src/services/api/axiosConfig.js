@@ -42,7 +42,6 @@ axiosInstance.interceptors.response.use(
           // Check if this is a login attempt (no token in request)
           const hasAuthHeader = error.config.headers.Authorization;
           if (!hasAuthHeader) {
-            // This is likely a login attempt with wrong credentials
             // Don't redirect, just let the error propagate to the component
             console.error('Login failed - invalid credentials');
             break;

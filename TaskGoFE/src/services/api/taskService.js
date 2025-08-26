@@ -1,10 +1,5 @@
 import axiosInstance from './axiosConfig';
 import { useMemo } from 'react';
-import { PROVINCES, DISTRICTS } from '../../config/locations';
-
-// ============================================================================
-// CONSTANTS & CONFIGURATION
-// ============================================================================
 
 // Task categories for the dropdown
 export const TASK_CATEGORIES = [
@@ -24,10 +19,6 @@ export const TASK_CATEGORIES = [
   'Tutoring',
   'Other'
 ];
-
-// ============================================================================
-// PUBLIC TASK OPERATIONS (Available to all users)
-// ============================================================================
 
 /**
  * Get all available tasks with filters and pagination
