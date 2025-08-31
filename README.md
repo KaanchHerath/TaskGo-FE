@@ -66,15 +66,12 @@ npm run dev
 yarn dev
 ```
 
-The application will be available at `http://localhost:5173`
+The application will be available at `http://localhost:5000`
 
 ## 🔧 Available Scripts
 
 - `npm run dev` - Start development server with hot reload
 - `npm run build` - Build for production
-- `npm run preview` - Preview production build locally
-- `npm run lint` - Run ESLint for code quality
-- `npm run tailwind` - Watch Tailwind CSS for changes
 
 ## 💳 Payment Gateway Setup
 
