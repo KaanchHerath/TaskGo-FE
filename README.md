@@ -2,8 +2,6 @@
 
 TaskGo is an on-demand gig worker platform that connects customers with skilled local service providers in real-time. It ensures seamless service matching, secure transactions, and flexible scheduling, making everyday tasks effortless.
 
-TaskGo is a comprehensive task management and service marketplace platform built with React. It connects customers who need tasks completed with skilled taskers who can perform various services.
-
 ## 🚀 Features
 
 - **User Management**: Customer and Tasker registration with role-based access
