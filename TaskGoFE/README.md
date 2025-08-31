@@ -153,10 +153,9 @@ TaskGo supports three distinct user types, each with specific roles and capabili
 - **Platform Management**: Oversee all platform operations and user activities
 - **User Management**: Approve tasker registrations, manage user accounts, and handle disputes
 - **Task Oversight**: Monitor task creation, progress, and completion across the platform
-- **Payment Administration**: Oversee payment processing, refunds, and financial transactions
 - **Analytics & Reports**: Access comprehensive platform statistics and performance metrics
 - **Content Moderation**: Review and approve user-generated content and task descriptions
-- **System Configuration**: Manage platform settings, categories, and operational parameters
+-
 
 ## 🔐 Authentication
 
@@ -172,12 +171,7 @@ Built with Tailwind CSS for mobile-first responsive design. The application work
 - Tablets
 - Mobile devices
 
-## 🧪 Testing
 
-Run tests using:
-
-```bash
-npm test
 ```
 
 ## 🚀 Deployment
