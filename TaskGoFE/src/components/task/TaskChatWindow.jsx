@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react';
 import { FaPaperPlane, FaTimes, FaSpinner, FaComments, FaUser, FaMinus, FaExpand, FaPhone, FaVideo } from 'react-icons/fa';
 import { getMessages, sendMessage, markMessagesAsRead } from '../../services/api/chatService';
 import socketService from '../../services/api/socketService';
-import audioManager from '../../utils/audioUtils';
 
 const TaskChatWindow = ({ taskId, receiverId, receiverName, isOpen, onClose, currentUser, task }) => {
   const [messages, setMessages] = useState([]);
@@ -66,10 +65,9 @@ const TaskChatWindow = ({ taskId, receiverId, receiverName, isOpen, onClose, cur
         // Auto-scroll to bottom for new messages
         setTimeout(scrollToBottom, 100);
         
-        // Play notification sound for incoming messages (only if from other user)
+        // Mark messages as read for incoming messages (only if from other user)
         const currentUserId = currentUser?.userId || currentUser?._id;
         if (data.senderId !== currentUserId) {
-          audioManager.playMessageSound();
           markAsRead();
         }
       } else {
@@ -347,16 +345,6 @@ const TaskChatWindow = ({ taskId, receiverId, receiverName, isOpen, onClose, cur
               ↻
             </button>
             
-            {/* Sound Toggle */}
-            <button
-              onClick={() => audioManager.setSoundEnabled(!audioManager.isEnabled)}
-              className={`text-xs p-1 hover:bg-gray-200/80 rounded transition-colors ${
-                audioManager.isEnabled ? 'text-slate-600' : 'text-slate-400'
-              }`}
-              title={audioManager.isEnabled ? 'Sound On' : 'Sound Off'}
-            >
-              {audioManager.isEnabled ? '🔊' : '🔇'}
-            </button>
           </div>
           
           <div className="flex items-center space-x-1 flex-shrink-0">

@@ -28,7 +28,7 @@ export const changePassword = async (currentPassword, newPassword) => {
     const response = await axiosInstance.put('/users/change-password', {
       currentPassword,
       newPassword,
-      confirmPassword: newPassword // Backend validation requires this
+      confirmPassword: newPassword 
     });
     return response.data;
   } catch (error) {

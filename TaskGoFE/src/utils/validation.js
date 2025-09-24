@@ -1,24 +1,12 @@
-// Validation utility functions for Tasker signup
-
-// Mobile number validation for Sri Lanka
 export const validateMobileNumber = (phone) => {
-  // Remove all non-digit characters except +
+
   const cleanPhone = phone.replace(/[^\d+]/g, '');
   
-  // Sri Lanka mobile number patterns - full international format
+
   const patterns = [
-    /^\+947[0-9]{8}$/,  // +947xxxxxxxx (most common)
-    /^\+941[0-9]{8}$/,  // +941xxxxxxxx
-    /^\+942[0-9]{8}$/,  // +942xxxxxxxx
-    /^\+943[0-9]{8}$/,  // +943xxxxxxxx
-    /^\+944[0-9]{8}$/,  // +944xxxxxxxx
-    /^\+945[0-9]{8}$/,  // +945xxxxxxxx
-    /^\+946[0-9]{8}$/,  // +946xxxxxxxx
-    /^\+948[0-9]{8}$/,  // +948xxxxxxxx
-    /^\+949[0-9]{8}$/,  // +949xxxxxxxx
+    /^\+947[0-9]{8}$/,  
   ];
   
-  // Check if the clean number matches any pattern
   const isValid = patterns.some(pattern => pattern.test(cleanPhone));
   
   return {
@@ -316,7 +304,6 @@ export const validateStep3 = (data) => {
     errors.idDocument = idValidation.error;
   }
   
-  // Validate qualification documents (optional but if provided, must be valid)
   if (data.qualificationDocuments && data.qualificationDocuments.length > 0) {
     const qualErrors = [];
     Array.from(data.qualificationDocuments).forEach((file, index) => {
@@ -376,29 +363,24 @@ export const getFieldError = (fieldName, value, validationType) => {
 
 // Format phone number as user types
 export const formatPhoneNumber = (value) => {
-  // Remove all non-digit characters except +
+
   const cleanValue = value.replace(/[^\d+]/g, '');
   
-  // If it already starts with +94, return as is
   if (cleanValue.startsWith('+94')) {
     return cleanValue;
   }
   
-  // If it starts with 94, add the +
   if (cleanValue.startsWith('94')) {
     return `+${cleanValue}`;
   }
   
-  // If it's a 9-digit number starting with 7, add +94
   if (cleanValue.length === 9 && cleanValue.startsWith('7')) {
     return `+94${cleanValue}`;
   }
-  
-  // If it's a 9-digit number starting with other digits, add +94
+
   if (cleanValue.length === 9 && /^[1-9]/.test(cleanValue)) {
     return `+94${cleanValue}`;
   }
   
-  // For partial input, just return the cleaned value
   return cleanValue;
 }; 
