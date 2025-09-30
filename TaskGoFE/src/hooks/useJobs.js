@@ -3,7 +3,6 @@ import { getTasks } from '../services/api/taskService';
 import { jobService } from '../services/api/jobService';
 
 /**
- * Unified hook for managing jobs - can fetch single job or multiple jobs
  * @param {Object|string} options - Either a job ID (string) or options object for multiple jobs
  * @returns {Object} - Returns different data based on usage:
  *   - Single job: { job, loading, error, refetch }

@@ -32,7 +32,7 @@ export function getCachedUserName() {
 export function setCachedUserName(name) {
   if (typeof name === 'string' && name.trim()) {
     localStorage.setItem(USER_NAME_CACHE_KEY, name.trim());
-    // Notify listeners so UI picking from cache can update
+
     window.dispatchEvent(new Event('authStateChanged'));
   }
 }
@@ -43,9 +43,9 @@ export function clearCachedUserName() {
 
 export function clearToken() {
   localStorage.removeItem('token');
-  // Also clear cached user name
+
   clearCachedUserName();
-  // Notify listeners in this tab
+
   window.dispatchEvent(new Event('authStateChanged'));
 }
 

@@ -12,12 +12,8 @@ const PrivateRoute = ({ allowedRoles }) => {
   const userRole = payload?.role;
   
   if (!allowedRoles.includes(userRole)) {
-    // Redirect to their dashboard if role does not match
     return <Navigate to={roleToDashboard[userRole] || '/'} replace />;
   }
-  
-  // Do not enforce tasker approval here. Approval is validated via TaskerApprovalCheck to avoid stale token issues.
-  
   return <Outlet />;
 };
 
