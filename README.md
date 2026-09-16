@@ -2,6 +2,10 @@
 
 TaskGo is an on-demand gig worker platform that connects customers with skilled local service providers in real-time. It ensures seamless service matching, secure transactions, and flexible scheduling, making everyday tasks effortless.
 
+## 🔗 Related Repository
+
+- **Backend Repository**: [TaskGo Backend](https://github.com/KaanchHerath/TaskGo-BE)
+
 ## 🚀 Features
 
 - **User Management**: Customer and Tasker registration with role-based access
